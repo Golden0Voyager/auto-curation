@@ -1,0 +1,18 @@
+# Python 核心
+.venv/
+__pycache__/
+*.pyc
+
+# 敏感信息 (最重要！)
+.env
+auth.json
+secrets.json
+
+# AI 辅助工具残留
+.gemini/
+.claude/
+.pdca-status.json
+.bkit-memory.json
+
+# 系统文件
+.DS_Store
