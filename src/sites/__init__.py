@@ -8,6 +8,8 @@ from src.sites.guggenheim import GuggenheimParser
 from src.sites.serpentine import SerpentineParser
 from src.sites.mori import MoriParser
 from src.sites.mplus import MPlusParser
+from src.sites.aic import AICParser
+from src.sites.nga import NGAParser
 
 SITES = {
     "moma": MoMAParser(),
@@ -19,5 +21,7 @@ SITES = {
     "guggenheim": GuggenheimParser(),
     "serpentine": SerpentineParser(),
     "mori": MoriParser(),
-    "mplus": MPlusParser()
+    "mplus": MPlusParser(),
+    "aic": AICParser(),
+    "nga": NGAParser(),
 }
