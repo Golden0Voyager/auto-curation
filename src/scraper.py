@@ -6,6 +6,8 @@ from src.database import ExhibitionDatabase
 from src.llm_parser import LLMExhibitionParser
 from src.sites import SITES
 from src.sites.moma import MoMAParser
+from src.sites.aic import AICParser
+from src.sites.nga import NGAParser
 
 logger = logging.getLogger("auto_curation.scraper")
 
@@ -58,6 +60,10 @@ class ExhibitionScraper:
         # === Special handling: MoMA uses GitHub CSV dataset ===
         if isinstance(parser, MoMAParser):
             return self._scrape_moma_csv(parser, limit=limit, force=force, dry_run=dry_run, since_year=since_year)
+
+        # === Special handling: AIC uses REST API (no LLM, no HTML) ===
+        if isinstance(parser, AICParser):
+            return self._scrape_aic_api(parser, limit=limit, force=force, dry_run=dry_run, since_year=since_year)
 
         # === Standard HTML scraping for all other sites ===
         urls = parser.get_exhibition_urls(self.client, since_year=since_year)
@@ -188,6 +194,54 @@ class ExhibitionScraper:
             processed_count += 1
         
         logger.info(f"[MoMA] Done | {stats}")
+        return stats
+
+    def _scrape_aic_api(
+        self,
+        parser: AICParser,
+        limit: Optional[int] = None,
+        force: bool = False,
+        dry_run: bool = False,
+        since_year: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """Special pipeline for AIC REST API (JSON-based, no LLM needed).
+
+        AIC's API returns structured JSON, so we skip the LLM parsing step entirely.
+        """
+        logger.info(f"[AIC] Using REST API mode (no LLM required).")
+
+        exhibitions = parser.get_api_exhibitions(since_year=since_year, limit=limit)
+
+        stats = {
+            "site": parser.source,
+            "discovered": len(exhibitions),
+            "parsed": len(exhibitions),
+            "saved": 0,
+            "skipped": 0,
+            "failed": 0
+        }
+
+        for ex_data in exhibitions:
+            url = ex_data.get("url", "")
+
+            # Deduplication check
+            if not force and not dry_run:
+                existing = self.db.get_exhibition_by_url(url)
+                if existing:
+                    stats["skipped"] += 1
+                    continue
+
+            if dry_run:
+                logger.info(f"[AIC][DRY-RUN] Would insert: '{ex_data['title']}' ({ex_data['start_date']})")
+                stats["saved"] += 1
+            else:
+                ex_id = self.db.insert_exhibition(ex_data)
+                if ex_id:
+                    stats["saved"] += 1
+                else:
+                    stats["failed"] += 1
+
+        logger.info(f"[AIC] Done | {stats}")
         return stats
 
     def scrape_all_sites(
