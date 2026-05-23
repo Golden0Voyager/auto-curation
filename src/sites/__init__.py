@@ -10,6 +10,7 @@ from src.sites.mori import MoriParser
 from src.sites.mplus import MPlusParser
 from src.sites.aic import AICParser
 from src.sites.nga import NGAParser
+from src.sites.wikidata import WikidataParser
 
 SITES = {
     "moma": MoMAParser(),
@@ -24,4 +25,5 @@ SITES = {
     "mplus": MPlusParser(),
     "aic": AICParser(),
     "nga": NGAParser(),
+    "wikidata": WikidataParser(),
 }
