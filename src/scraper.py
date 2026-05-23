@@ -61,9 +61,9 @@ class ExhibitionScraper:
         if isinstance(parser, MoMAParser):
             return self._scrape_moma_csv(parser, limit=limit, force=force, dry_run=dry_run, since_year=since_year)
 
-        # === Special handling: AIC uses REST API (no LLM, no HTML) ===
-        if isinstance(parser, AICParser):
-            return self._scrape_aic_api(parser, limit=limit, force=force, dry_run=dry_run, since_year=since_year)
+        # === Special handling: API parsers (AIC, Wikidata, etc.) ===
+        if hasattr(parser, "get_api_exhibitions") and callable(getattr(parser, "get_api_exhibitions")):
+            return self._scrape_api(parser, limit=limit, force=force, dry_run=dry_run, since_year=since_year)
 
         # === Standard HTML scraping for all other sites ===
         urls = parser.get_exhibition_urls(self.client, since_year=since_year)
@@ -196,19 +196,20 @@ class ExhibitionScraper:
         logger.info(f"[MoMA] Done | {stats}")
         return stats
 
-    def _scrape_aic_api(
+    def _scrape_api(
         self,
-        parser: AICParser,
+        parser: Any,
         limit: Optional[int] = None,
         force: bool = False,
         dry_run: bool = False,
         since_year: Optional[int] = None
     ) -> Dict[str, Any]:
-        """Special pipeline for AIC REST API (JSON-based, no LLM needed).
+        """Generic pipeline for API parsers (AIC, Wikidata, etc.).
 
-        AIC's API returns structured JSON, so we skip the LLM parsing step entirely.
+        Parsers with get_api_exhibitions() return structured data directly,
+        so we skip the LLM parsing step entirely.
         """
-        logger.info(f"[AIC] Using REST API mode (no LLM required).")
+        logger.info(f"[{parser.source}] Using REST/API mode (no LLM required).")
 
         exhibitions = parser.get_api_exhibitions(since_year=since_year, limit=limit)
 
@@ -232,7 +233,7 @@ class ExhibitionScraper:
                     continue
 
             if dry_run:
-                logger.info(f"[AIC][DRY-RUN] Would insert: '{ex_data['title']}' ({ex_data['start_date']})")
+                logger.info(f"[{parser.source}][DRY-RUN] Would insert: '{ex_data['title']}' ({ex_data['start_date']})")
                 stats["saved"] += 1
             else:
                 ex_id = self.db.insert_exhibition(ex_data)
@@ -241,7 +242,7 @@ class ExhibitionScraper:
                 else:
                     stats["failed"] += 1
 
-        logger.info(f"[AIC] Done | {stats}")
+        logger.info(f"[{parser.source}] Done | {stats}")
         return stats
 
     def scrape_all_sites(
