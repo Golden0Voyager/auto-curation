@@ -15,8 +15,8 @@ def setup_logging(verbose: bool):
     ])
 
 def list_registered_sites():
-    """Prints all 10 registered institutions and their locations."""
-    print("\n🏛️  Registered Contemporary Art Institutions:")
+    """Prints all registered institutions and their capabilities."""
+    print(f"\n🏛️  Registered Contemporary Art Institutions ({len(SITES)} sites):")
     print("-" * 60)
     for key, parser in SITES.items():
         hist = "✅ 历史档案支持" if hasattr(parser, 'extra_list_urls') and getattr(parser, 'extra_list_urls', []) else "⚠️  仅当前展览"
@@ -24,6 +24,10 @@ def list_registered_sites():
             hist = "✅ GitHub 开放数据集 (1929-1989)"
         elif key == "tate":
             hist = "✅ 按年份历史过滤 (--since YEAR)"
+        elif key == "aic":
+            hist = "✅ REST API (6,253 个展览)"
+        elif key == "nga":
+            hist = "✅ 本地 CSV (145,655 件)"
         print(f" - {key:<15}: {parser.source:<25} ({parser.city}) | {hist}")
     print("-" * 60)
     print("Usage: --site <key> [--since YEAR]  (e.g., --site mplus --since 2015)\n")
