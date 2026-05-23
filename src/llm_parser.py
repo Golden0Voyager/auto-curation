@@ -30,16 +30,25 @@ class LLMExhibitionParser:
     """Uses Gemini API via OpenAI-compatible endpoint to parse cleaned HTML text into structured JSON."""
     
     def __init__(self):
-        self.api_key = os.getenv("GEMINI_API_KEY")
-        # Default to OpenAI compatible Gemini base url if provided, else fall back to standard Gemini endpoint
-        self.base_url = os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
-        
-        # Fallbacks for other keys in environment if Gemini key is missing
+        # Primary: SenseNova (free DeepSeek models)
+        self.api_key = os.getenv("SENSENOVA_API_KEY")
+        self.base_url = os.getenv("SENSENOVA_BASE_URL", "https://api.sensenova.cn/compatible-mode/v2")
+        self.provider = "sensenova"
+
+        # Fallback 1: Gemini
+        if not self.api_key:
+            self.api_key = os.getenv("GEMINI_API_KEY")
+            self.base_url = os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
+            self.provider = "gemini"
+            logger.info("SENSENOVA_API_KEY not found, falling back to Gemini.")
+
+        # Fallback 2: SiliconFlow
         if not self.api_key:
             self.api_key = os.getenv("SILICONFLOW_API_KEY")
             self.base_url = os.getenv("SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1")
+            self.provider = "siliconflow"
             logger.info("GEMINI_API_KEY not found, falling back to SiliconFlow.")
-            
+
         if not self.api_key:
             logger.warning("No LLM API keys found in the environment! LLM parsing will fail.")
 
@@ -109,10 +118,13 @@ Strict Guidelines:
 4. Ensure 'city' is populated, using the Default City if not explicitly found in the text.
 """
 
-        # Choose the right model depending on the API host
-        model_name = "gemini-2.5-flash"
-        if "siliconflow" in self.base_url:
-            model_name = "deepseek-ai/DeepSeek-V3" # Siliconflow deepseek model
+        # Choose the right model depending on the active provider
+        if self.provider == "sensenova":
+            model_name = "DeepSeek-V3-1"
+        elif self.provider == "gemini":
+            model_name = "gemini-2.5-flash"
+        else:
+            model_name = "deepseek-ai/DeepSeek-V3"  # siliconflow fallback
             
         payload = {
             "model": model_name,
