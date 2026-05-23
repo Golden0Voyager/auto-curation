@@ -28,6 +28,8 @@ def list_registered_sites():
             hist = "✅ REST API (6,253 个展览)"
         elif key == "nga":
             hist = "✅ 本地 CSV (145,655 件)"
+        elif key == "wikidata":
+            hist = "✅ SPARQL (欧洲/全球)"
         print(f" - {key:<15}: {parser.source:<25} ({parser.city}) | {hist}")
     print("-" * 60)
     print("Usage: --site <key> [--since YEAR]  (e.g., --site mplus --since 2015)\n")
