@@ -1,117 +1,164 @@
-# CLAUDE.md - Auto Curation
+# CLAUDE.md
 
-This file provides guidance to Claude Code when working with this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 项目概述
 
-Auto Curation（智能内容策展系统）致力于探索 AI、审美与策展在 2026 年"大失序"背景下的深度融合。项目通过理论研究、概念设计与技术实现，构建自动化的内容策展与分析实验平台。
+Auto Curation 已从最初的策展概念文档演化为一个**模块化当代艺术展览数据采集与结构化存储系统**。它从全球 10 家顶级艺术机构抓取展览数据，通过三种策略转化为结构化数据，存入 SQLite 数据库。
 
-## 项目结构
+---
+
+## 常用命令
+
+### 依赖管理
+
+```bash
+uv pip install -r requirements.txt
+```
+
+### 运行采集器
+
+```bash
+# 列出所有支持的机构及其历史数据支持情况
+python run_collector.py --list-sites
+
+# 采集单个机构（示例：M+ Museum）
+python run_collector.py --site mplus
+
+# 全量采集所有机构
+python run_collector.py --all
+
+# 限制每站处理数量（测试用）
+python run_collector.py --site serpentine --limit 3
+
+# 按年份过滤（支持 moma / tate / mori / mplus / serpentine）
+python run_collector.py --site moma --since 1970
+
+# 模拟运行，不写入数据库
+python run_collector.py --site mori --dry-run --limit 2
+
+# 强制重新抓取（跳过去重检查）
+python run_collector.py --site tate --force
+
+# 详细 DEBUG 日志
+python run_collector.py --site mplus --verbose
+```
+
+### 数据库查询
+
+```bash
+# 快速统计
+python -c "import sqlite3; conn=sqlite3.connect('exhibitions.db'); print('展览:', conn.execute('SELECT count(*) FROM exhibitions').fetchone()[0]); print('作品:', conn.execute('SELECT count(*) FROM artworks').fetchone()[0]); [print(f'  {r[0]}: {r[1]}') for r in conn.execute('SELECT source, count(*) FROM exhibitions GROUP BY source ORDER BY 2 DESC')]"
+```
+
+---
+
+## 高层架构
+
+### 三种采集策略
+
+`ExhibitionScraper`（`src/scraper.py`）根据 parser 类型自动路由到对应策略：
+
+| 策略 | 触发条件 | 适用机构 | 说明 |
+|:--|:--|:--|:--|
+| **HTML 爬取 + LLM** | `BaseSiteParser` 子类 | Tate, M+, Serpentine, Mori 等 | 爬取官网，HTML 清洗后送 Gemini 结构化提取 |
+| **CSV 本地解析** | `MoMAParser` / `NGAParser` | MoMA, NGA, The Met | 读取本地 GitHub 开放数据集，零 LLM 消耗 |
+| **REST API** | `AICParser` | Art Institute of Chicago | 直接拉取 JSON，无需密钥 |
+
+### 数据流
 
 ```
-auto_curation/
-├── career_transition_advice.md       # 艺术策展人向 AI 领域转型的实战建议
-├── exhibition_concept_2026.md        # 2026 失序时代数字艺术展《人的印记》策划提案
-├── README.md                         # 项目简介
-├── requirements.txt                  # Python 依赖（如有代码）
-└── pyproject.toml                    # 项目配置
+[URL 发现 / CSV 读取 / API 分页]
+         │
+         ▼
+[HTML 清洗 / CSV 聚合 / JSON 解析]
+         │
+         ├──(HTML)──▶ [Gemini LLM 结构化] ──▶ Pydantic 模型
+         │
+         ├──(CSV)───▶ [Python 聚合逻辑]  ──▶ Dict
+         │
+         └──(API)───▶ [JSON 直接映射]    ──▶ Dict
+                            │
+                            ▼
+                  [去重检查 — url UNIQUE]
+                            │
+                            ▼
+                    [exhibitions.db]
 ```
 
-## 文档说明
+### 核心模块
 
-### 1. career_transition_advice.md
-艺术策展人进入 AI 领域的转型指南，包含：
-- 技能转化：传统策展能力如何应用于 AI 策展
-- 学习路径：推荐资源和学习步骤
-- 职业规划：不同角色的探索方向
+| 文件 | 职责 |
+|:--|:--|
+| `run_collector.py` | CLI 入口，解析参数并调用 `ExhibitionScraper` |
+| `src/scraper.py` | `ExhibitionScraper` 编排器，路由三种策略，管理 httpx 客户端 |
+| `src/database.py` | `ExhibitionDatabase`，SQLite 连接与 CRUD，`url` 字段为唯一去重键 |
+| `src/llm_parser.py` | `LLMExhibitionParser`，调用 Gemini/SiliconFlow API，Pydantic 模型校验输出 |
+| `src/sites/base.py` | `BaseSiteParser` 基类，封装列表页抓取、URL 发现、HTML 清洗 |
+| `src/sites/__init__.py` | `SITES` 字典，注册全部 10 个机构的 parser 实例 |
+| `src/sites/<key>.py` | 各机构专属解析器（见下表） |
 
-### 2. exhibition_concept_2026.md
-2026 年主题策展方案《人的印记》，内容包括：
-- **展览理念**：在 AI 生成完美图像的时代，寻找属于人类的"瑕疵"与"直觉"
-- **策展框架**：展览的逻辑结构和主题分区
-- **参展作品**：艺术家和 AI 的对话
-- **呈现方式**：沉浸式、交互式展览体验设计
+### 机构与策略对照
 
-## 核心价值观
+| Key | 机构 | 策略 | 历史数据支持 |
+|:--|:--|:--|:--|
+| `moma` | MoMA | 本地 CSV | 1929–1989 全量（GitHub 开放数据集） |
+| `tate` | Tate Modern | HTML + 年份 URL | 按年生成列表页 URL，`--since` 生效 |
+| `mplus` | M+ Museum | HTML | `?status=past` 历史档案 |
+| `serpentine` | Serpentine Galleries | HTML + 分页 archive | 默认 15 页历史，最多 142 页 |
+| `mori` | Mori Art Museum | HTML + past 分页 | 5 页历史 |
+| `aic` | Art Institute of Chicago | REST API | 6,253 个展览 |
+| `nga` | National Gallery of Art | 本地 CSV (多表 join) | 145,655 件 |
+| `met` | The Met | HTML（403 封锁）| 用本地 CSV 替代 |
+| `pompidou` | Centre Pompidou | HTML | 仅当前，JS 渲染限制 |
+| `palais_tokyo` | Palais de Tokyo | HTML | 仅当前 |
+| `biennale` | Venice Biennale | HTML | 仅当前 |
+| `guggenheim` | Guggenheim | HTML（403 封锁）| 暂无 |
 
-### 美学思考
-在 AI 可以生成完美图像的时代，我们探索：
-- **缺陷之美**：不完美、有痕迹的创意
-- **人类直觉**：算法无法模拟的创意决策过程
-- **道德维度**：AI 生成内容的伦理思考
+---
 
-### 策展创新
-将 AI 作为策展工具，而非仅作为展品：
-- **智能推荐**：AI 辅助观众发现相关作品
-- **个性化体验**：根据观众背景定制展览路线
-- **交互装置**：人与 AI 的创意对话装置
+## 数据库 Schema
 
-## 内容开发指南
+SQLite，两张核心表：
 
-### 文档编写规范
-- 使用 Markdown 格式
-- 保持逻辑清晰，层级合理
-- 包含实例和案例研究
-- 引用来源和参考文献
+- **`exhibitions`**：`id`, `source`, `title`, `preface`, `concept`, `curators` (JSON), `start_date`, `end_date`, `location`, `city`, `url` (UNIQUE), `scraped_at`
+- **`artworks`**：`id`, `exhibition_id` (FK), `artist_name`, `work_title`, `work_year`, `medium`, `dimensions`, `caption`
 
-### 更新周期
-- 定期审视策展理论和 AI 发展动态
-- 根据展览进展更新方案
-- 收集反馈并迭代优化
+---
 
-## 关键观点
+## 环境变量
 
-### AI 与策展的融合点
-1. **数据驱动的策展** — AI 分析观众数据，优化展览设计
-2. **创意协作** — 艺术家与 AI 模型的创意对话
-3. **情感设计** — AI 辅助理解观众情感，优化空间体验
-4. **伦理框架** — 思考 AI 策展的道德边界
+| 变量 | 说明 |
+|:--|:--|
+| `GEMINI_API_KEY` | 首选 LLM API 密钥（HTML 爬取模式必需） |
+| `GEMINI_BASE_URL` | 可选，默认 `https://generativelanguage.googleapis.com/v1beta/openai/` |
+| `SILICONFLOW_API_KEY` | 备用密钥（Gemini 不可用时回退） |
+| `SILICONFLOW_BASE_URL` | 可选，默认 `https://api.siliconflow.cn/v1` |
 
-### 失序时代的策展价值
-在信息爆炸、价值混乱的"失序"背景下：
-- **意义生产**：策展赋予碎片化内容以意义
-- **审美教育**：通过展览培养审美和判断力
-- **人文关怀**：强调人的中心地位和创意价值
+---
 
-## 开发流程
+## 新增机构接入
 
-### 策划阶段
-1. 定义展览主题和核心问题
-2. 分析目标观众和展览场地
-3. 整理参展作品和艺术家名单
-4. 设计展览路线和空间布局
+1. 在 `src/sites/` 下新建解析器文件（继承 `BaseSiteParser` 或独立实现 CSV/API 逻辑）
+2. 在 `src/sites/__init__.py` 中导入并注册到 `SITES` 字典
+3. 在 `run_collector.py` 的 `list_registered_sites()` 中更新历史支持状态提示（如有必要）
 
-### 实施阶段
-1. 与艺术家和技术团队协作
-2. 开发交互装置和 AI 工具
-3. 完善展览文案和视觉设计
-4. 进行压力测试和优化
+---
 
-### 评估阶段
-1. 收集观众反馈
-2. 分析展览数据（参与度、停留时间等）
-3. 文档化经验教训
-4. 为后续展览提供参考
+## 本地数据集
 
-## 相关资源
+部分机构依赖预下载的 CSV 数据集（存放于 `data/`）：
 
-### 理论参考
-- 当代策展理论（Claire Bishop, Hans Ulrich Obrist）
-- AI 创意应用研究
-- 交互设计和用户体验
+- `data/moma_github/MoMAExhibitions1929to1989.csv` — MoMA 展览历史
+- `data/nga_collection/` — NGA 多表（`objects.csv`, `constituents.csv`, `objects_constituents.csv`）
+- `data/met_collection/MetObjects.csv` — The Met 开放数据
+- `data/tate_collection/` — Tate 馆藏（已停更，截至 2014）
+- `data/moma_collection/Artworks.csv` — MoMA 馆藏
 
-### 技术栈（如需代码实现）
-- Web 框架：Flask/FastAPI
-- 前端：React/Vue
-- 数据可视化：D3.js / Plotly
-- AI 模型：GPT-4 / Claude / Gemini
+---
 
-## 中文支持
+## 技术栈
 
-- 所有文档使用中文撰写
-- 保持中文表达的诗意和准确性
-- 对外交流时准备英文版本
-
-## 联系与反馈
-
-欢迎对本项目的理论框架、策展方案提供意见和建议。
+- Python 3.12+
+- 依赖：`httpx`, `beautifulsoup4`, `pydantic`
+- 包管理器：`uv`
