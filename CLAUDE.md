@@ -1,15 +1,15 @@
-# CLAUDE.md - AI Curation Lab
+# CLAUDE.md - Auto Curation
 
 This file provides guidance to Claude Code when working with this repository.
 
 ## 项目概述
 
-AI Curation Lab（AI 策展实验室）致力于探索 AI、审美与策展在 2026 年"大失序"背景下的深度融合。项目通过理论研究和概念设计，思考 AI 如何赋能艺术策展领域。
+Auto Curation（智能内容策展系统）致力于探索 AI、审美与策展在 2026 年"大失序"背景下的深度融合。项目通过理论研究、概念设计与技术实现，构建自动化的内容策展与分析实验平台。
 
 ## 项目结构
 
 ```
-ai_curation_lab/
+auto_curation/
 ├── career_transition_advice.md       # 艺术策展人向 AI 领域转型的实战建议
 ├── exhibition_concept_2026.md        # 2026 失序时代数字艺术展《人的印记》策划提案
 ├── README.md                         # 项目简介

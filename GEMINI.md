@@ -1,4 +1,4 @@
-# Project Intelligence: AI Curation Lab
+# Project Intelligence: Auto Curation
 
 智能内容策展与分析实验项目。
 
