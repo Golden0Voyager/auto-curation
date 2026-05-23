@@ -14,5 +14,8 @@ secrets.json
 .pdca-status.json
 .bkit-memory.json
 
+# 数据库
+exhibitions.db
+
 # 系统文件
 .DS_Store
