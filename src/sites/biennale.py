@@ -3,6 +3,8 @@ from src.sites.base import BaseSiteParser
 class BiennaleParser(BaseSiteParser):
     source = "Venice Biennale"
     city = "Venice"
+    parser_key = "venice_biennale"
+    institution_type = "biennial"
     list_url = "https://www.labiennale.org/en/art/2026"
     link_patterns = [
         r"/en/art/2026/[a-zA-Z0-9_-]+",
