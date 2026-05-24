@@ -523,10 +523,18 @@ async function loadExhibitionsGallery() {
       
       // Prepare tags markup
       let tagsHtml = "";
-      if (ex.tags && ex.tags.length > 0) {
+      let parsedTags = [];
+      try {
+        if (ex.tags) {
+          parsedTags = typeof ex.tags === "string" ? JSON.parse(ex.tags) : ex.tags;
+        }
+      } catch (err) {
+        parsedTags = [];
+      }
+      if (Array.isArray(parsedTags) && parsedTags.length > 0) {
         tagsHtml = `
           <div class="flex flex-wrap gap-1 mt-0.5">
-            ${ex.tags.map(t => `<span class="px-1.5 py-0.2 rounded text-[7.5px] font-medium tracking-wide uppercase font-space bg-slate-800/80 border border-slate-700/40 text-slate-300">${t}</span>`).join('')}
+            ${parsedTags.map(t => `<span class="px-1.5 py-0.2 rounded text-[7.5px] font-medium tracking-wide uppercase font-space bg-slate-800/80 border border-slate-700/40 text-slate-300">${t}</span>`).join('')}
           </div>
         `;
       }
@@ -614,8 +622,16 @@ async function showExhibitionModal(id) {
     const modalTags = document.getElementById("modal-tags");
     if (modalTags) {
       modalTags.innerHTML = "";
-      if (ex.tags && ex.tags.length > 0) {
-        ex.tags.forEach(t => {
+      let parsedTags = [];
+      try {
+        if (ex.tags) {
+          parsedTags = typeof ex.tags === "string" ? JSON.parse(ex.tags) : ex.tags;
+        }
+      } catch (err) {
+        parsedTags = [];
+      }
+      if (Array.isArray(parsedTags) && parsedTags.length > 0) {
+        parsedTags.forEach(t => {
           const pill = document.createElement("span");
           pill.className = "px-2 py-0.5 rounded-full text-[9px] font-semibold tracking-wide uppercase font-space bg-cyan-950/40 text-cyan-400 border border-cyan-800/40";
           pill.textContent = t;
