@@ -5,9 +5,7 @@ from datetime import date
 from src.database import ExhibitionDatabase
 from src.llm_parser import LLMExhibitionParser
 from src.sites import SITES
-from src.sites.moma import MoMAParser
-from src.sites.aic import AICParser
-from src.sites.nga import NGAParser
+from src.sites.base import ParserStrategy
 
 logger = logging.getLogger("auto_curation.scraper")
 
@@ -15,13 +13,24 @@ logger = logging.getLogger("auto_curation.scraper")
 class ExhibitionScraper:
     """Orchestrates the entire scraping pipeline: URL discovery, HTML cleaning,
     LLM metadata extraction, and database persistence.
-    
-    Supports three scraping strategies:
-    1. Standard HTML scraping (most sites)
-    2. Multi-URL archive scraping (M+, Serpentine, Mori with historical URLs)
-    3. GitHub CSV dataset ingestion (MoMA open data)
+
+    Supports pluggable scraping strategies determined by each parser's
+    `strategy` class attribute:
+    1. HTML + LLM (default)
+    2. CSV local/remote ingestion
+    3. REST API / SPARQL ingestion
+    4. Artwork-only collection databases
     """
-    
+
+    STRATEGY_HANDLERS = {
+        ParserStrategy.HTML_LLM: "_scrape_html",
+        ParserStrategy.CSV_LOCAL: "_scrape_csv",
+        ParserStrategy.CSV_REMOTE: "_scrape_csv",
+        ParserStrategy.REST_API: "_scrape_api",
+        ParserStrategy.SPARQL: "_scrape_api",
+        ParserStrategy.ARTWORK_ONLY: "_scrape_artwork_only",
+    }
+
     def __init__(self, db_path: str = "exhibitions.db"):
         self.db = ExhibitionDatabase(db_path)
         self.parser = LLMExhibitionParser()
@@ -38,39 +47,51 @@ class ExhibitionScraper:
         dry_run: bool = False,
         since_year: Optional[int] = None
     ) -> Dict[str, Any]:
-        """Scrapes contemporary art exhibitions from a single registered institution.
-        
-        Args:
-            site_key: Identifier key in SITES (e.g. 'moma', 'tate')
-            limit: Maximum number of detail pages to parse for this run
-            force: Parse and update even if URL already exists in database
-            dry_run: Fetch and parse but do not write to database
-            since_year: Only collect exhibitions from this year onwards (where supported)
-            
-        Returns:
-            Dictionary containing run summary statistics.
+        """Scrapes exhibitions from a single registered institution.
+
+        Routes to the appropriate pipeline based on the parser's strategy.
         """
         if site_key not in SITES:
             logger.error(f"Site key '{site_key}' is not registered.")
             return {"error": f"Site '{site_key}' not found"}
-            
+
         parser = SITES[site_key]
-        logger.info(f"Starting scrape for '{parser.source}' (City: {parser.city}){' | since=' + str(since_year) if since_year else ''}")
+        strategy = getattr(parser, "strategy", ParserStrategy.HTML_LLM)
+        handler_name = self.STRATEGY_HANDLERS.get(strategy)
 
-        # === Special handling: MoMA uses GitHub CSV dataset ===
-        if isinstance(parser, MoMAParser):
-            return self._scrape_moma_csv(parser, limit=limit, force=force, dry_run=dry_run, since_year=since_year)
+        if not handler_name:
+            logger.error(f"No handler for strategy {strategy} on {site_key}")
+            return {"error": f"Unknown strategy {strategy}"}
 
-        # === Special handling: API parsers (AIC, Wikidata, etc.) ===
-        if hasattr(parser, "get_api_exhibitions") and callable(getattr(parser, "get_api_exhibitions")):
-            return self._scrape_api(parser, limit=limit, force=force, dry_run=dry_run, since_year=since_year)
+        handler = getattr(self, handler_name)
+        logger.info(
+            f"Starting scrape for '{parser.source}' (City: {parser.city}) "
+            f"| strategy={strategy.value}{' | since=' + str(since_year) if since_year else ''}"
+        )
+        return handler(parser, limit=limit, force=force, dry_run=dry_run, since_year=since_year)
 
-        # === Standard HTML scraping for all other sites ===
+    # ------------------------------------------------------------------
+    # Strategy handlers
+    # ------------------------------------------------------------------
+
+    def _scrape_html(
+        self,
+        parser,
+        limit: Optional[int] = None,
+        force: bool = False,
+        dry_run: bool = False,
+        since_year: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """Standard HTML scraping pipeline: discover URLs, clean HTML, LLM parse.
+
+        If a parser implements ``parse_exhibition_page(client, url)`` and returns
+        a dict, that structured data is used directly and the LLM step is skipped.
+        """
         urls = parser.get_exhibition_urls(self.client, since_year=since_year)
         if not urls:
             logger.warning(f"No exhibition URLs discovered for {parser.source}.")
             return {"site": parser.source, "discovered": 0, "parsed": 0, "saved": 0, "skipped": 0, "failed": 0}
-            
+
         stats = {
             "site": parser.source,
             "discovered": len(urls),
@@ -79,50 +100,66 @@ class ExhibitionScraper:
             "skipped": 0,
             "failed": 0
         }
-        
+
+        has_native_parser = hasattr(parser, "parse_exhibition_page") and callable(getattr(parser, "parse_exhibition_page"))
+        if has_native_parser:
+            logger.info(f"[{parser.source}] Parser provides native page extraction; LLM step will be skipped.")
+
         processed_count = 0
         for url in urls:
             if limit is not None and processed_count >= limit:
                 logger.info(f"Reached limit of {limit} pages. Stopping.")
                 break
-                
+
             logger.info(f"Processing: {url}")
-            
-            # Smart token saver: skip already-scraped URLs
+
             if not force and not dry_run:
                 existing = self.db.get_exhibition_by_url(url)
                 if existing:
                     logger.info(f"-> Skip: already in DB (ID: {existing['id']})")
                     stats["skipped"] += 1
                     continue
-            
+
             try:
-                response = self.client.get(url)
-                response.raise_for_status()
-                
-                clean_text = parser.clean_html(response.text)
-                
-                if not clean_text or len(clean_text.strip()) < 100:
-                    logger.warning(f"Content too short/empty for {url}. Skipping.")
-                    stats["failed"] += 1
-                    continue
-                
-                logger.info(f"Sending {len(clean_text)} chars to Gemini...")
-                parsed_data = self.parser.parse_exhibition_text(clean_text, parser.source, parser.city)
-                
+                parsed_data = None
+
+                # 1. Try native structured extraction if available
+                if has_native_parser:
+                    parsed_data = parser.parse_exhibition_page(self.client, url)
+                    if parsed_data:
+                        logger.info(f"[{parser.source}] Native extraction succeeded for {url}")
+
+                # 2. Fall back to LLM pipeline
                 if not parsed_data:
-                    logger.error(f"-> LLM parsing failed for: {url}")
-                    stats["failed"] += 1
-                    continue
-                
+                    response = self.client.get(url)
+                    response.raise_for_status()
+
+                    clean_text = parser.clean_html(response.text)
+
+                    if not clean_text or len(clean_text.strip()) < 100:
+                        logger.warning(f"Content too short/empty for {url}. Skipping.")
+                        stats["failed"] += 1
+                        continue
+
+                    logger.info(f"Sending {len(clean_text)} chars to LLM...")
+                    parsed_data = self.parser.parse_exhibition_text(clean_text, parser.source, parser.city)
+
+                    if not parsed_data:
+                        logger.error(f"-> LLM parsing failed for: {url}")
+                        stats["failed"] += 1
+                        continue
+
+                # Enrich with parser metadata
                 parsed_data["source"] = parser.source
                 parsed_data["url"] = url
+                parsed_data["parser_key"] = getattr(parser, "parser_key", "")
+                parsed_data["institution_type"] = getattr(parser, "institution_type", "museum")
                 if not parsed_data.get("city"):
                     parsed_data["city"] = parser.city
-                
+
                 stats["parsed"] += 1
                 processed_count += 1
-                
+
                 if dry_run:
                     logger.info(f"[DRY-RUN] '{parsed_data['title']}': {len(parsed_data.get('artworks', []))} artworks extracted.")
                     stats["saved"] += 1
@@ -132,57 +169,54 @@ class ExhibitionScraper:
                         stats["saved"] += 1
                     else:
                         stats["failed"] += 1
-                        
+
             except Exception as e:
                 logger.error(f"Error processing {url}: {e}", exc_info=True)
                 stats["failed"] += 1
-                
+
         logger.info(f"Done: '{parser.source}' | {stats}")
         return stats
 
-    def _scrape_moma_csv(
+    def _scrape_csv(
         self,
-        parser: MoMAParser,
+        parser,
         limit: Optional[int] = None,
         force: bool = False,
         dry_run: bool = False,
         since_year: Optional[int] = None
     ) -> Dict[str, Any]:
-        """Special pipeline for MoMA GitHub open dataset (CSV-based, no LLM needed).
-        
-        MoMA's CSV data is already structured, so we skip the LLM parsing step entirely.
-        This saves significant API costs for historical data ingestion.
-        """
-        logger.info(f"[MoMA] Using GitHub open dataset mode (no LLM required).")
-        
+        """Generic CSV pipeline for parsers with get_csv_exhibitions()."""
+        logger.info(f"[{parser.source}] Using CSV mode (no LLM required).")
+
         exhibitions = parser.get_csv_exhibitions(since_year=since_year)
-        
+
         stats = {
             "site": parser.source,
             "discovered": len(exhibitions),
-            "parsed": len(exhibitions),  # CSV is already structured
+            "parsed": len(exhibitions),
             "saved": 0,
             "skipped": 0,
             "failed": 0
         }
-        
+
         processed_count = 0
         for ex_data in exhibitions:
             if limit is not None and processed_count >= limit:
-                logger.info(f"[MoMA] Reached limit of {limit} records. Stopping.")
+                logger.info(f"[{parser.source}] Reached limit of {limit} records. Stopping.")
                 break
-            
+
             url = ex_data.get("url", "")
-            
-            # Deduplication check
+            ex_data["parser_key"] = getattr(parser, "parser_key", "")
+            ex_data["institution_type"] = getattr(parser, "institution_type", "museum")
+
             if not force and not dry_run:
                 existing = self.db.get_exhibition_by_url(url)
                 if existing:
                     stats["skipped"] += 1
                     continue
-            
+
             if dry_run:
-                logger.info(f"[MoMA][DRY-RUN] Would insert: '{ex_data['title']}' ({ex_data['start_date']})")
+                logger.info(f"[{parser.source}][DRY-RUN] Would insert: '{ex_data['title']}' ({ex_data['start_date']})")
                 stats["saved"] += 1
             else:
                 ex_id = self.db.insert_exhibition(ex_data)
@@ -190,25 +224,21 @@ class ExhibitionScraper:
                     stats["saved"] += 1
                 else:
                     stats["failed"] += 1
-            
+
             processed_count += 1
-        
-        logger.info(f"[MoMA] Done | {stats}")
+
+        logger.info(f"[{parser.source}] Done | {stats}")
         return stats
 
     def _scrape_api(
         self,
-        parser: Any,
+        parser,
         limit: Optional[int] = None,
         force: bool = False,
         dry_run: bool = False,
         since_year: Optional[int] = None
     ) -> Dict[str, Any]:
-        """Generic pipeline for API parsers (AIC, Wikidata, etc.).
-
-        Parsers with get_api_exhibitions() return structured data directly,
-        so we skip the LLM parsing step entirely.
-        """
+        """Generic pipeline for API/SPARQL parsers with get_api_exhibitions()."""
         logger.info(f"[{parser.source}] Using REST/API mode (no LLM required).")
 
         exhibitions = parser.get_api_exhibitions(since_year=since_year, limit=limit)
@@ -224,8 +254,9 @@ class ExhibitionScraper:
 
         for ex_data in exhibitions:
             url = ex_data.get("url", "")
+            ex_data["parser_key"] = getattr(parser, "parser_key", "")
+            ex_data["institution_type"] = getattr(parser, "institution_type", "museum")
 
-            # Deduplication check
             if not force and not dry_run:
                 existing = self.db.get_exhibition_by_url(url)
                 if existing:
@@ -243,6 +274,73 @@ class ExhibitionScraper:
                     stats["failed"] += 1
 
         logger.info(f"[{parser.source}] Done | {stats}")
+        return stats
+
+    def _scrape_artwork_only(
+        self,
+        parser,
+        limit: Optional[int] = None,
+        force: bool = False,
+        dry_run: bool = False,
+        since_year: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """Pipeline for artwork-only parsers (NGA, etc.).
+
+        Creates a synthetic 'Permanent Collection' exhibition record and attaches
+        artworks as children, preserving the relational model.
+        """
+        logger.info(f"[{parser.source}] Using artwork-only mode (no exhibitions, collection only).")
+
+        artworks = parser.get_csv_artworks(since_year=since_year, limit=limit)
+        if not artworks:
+            logger.warning(f"[{parser.source}] No artworks loaded.")
+            return {"site": parser.source, "discovered": 0, "parsed": 0, "saved": 0, "skipped": 0, "failed": 0}
+
+        synthetic_url = f"https://auto-curation.internal/collection/{getattr(parser, 'parser_key', parser.source.lower().replace(' ', '-'))}"
+
+        synthetic_ex = {
+            "source": parser.source,
+            "title": f"{parser.source} Permanent Collection",
+            "preface": f"Selected works from the {parser.source} collection.",
+            "concept": None,
+            "curators": [],
+            "start_date": None,
+            "end_date": None,
+            "location": parser.source,
+            "city": parser.city,
+            "url": synthetic_url,
+            "parser_key": getattr(parser, "parser_key", ""),
+            "institution_type": getattr(parser, "institution_type", "museum"),
+            "artworks": artworks,
+        }
+
+        stats = {
+            "site": parser.source,
+            "discovered": len(artworks),
+            "parsed": len(artworks),
+            "saved": 0,
+            "skipped": 0,
+            "failed": 0
+        }
+
+        if not force and not dry_run:
+            existing = self.db.get_exhibition_by_url(synthetic_url)
+            if existing:
+                logger.info(f"[{parser.source}] Synthetic collection already in DB (ID: {existing['id']}). Skipping.")
+                stats["skipped"] = 1
+                return stats
+
+        if dry_run:
+            logger.info(f"[{parser.source}][DRY-RUN] Would insert synthetic collection with {len(artworks)} artworks.")
+            stats["saved"] = 1
+        else:
+            ex_id = self.db.insert_exhibition(synthetic_ex)
+            if ex_id:
+                stats["saved"] = 1
+                logger.info(f"[{parser.source}] Inserted synthetic collection (ID: {ex_id}) with {len(artworks)} artworks.")
+            else:
+                stats["failed"] = 1
+
         return stats
 
     def scrape_all_sites(
