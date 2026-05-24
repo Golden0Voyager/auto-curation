@@ -34,15 +34,18 @@ class ExhibitionDatabase:
                 title TEXT NOT NULL,
                 preface TEXT,
                 concept TEXT,
+                curators TEXT DEFAULT '[]',
                 start_date TEXT,
                 end_date TEXT,
                 location TEXT,
                 city TEXT,
                 url TEXT UNIQUE NOT NULL,
+                parser_key TEXT,
+                institution_type TEXT DEFAULT 'museum',
                 scraped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
-        
+
         # 2. Create artworks table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS artworks (
@@ -57,9 +60,13 @@ class ExhibitionDatabase:
                 FOREIGN KEY (exhibition_id) REFERENCES exhibitions(id) ON DELETE CASCADE
             );
         """)
-        
+
         # Create indexes for speed and uniqueness
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_url ON exhibitions(url);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_source ON exhibitions(source);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_city ON exhibitions(city);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_start_date ON exhibitions(start_date);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_parser_key ON exhibitions(parser_key);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_artworks_exhibition ON artworks(exhibition_id);")
         
         conn.commit()
@@ -83,21 +90,28 @@ class ExhibitionDatabase:
         cursor = conn.cursor()
         
         try:
+            curators = ex_data.get("curators", [])
+            if isinstance(curators, list):
+                curators = json.dumps(curators, ensure_ascii=False)
+
             # 1. Insert into exhibitions table using INSERT OR IGNORE
             cursor.execute("""
                 INSERT OR IGNORE INTO exhibitions (
-                    source, title, preface, concept, start_date, end_date, location, city, url
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    source, title, preface, concept, curators, start_date, end_date, location, city, url, parser_key, institution_type
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 ex_data.get("source"),
                 ex_data.get("title"),
                 ex_data.get("preface"),
                 ex_data.get("concept"),
+                curators,
                 ex_data.get("start_date"),
                 ex_data.get("end_date"),
                 ex_data.get("location"),
                 ex_data.get("city"),
-                ex_data.get("url")
+                ex_data.get("url"),
+                ex_data.get("parser_key"),
+                ex_data.get("institution_type", "museum")
             ))
             
             ex_id = None
@@ -153,11 +167,18 @@ class ExhibitionDatabase:
                 return None
                 
             ex_data = dict(ex_row)
-            
+            if ex_data.get("curators"):
+                try:
+                    ex_data["curators"] = json.loads(ex_data["curators"])
+                except json.JSONDecodeError:
+                    ex_data["curators"] = []
+            else:
+                ex_data["curators"] = []
+
             cursor.execute("SELECT * FROM artworks WHERE exhibition_id = ?", (ex_data["id"],))
             art_rows = cursor.fetchall()
             ex_data["artworks"] = [dict(row) for row in art_rows]
-            
+
             return ex_data
         finally:
             conn.close()
@@ -177,11 +198,18 @@ class ExhibitionDatabase:
             exhibitions = []
             for row in rows:
                 ex_data = dict(row)
+                if ex_data.get("curators"):
+                    try:
+                        ex_data["curators"] = json.loads(ex_data["curators"])
+                    except json.JSONDecodeError:
+                        ex_data["curators"] = []
+                else:
+                    ex_data["curators"] = []
                 cursor.execute("SELECT * FROM artworks WHERE exhibition_id = ?", (ex_data["id"],))
                 art_rows = cursor.fetchall()
                 ex_data["artworks"] = [dict(r) for r in art_rows]
                 exhibitions.append(ex_data)
-                
+
             return exhibitions
         finally:
             conn.close()
