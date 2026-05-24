@@ -3,7 +3,7 @@ import sqlite3
 import json
 import re
 from typing import Optional, List
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -368,6 +368,10 @@ def get_index():
         with open(index_path, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>CurationInsight Dashboard</h1><p>Index file templates/index.html not found.</p>")
+
+@app.get("/favicon.ico", include_in_schema=False)
+def get_favicon():
+    return Response(content=b"", media_type="image/x-icon")
 
 # Mount static and templates folders properly
 # Since static dir might contain JS/CSS, let's mount it safely if it exists
