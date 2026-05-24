@@ -96,6 +96,11 @@ class ExhibitionDatabase:
         except sqlite3.OperationalError:
             pass
 
+        try:
+            cursor.execute("ALTER TABLE exhibitions ADD COLUMN tags TEXT DEFAULT '[]';")
+        except sqlite3.OperationalError:
+            pass
+
         conn.commit()
         conn.close()
         logger.info(f"Database initialized at {self.db_path}")
@@ -124,8 +129,8 @@ class ExhibitionDatabase:
             # 1. Insert into exhibitions table using INSERT OR IGNORE
             cursor.execute("""
                 INSERT OR IGNORE INTO exhibitions (
-                    source, title, preface, concept, curators, start_date, end_date, location, city, url, parser_key, institution_type, preface_en, concept_en, biographies, biographies_cn, credits, images
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    source, title, preface, concept, curators, start_date, end_date, location, city, url, parser_key, institution_type, preface_en, concept_en, biographies, biographies_cn, credits, images, tags
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 ex_data.get("source"),
                 ex_data.get("title"),
@@ -144,7 +149,8 @@ class ExhibitionDatabase:
                 ex_data.get("biographies"),
                 ex_data.get("biographies_cn"),
                 ex_data.get("credits"),
-                ex_data.get("images", "[]")
+                ex_data.get("images", "[]"),
+                ex_data.get("tags", "[]")
             ))
 
             

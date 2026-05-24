@@ -183,6 +183,12 @@ class ExhibitionScraper:
                 if not parsed_data.get("city"):
                     parsed_data["city"] = parser.city
 
+                # Attach category tags if cached in parser
+                if hasattr(parser, "_url_tags") and url in parser._url_tags:
+                    parsed_data["tags"] = parser._url_tags[url]
+                else:
+                    parsed_data["tags"] = "[]"
+
                 stats["parsed"] += 1
                 processed_count += 1
 
