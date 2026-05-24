@@ -14,6 +14,7 @@ import time
 from typing import List, Optional, Dict, Any
 from datetime import date
 import httpx
+from src.sites.base import ParserStrategy
 
 logger = logging.getLogger("auto_curation.sites.aic")
 
@@ -38,6 +39,8 @@ class AICParser:
     """
     source = "Art Institute of Chicago"
     city = "Chicago"
+    strategy = ParserStrategy.REST_API
+    parser_key = "aic"
     list_url = AIC_EXHIBITIONS_URL
 
     def get_list_urls(self, since_year: Optional[int] = None) -> List[str]:
