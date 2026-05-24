@@ -382,21 +382,24 @@ async function loadNetworkChart() {
           label: {
             show: true,
             position: "right",
-            formatter: "{b}",
-            color: "#c5c6c7",
-            fontSize: 9,
-            fontFamily: "Space Grotesk",
-            minMargin: 5
+            formatter: (params) => {
+              // 仅当艺术家作品计数大于 22 时，才在常态显示其名字，大幅净化空间堆叠
+              return params.data.value > 22 ? params.name : "";
+            },
+            color: "#a0aec0",
+            fontSize: 8.5,
+            fontFamily: "Space Grotesk"
           },
           labelLayout: {
             hideOverlap: true
           },
           force: {
-            repulsion: 80,
-            gravity: 0.08,
-            edgeLength: 45,
+            repulsion: 260, // 调高斥力，拉开间距
+            gravity: 0.04,   // 降低聚集引力
+            edgeLength: 95,  // 增长连线以利字距
             layoutAnimation: true
           },
+
           lineStyle: {
             color: "rgba(255, 255, 255, 0.11)",
             width: 1,
