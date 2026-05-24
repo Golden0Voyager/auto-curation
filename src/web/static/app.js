@@ -521,6 +521,16 @@ async function loadExhibitionsGallery() {
       card.className = "ex_card glass-panel p-4 flex flex-col justify-between gap-3 border border-slate-800/80 bg-slate-900/30";
       card.onclick = () => showExhibitionModal(ex.id);
       
+      // Prepare tags markup
+      let tagsHtml = "";
+      if (ex.tags && ex.tags.length > 0) {
+        tagsHtml = `
+          <div class="flex flex-wrap gap-1 mt-0.5">
+            ${ex.tags.map(t => `<span class="px-1.5 py-0.2 rounded text-[7.5px] font-medium tracking-wide uppercase font-space bg-slate-800/80 border border-slate-700/40 text-slate-300">${t}</span>`).join('')}
+          </div>
+        `;
+      }
+      
       card.innerHTML = `
         <div class="flex flex-col gap-1.5">
           <div class="flex items-center justify-between gap-2">
@@ -528,11 +538,13 @@ async function loadExhibitionsGallery() {
               ${ex.source}
             </span>
             <span class="text-[10px] text-slate-500 flex items-center gap-1 font-space">
-              <i data-lucide="map-pin" class="w-3 h-3 text-amber-500/50"></i> ${ex.city || "全球"}
+              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-500/50"></i> ${ex.city || "全球"}
             </span>
           </div>
           
-          <h3 class="text-sm font-semibold text-slate-100 font-cinzel line-clamp-2 tracking-wide leading-snug group-hover:text-amber-400">
+          ${tagsHtml}
+          
+          <h3 class="text-sm font-semibold text-slate-100 font-cinzel line-clamp-2 tracking-wide leading-snug group-hover:text-amber-400 mt-1">
             ${ex.title}
           </h3>
           
@@ -597,6 +609,20 @@ async function showExhibitionModal(id) {
     document.getElementById("modal-curators").textContent = curators;
     
     document.getElementById("modal-art-count").textContent = `${ex.artworks.length} 件`;
+
+    // Render Modal tags
+    const modalTags = document.getElementById("modal-tags");
+    if (modalTags) {
+      modalTags.innerHTML = "";
+      if (ex.tags && ex.tags.length > 0) {
+        ex.tags.forEach(t => {
+          const pill = document.createElement("span");
+          pill.className = "px-2 py-0.5 rounded-full text-[9px] font-semibold tracking-wide uppercase font-space bg-cyan-950/40 text-cyan-400 border border-cyan-800/40";
+          pill.textContent = t;
+          modalTags.appendChild(pill);
+        });
+      }
+    }
     
     // Render images gallery if available (saves disk & tokens, directly links remote urls)
     const imgContainer = document.getElementById("modal-images-container");

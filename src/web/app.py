@@ -287,7 +287,7 @@ def get_exhibitions(
         
         # 2. Main data query
         sql = f"""
-            SELECT id, source, title, curators, start_date, end_date, location, city, url
+            SELECT id, source, title, curators, start_date, end_date, location, city, url, tags
             FROM exhibitions 
             WHERE {where_str} 
             ORDER BY start_date DESC, id DESC 
@@ -304,6 +304,11 @@ def get_exhibitions(
             except json.JSONDecodeError:
                 ex_data["curators"] = [ex_data["curators"]] if ex_data.get("curators") else []
             
+            try:
+                ex_data["tags"] = json.loads(ex_data["tags"]) if ex_data.get("tags") else []
+            except json.JSONDecodeError:
+                ex_data["tags"] = []
+                
             # Subquery artwork count for dashboard grid preview
             cursor.execute("SELECT COUNT(*) FROM artworks WHERE exhibition_id = ?", (ex_data["id"],))
             ex_data["artwork_count"] = cursor.fetchone()[0]
@@ -335,6 +340,11 @@ def get_exhibition_details(exhibition_id: int):
             ex_data["curators"] = json.loads(ex_data["curators"]) if ex_data.get("curators") else []
         except json.JSONDecodeError:
             ex_data["curators"] = [ex_data["curators"]] if ex_data.get("curators") else []
+            
+        try:
+            ex_data["tags"] = json.loads(ex_data["tags"]) if ex_data.get("tags") else []
+        except json.JSONDecodeError:
+            ex_data["tags"] = []
             
         # Get all artworks
         cursor.execute("""
