@@ -48,22 +48,48 @@
         </p>
       </div>
       
-      <!-- Metrics Dashboard -->
-      <div class="flex items-center gap-6 md:gap-12">
-        <div class="flex flex-col items-center">
-          <span class="text-xs text-slate-400 uppercase tracking-widest font-space font-medium">展览总收录</span>
-          <span id="metric-exhibitions" class="text-2xl md:text-3xl font-extrabold font-space text-amber-400 gold-glow">8,076</span>
+      <!-- Metrics Dashboard + Settings -->
+      <div class="flex flex-wrap items-center justify-center gap-6 md:gap-8">
+
+        <!-- Metrics Dashboard -->
+        <div class="flex items-center gap-6 md:gap-12">
+          <div class="flex flex-col items-center">
+            <span class="text-xs text-slate-400 uppercase tracking-widest font-space font-medium">展览总收录</span>
+            <span id="metric-exhibitions" class="text-2xl md:text-3xl font-extrabold font-space text-amber-400 gold-glow">8,076</span>
+          </div>
+          <div class="h-8 w-[1px] bg-slate-800"></div>
+          <div class="flex flex-col items-center">
+            <span class="text-xs text-slate-400 uppercase tracking-widest font-space font-medium">结构化作品</span>
+            <span id="metric-artworks" class="text-2xl md:text-3xl font-extrabold font-space text-cyan-400 cyan-glow">32,288</span>
+          </div>
+          <div class="h-8 w-[1px] bg-slate-800"></div>
+          <div class="flex flex-col items-center">
+            <span class="text-xs text-slate-400 uppercase tracking-widest font-space font-medium">覆盖艺术机构</span>
+            <span id="metric-museums" class="text-2xl md:text-3xl font-extrabold font-space text-indigo-400">7</span>
+          </div>
         </div>
-        <div class="h-8 w-[1px] bg-slate-800"></div>
-        <div class="flex flex-col items-center">
-          <span class="text-xs text-slate-400 uppercase tracking-widest font-space font-medium">结构化作品</span>
-          <span id="metric-artworks" class="text-2xl md:text-3xl font-extrabold font-space text-cyan-400 cyan-glow">32,288</span>
+
+        <div class="h-8 w-[1px] bg-slate-800 hidden md:block"></div>
+
+        <!-- Language & Bilingual Settings -->
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-slate-500 uppercase tracking-wider font-space">语言</span>
+            <div class="flex items-center p-0.5 bg-slate-950/60 rounded-lg border border-slate-800/80">
+              <button id="lang-zh-btn" class="px-2.5 py-1 text-[10px] rounded-md transition-all duration-200 font-space active" onclick="setLanguage('zh')">中</button>
+              <button id="lang-en-btn" class="px-2.5 py-1 text-[10px] rounded-md transition-all duration-200 font-space text-slate-400" onclick="setLanguage('en')">EN</button>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-slate-500 uppercase tracking-wider font-space">双语对照</span>
+            <button id="bilingual-toggle-btn" class="relative w-9 h-5 rounded-full bg-slate-800 border border-slate-700 transition-all duration-300" onclick="toggleBilingual()">
+              <span id="bilingual-toggle-knob" class="absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-slate-500 transition-all duration-300"></span>
+            </button>
+            <span id="bilingual-status-text" class="text-[10px] text-slate-500 font-space">关闭</span>
+          </div>
         </div>
-        <div class="h-8 w-[1px] bg-slate-800"></div>
-        <div class="flex flex-col items-center">
-          <span class="text-xs text-slate-400 uppercase tracking-widest font-space font-medium">覆盖艺术机构</span>
-          <span id="metric-museums" class="text-2xl md:text-3xl font-extrabold font-space text-indigo-400">7</span>
-        </div>
+
       </div>
     </header>
 

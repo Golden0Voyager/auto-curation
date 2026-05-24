@@ -70,6 +70,68 @@ function updateStaticTexts() {
   document.documentElement.lang = appLanguage === 'zh' ? 'zh-CN' : 'en';
 }
 
+function setLanguage(lng) {
+  if (!i18nReady || lng === appLanguage) return;
+
+  i18next.changeLanguage(lng, (err) => {
+    if (err) {
+      console.error('Language change failed:', err);
+      return;
+    }
+    appLanguage = lng;
+    updateStaticTexts();
+    updateSettingsUI();
+
+    // If bilingual is on, sync priority to match new language
+    if (bilingualEnabled) {
+      currentBilingualMode = (appLanguage === 'zh') ? 'cn-top' : 'en-top';
+      updateBilingualSliderUI();
+      if (activeExhibitionData) renderBilingualTexts();
+    }
+
+    // Refresh dynamic content
+    loadExhibitionsGallery();
+  });
+}
+
+function toggleBilingual() {
+  bilingualEnabled = !bilingualEnabled;
+  localStorage.setItem('bilingualEnabled', bilingualEnabled.toString());
+  updateSettingsUI();
+
+  // Sync priority when turning on
+  if (bilingualEnabled) {
+    currentBilingualMode = (appLanguage === 'zh') ? 'cn-top' : 'en-top';
+  }
+
+  if (activeExhibitionData) {
+    renderBilingualTexts();
+    updateBilingualSliderUI();
+  }
+}
+
+function updateSettingsUI() {
+  const zhBtn = document.getElementById('lang-zh-btn');
+  const enBtn = document.getElementById('lang-en-btn');
+  const toggleBtn = document.getElementById('bilingual-toggle-btn');
+  const statusText = document.getElementById('bilingual-status-text');
+
+  if (zhBtn) {
+    zhBtn.classList.toggle('active', appLanguage === 'zh');
+    zhBtn.classList.toggle('text-slate-400', appLanguage !== 'zh');
+  }
+  if (enBtn) {
+    enBtn.classList.toggle('active', appLanguage === 'en');
+    enBtn.classList.toggle('text-slate-400', appLanguage !== 'en');
+  }
+  if (toggleBtn) {
+    toggleBtn.classList.toggle('active', bilingualEnabled);
+  }
+  if (statusText) {
+    statusText.textContent = bilingualEnabled ? '开启' : '关闭';
+  }
+}
+
 // Initialize when DOM loaded
 document.addEventListener("DOMContentLoaded", async () => {
   // Initialize i18next first
@@ -77,6 +139,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Update all static UI texts
   updateStaticTexts();
+  updateSettingsUI();
 
   // Initialize Lucide Icons
   lucide.createIcons();
