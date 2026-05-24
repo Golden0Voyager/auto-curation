@@ -13,6 +13,7 @@ import csv
 import logging
 import os
 from typing import List, Optional, Dict, Any
+from src.sites.base import ParserStrategy
 
 logger = logging.getLogger("auto_curation.sites.nga")
 
@@ -34,6 +35,8 @@ class NGAParser:
     """
     source = "National Gallery of Art"
     city = "Washington D.C."
+    strategy = ParserStrategy.ARTWORK_ONLY
+    parser_key = "nga"
     list_url = NGA_OBJECTS_PATH
 
     def get_list_urls(self, since_year: Optional[int] = None) -> List[str]:
