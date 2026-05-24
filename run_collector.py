@@ -16,22 +16,32 @@ def setup_logging(verbose: bool):
 
 def list_registered_sites():
     """Prints all registered institutions and their capabilities."""
+    from src.sites.base import ParserStrategy
+
     print(f"\n🏛️  Registered Contemporary Art Institutions ({len(SITES)} sites):")
-    print("-" * 60)
-    for key, parser in SITES.items():
-        hist = "✅ 历史档案支持" if hasattr(parser, 'extra_list_urls') and getattr(parser, 'extra_list_urls', []) else "⚠️  仅当前展览"
-        if key == "moma":
-            hist = "✅ GitHub 开放数据集 (1929-1989)"
-        elif key == "tate":
-            hist = "✅ 按年份历史过滤 (--since YEAR)"
-        elif key == "aic":
-            hist = "✅ REST API (6,253 个展览)"
-        elif key == "nga":
-            hist = "✅ 本地 CSV (145,655 件)"
-        elif key == "wikidata":
-            hist = "✅ SPARQL (欧洲/全球)"
-        print(f" - {key:<15}: {parser.source:<25} ({parser.city}) | {hist}")
-    print("-" * 60)
+    print("-" * 70)
+    for key, parser in sorted(SITES.items()):
+        strategy = getattr(parser, 'strategy', ParserStrategy.HTML_LLM)
+        strategy_label = strategy.value
+
+        # Historical support detection
+        has_history = bool(
+            getattr(parser, 'extra_list_urls', [])
+            or 'get_list_urls' in parser.__class__.__dict__
+            or strategy in (ParserStrategy.CSV_LOCAL, ParserStrategy.CSV_REMOTE, ParserStrategy.REST_API, ParserStrategy.SPARQL)
+        )
+        hist = "✅ 历史档案支持" if has_history else "⚠️  仅当前展览"
+
+        # Institution type badge
+        itype = getattr(parser, 'institution_type', 'museum')
+        type_badge = ""
+        if itype == 'biennial':
+            type_badge = " [双年展]"
+        elif itype == 'triennial':
+            type_badge = " [三年展]"
+
+        print(f" - {key:<18}: {parser.source:<26} ({parser.city}) | {strategy_label:<12} | {hist}{type_badge}")
+    print("-" * 70)
     print("Usage: --site <key> [--since YEAR]  (e.g., --site mplus --since 2015)\n")
 
 def main():
