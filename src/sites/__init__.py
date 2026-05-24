@@ -1,29 +1,67 @@
-from src.sites.moma import MoMAParser
-from src.sites.tate import TateParser
-from src.sites.met import MetParser
-from src.sites.palais_tokyo import PalaisTokyoParser
-from src.sites.biennale import BiennaleParser
-from src.sites.pompidou import PompidouParser
-from src.sites.guggenheim import GuggenheimParser
-from src.sites.serpentine import SerpentineParser
-from src.sites.mori import MoriParser
-from src.sites.mplus import MPlusParser
-from src.sites.aic import AICParser
-from src.sites.nga import NGAParser
-from src.sites.wikidata import WikidataParser
+import importlib
+import inspect
+import logging
+import pkgutil
+from src.sites.base import BaseSiteParser
 
-SITES = {
-    "moma": MoMAParser(),
-    "tate": TateParser(),
-    "met": MetParser(),
-    "palais_tokyo": PalaisTokyoParser(),
-    "biennale": BiennaleParser(),
-    "pompidou": PompidouParser(),
-    "guggenheim": GuggenheimParser(),
-    "serpentine": SerpentineParser(),
-    "mori": MoriParser(),
-    "mplus": MPlusParser(),
-    "aic": AICParser(),
-    "nga": NGAParser(),
-    "wikidata": WikidataParser(),
-}
+logger = logging.getLogger("auto_curation.sites")
+
+
+def _discover_parsers():
+    """Auto-discover all parser classes in src.sites package.
+
+    Scans every module in src.sites/, imports it, and collects concrete
+    classes that define both `source` and `city` class attributes.
+    Registration key is taken from `parser_key` if set; otherwise derived
+    from the class name.
+    """
+    parsers = {}
+    package_dir = __path__[0]
+
+    # Step 1: import all modules to trigger class registration
+    for _, module_name, _ in pkgutil.iter_modules([package_dir]):
+        if module_name.startswith("_"):
+            continue
+        try:
+            importlib.import_module(f"src.sites.{module_name}")
+        except Exception as e:
+            logger.warning(f"Failed to import src.sites.{module_name}: {e}")
+
+    # Step 2: collect classes with source + city attributes
+    for module_name in list(sys.modules.keys()):
+        if not module_name.startswith("src.sites.") or module_name == "src.sites":
+            continue
+        mod = sys.modules[module_name]
+        for name, obj in inspect.getmembers(mod, inspect.isclass):
+            # Skip BaseSiteParser itself and helper/model classes
+            if name in ("BaseSiteParser",):
+                continue
+            # Skip classes without the required institutional attributes
+            if not (hasattr(obj, "source") and hasattr(obj, "city")):
+                continue
+            # Skip base classes that have default/generic values
+            if getattr(obj, "source", "") in ("", "Generic"):
+                continue
+            # Derive registration key
+            key = getattr(obj, "parser_key", None)
+            if not key:
+                key = name.replace("Parser", "").lower()
+                # Handle multi-word class names: e.g. PalaisTokyo -> palais_tokyo
+                import re
+                key = re.sub(r'(?<!^)(?=[A-Z])', '_', key).lower()
+            if key in parsers:
+                logger.warning(f"Parser key collision: '{key}' already registered. Skipping {name}.")
+                continue
+            try:
+                parsers[key] = obj()
+                logger.debug(f"Registered parser '{key}' -> {obj.__name__} ({obj.source})")
+            except Exception as e:
+                logger.error(f"Failed to instantiate {name} for key '{key}': {e}")
+
+    return parsers
+
+
+# Trigger auto-discovery on import
+import sys
+SITES = _discover_parsers()
+logger.info(f"Auto-discovered {len(SITES)} site parsers: {list(SITES.keys())}")
