@@ -13,6 +13,7 @@ import logging
 from typing import List, Optional, Dict, Any
 from datetime import date
 import httpx
+from src.sites.base import ParserStrategy
 
 logger = logging.getLogger("auto_curation.sites.moma")
 
@@ -28,12 +29,14 @@ MOMA_EXHIBITION_BASE_URL = "https://www.moma.org/calendar/exhibitions/{id}"
 
 class MoMAParser:
     """MoMA Open Dataset Parser.
-    
+
     通过解析 MoMA 官方 GitHub 数据集获取结构化展览数据，
     而非网页爬取。数据涵盖 1929-1989 年的完整展览历史。
     """
     source = "MoMA"
     city = "New York"
+    strategy = ParserStrategy.CSV_REMOTE
+    parser_key = "moma"
     # MoMA 使用 CSV 而非网页，此字段仅作标识
     list_url = MOMA_EXHIBITIONS_CSV_URL
 
