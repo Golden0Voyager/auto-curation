@@ -119,6 +119,9 @@ class ExhibitionScraper:
                     logger.info(f"-> Skip: already in DB (ID: {existing['id']})")
                     stats["skipped"] += 1
                     continue
+            elif force and not dry_run:
+                logger.info(f"-> Force active: Deleting existing DB entry for URL to ensure clean overwrite: {url}")
+                self.db.delete_exhibition_by_url(url)
 
             try:
                 parsed_data = None

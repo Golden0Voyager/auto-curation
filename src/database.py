@@ -189,6 +189,21 @@ class ExhibitionDatabase:
         finally:
             conn.close()
 
+    def delete_exhibition_by_url(self, url: str) -> bool:
+        """Deletes an exhibition and its cascading artworks by URL."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("DELETE FROM exhibitions WHERE url = ?", (url,))
+            conn.commit()
+            return cursor.rowcount > 0
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Failed to delete exhibition by url '{url}': {e}")
+            return False
+        finally:
+            conn.close()
+
     def get_exhibition_by_url(self, url: str) -> Optional[Dict[str, Any]]:
         """Retrieves a single exhibition and its artworks by URL."""
         conn = self._get_connection()
