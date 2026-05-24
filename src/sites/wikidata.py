@@ -13,6 +13,7 @@ import time
 import urllib.parse
 import urllib.request
 from typing import List, Optional, Dict, Any
+from src.sites.base import ParserStrategy
 
 logger = logging.getLogger("auto_curation.sites.wikidata")
 
@@ -22,8 +23,8 @@ HEADERS = {
     "Accept": "application/sparql-results+json",
 }
 
-# Major European art museums with Wikidata QIDs
-EUROPEAN_MUSEUM_QIDS = [
+# Global art museums with Wikidata QIDs
+WIKIDATA_MUSEUM_QIDS = [
     ("Q19675", "Louvre", "Paris"),
     ("Q178065", "Centre Pompidou", "Paris"),
     ("Q189826", "Tate Modern", "London"),
@@ -40,6 +41,7 @@ EUROPEAN_MUSEUM_QIDS = [
     ("Q1052661", "Palais de Tokyo", "Paris"),
     ("Q1471477", "Mori Art Museum", "Tokyo"),
     ("Q89568", "M+ Museum", "Hong Kong"),
+    ("Q214078", "SFMOMA", "San Francisco"),
 ]
 
 
@@ -51,6 +53,8 @@ class WikidataParser:
     """
     source = "Wikidata"
     city = "Various"
+    strategy = ParserStrategy.SPARQL
+    parser_key = "wikidata"
     list_url = WIKIDATA_SPARQL_URL
 
     def get_exhibition_urls(self, client, since_year: Optional[int] = None) -> List[str]:
@@ -59,7 +63,7 @@ class WikidataParser:
 
     def _build_sparql_query(self, since_year: Optional[int] = None, limit: Optional[int] = None) -> str:
         """Builds a SPARQL query to fetch exhibitions from configured museums."""
-        museum_values = " ".join([f"wd:{qid}" for qid, _, _ in EUROPEAN_MUSEUM_QIDS])
+        museum_values = " ".join([f"wd:{qid}" for qid, _, _ in WIKIDATA_MUSEUM_QIDS])
 
         since_filter = ""
         if since_year:
@@ -125,7 +129,7 @@ class WikidataParser:
             logger.info(f"[Wikidata] Received {len(bindings)} results")
 
             museum_map = {f"http://www.wikidata.org/entity/{qid}": (name, city)
-                          for qid, name, city in EUROPEAN_MUSEUM_QIDS}
+                          for qid, name, city in WIKIDATA_MUSEUM_QIDS}
 
             for binding in bindings:
                 ex_uri = binding.get("exhibition", {}).get("value", "")
