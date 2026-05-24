@@ -16,3 +16,6 @@ secrets.json
 
 # 系统文件
 .DS_Store
+
+# 本地数据库（可通过重新采集生成）
+exhibitions.db
