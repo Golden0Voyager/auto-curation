@@ -209,23 +209,101 @@
         </div>
       </div>
 
-      <!-- Curatorial Concept / Preface (Grid breakdown) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="flex flex-col gap-2">
-          <h3 class="text-sm font-semibold tracking-wider text-amber-400 flex items-center gap-1.5">
-            <i data-lucide="book-open" class="w-4 h-4"></i> 展览简介 (Preface)
-          </h3>
-          <p id="modal-preface" class="text-sm text-slate-300 font-light leading-relaxed whitespace-pre-line max-h-[250px] overflow-y-auto pr-2">
-            暂无前言介绍
-          </p>
+      <!-- Exhibition Install Shots horizontal gallery -->
+      <div id="modal-images-container" class="hidden flex flex-col gap-2 bg-slate-950/20 p-3 rounded-xl border border-slate-900">
+        <div id="modal-images-list" class="flex gap-3 overflow-x-auto py-1 pr-2 no-scrollbar scroll-smooth snap-x">
+          <!-- Dynamically filled by JS -->
         </div>
-        <div class="flex flex-col gap-2">
+      </div>
+
+      <!-- Bilingual Priority Toggle capsule -->
+      <div class="flex justify-between items-center bg-slate-900/30 backdrop-blur-md px-4 py-2.5 rounded-xl border border-slate-800/80 text-xs">
+        <span class="text-slate-400 flex items-center gap-1.5 font-light"><i data-lucide="languages" class="w-4 h-4 text-cyan-400 animate-pulse"></i> 双语对照学术阅读模式 (Bilingual Curation Mode)</span>
+        
+        <!-- Toggle button capsule -->
+        <div id="bilingual-toggle" class="relative flex items-center p-0.5 bg-slate-950/80 rounded-lg border border-slate-800/80 cursor-pointer user-select-none w-48 font-space text-[10px]">
+          <div id="bilingual-slider" class="absolute top-0.5 left-0.5 bottom-0.5 w-[92px] bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-md transition-all duration-300"></div>
+          <div class="flex-1 py-1 text-center z-10 transition-colors duration-300 text-slate-100 font-bold" id="btn-cn-top">中文置顶</div>
+          <div class="flex-1 py-1 text-center z-10 transition-colors duration-300 text-slate-400" id="btn-en-top">English Top</div>
+        </div>
+      </div>
+
+      <!-- Preface and Concept (Bilingual Stacked layout) -->
+      <div class="flex flex-col gap-6">
+        
+        <!-- Section 1: Preface Stack -->
+        <div class="flex flex-col gap-3 p-4 rounded-xl border border-slate-900 bg-slate-950/20">
           <h3 class="text-sm font-semibold tracking-wider text-amber-400 flex items-center gap-1.5">
-            <i data-lucide="sparkles" class="w-4 h-4"></i> 策展学术理念 (Concept)
+            <i data-lucide="book-open" class="w-4.5 h-4.5"></i> 展览简介 (Preface)
           </h3>
-          <p id="modal-concept" class="text-sm text-slate-300 font-light leading-relaxed whitespace-pre-line max-h-[250px] overflow-y-auto pr-2">
-            暂无策展学术理念
-          </p>
+          
+          <div id="preface-stack" class="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-2">
+            <!-- Upper Block -->
+            <div id="preface-upper-block" class="text-sm text-slate-100 font-normal leading-relaxed whitespace-pre-line transition-all duration-300">
+              <!-- Filled by JS -->
+            </div>
+            
+            <!-- Separator -->
+            <div class="h-[1px] bg-slate-800/40 my-1"></div>
+            
+            <!-- Lower Block -->
+            <div id="preface-lower-block" class="text-xs text-slate-400 font-light leading-relaxed italic whitespace-pre-line pl-3 border-l-2 border-slate-800/50 transition-all duration-300">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Concept Stack -->
+        <div class="flex flex-col gap-3 p-4 rounded-xl border border-slate-900 bg-slate-950/20">
+          <h3 class="text-sm font-semibold tracking-wider text-amber-400 flex items-center gap-1.5">
+            <i data-lucide="sparkles" class="w-4.5 h-4.5"></i> 策展学术理念 (Concept)
+          </h3>
+          
+          <div id="concept-stack" class="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-2">
+            <!-- Upper Block -->
+            <div id="concept-upper-block" class="text-sm text-slate-100 font-normal leading-relaxed whitespace-pre-line transition-all duration-300">
+              <!-- Filled by JS -->
+            </div>
+            
+            <!-- Separator -->
+            <div class="h-[1px] bg-slate-800/40 my-1"></div>
+            
+            <!-- Lower Block -->
+            <div id="concept-lower-block" class="text-xs text-slate-400 font-light leading-relaxed italic whitespace-pre-line pl-3 border-l-2 border-slate-800/50 transition-all duration-300">
+              <!-- Filled by JS -->
+            </div>
+      </div>
+
+      <!-- Section 3: Biographies Stack -->
+      <div id="modal-biographies-section" class="flex flex-col gap-3 p-4 rounded-xl border border-slate-900 bg-slate-950/20 hidden">
+        <h3 class="text-sm font-semibold tracking-wider text-amber-400 flex items-center gap-1.5">
+          <i data-lucide="user-check" class="w-4.5 h-4.5"></i> 艺术家与合作团队传记 (Biographies)
+        </h3>
+        
+        <div id="biographies-stack" class="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-2">
+          <!-- Upper Block -->
+          <div id="biographies-upper-block" class="text-sm text-slate-100 font-normal leading-relaxed whitespace-pre-line transition-all duration-300">
+            <!-- Filled by JS -->
+          </div>
+          
+          <!-- Separator -->
+          <div id="biographies-separator" class="h-[1px] bg-slate-800/40 my-1"></div>
+          
+          <!-- Lower Block -->
+          <div id="biographies-lower-block" class="text-xs text-slate-400 font-light leading-relaxed italic whitespace-pre-line pl-3 border-l-2 border-slate-800/50 transition-all duration-300">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Credits Stack -->
+      <div id="modal-credits-section" class="flex flex-col gap-3 p-4 rounded-xl border border-slate-900 bg-slate-950/20 hidden">
+        <h3 class="text-sm font-semibold tracking-wider text-cyan-400 flex items-center gap-1.5">
+          <i data-lucide="scroll" class="w-4.5 h-4.5"></i> 学术鸣谢与制作团队 (Credits & Production)
+        </h3>
+        
+        <div id="credits-content" class="text-xs text-slate-300 font-light leading-relaxed whitespace-pre-line max-h-[300px] overflow-y-auto pr-2 transition-all duration-300">
+          <!-- Filled by JS -->
         </div>
       </div>
 

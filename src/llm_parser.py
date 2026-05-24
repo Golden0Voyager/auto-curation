@@ -9,7 +9,7 @@ logger = logging.getLogger("auto_curation.llm_parser")
 
 class ArtworkModel(BaseModel):
     artist_name: str = Field(..., description="Name of the artist")
-    work_title: str = Field(..., description="Title of the artwork")
+    work_title: Optional[str] = Field("Untitled", description="Title of the artwork")
     work_year: Optional[str] = Field(None, description="Year of creation")
     medium: Optional[str] = Field(None, description="Materials/medium of the artwork")
     dimensions: Optional[str] = Field(None, description="Physical dimensions")
@@ -19,12 +19,18 @@ class ExhibitionModel(BaseModel):
     title: str = Field(..., description="Exhibition title/theme")
     preface: Optional[str] = Field(None, description="Exhibition introduction/preface")
     concept: Optional[str] = Field(None, description="Curatorial concept/theoretical background")
+    preface_en: Optional[str] = Field(None, description="Detailed exhibition preface/description in original English")
+    concept_en: Optional[str] = Field(None, description="Theoretical concept/background in original English")
+    biographies: Optional[str] = Field(None, description="Detailed biographies of artists and collaborators in original English")
+    biographies_cn: Optional[str] = Field(None, description="A brief summary/translation of the primary artist biography in Chinese")
+    credits: Optional[str] = Field(None, description="Detailed exhibition credits, curators, production, and special thanks in original English")
     curators: List[str] = Field(default_factory=list, description="List of curators")
     start_date: Optional[str] = Field(None, description="Exhibition start date")
     end_date: Optional[str] = Field(None, description="Exhibition end date")
     location: Optional[str] = Field(None, description="Gallery location within the institution")
     city: Optional[str] = Field(None, description="Host city")
     artworks: List[ArtworkModel] = Field(default_factory=list, description="List of exhibited artworks")
+
 
 class LLMExhibitionParser:
     """Uses Gemini API via OpenAI-compatible endpoint to parse cleaned HTML text into structured JSON."""
@@ -88,12 +94,16 @@ Analyze the following raw text/markdown and extract the structured metadata.
 === TEXT ===
 {text}
 === END TEXT ===
-
 Extract this JSON Schema exactly:
 {{
   "title": "Exhibition title or theme (required, string)",
   "preface": "Detailed exhibition preface/introduction/description in Chinese (string or null)",
   "concept": "Specific curatorial concept or theoretical background in Chinese if mentioned (string or null)",
+  "preface_en": "Detailed exhibition preface/introduction/description in original English (string or null)",
+  "concept_en": "Specific curatorial concept or theoretical background in original English if mentioned (string or null)",
+  "biographies": "Detailed biographies of artists and collaborators in original English, formatted in clean Markdown (string or null)",
+  "biographies_cn": "A brief summary/translation of the primary artist biography in Chinese, formatted in clean Markdown (string or null)",
+  "credits": "Detailed exhibition credits, curators, collaborator technical credits, production, playtesters, and special thanks in original English, formatted in clean Markdown (string or null)",
   "curators": ["List of curators (array of strings)"],
   "start_date": "Exhibition start date, e.g. 2026-05-23 (string or null)",
   "end_date": "Exhibition end date, e.g. 2026-11-22 (string or null)",
@@ -113,9 +123,10 @@ Extract this JSON Schema exactly:
 
 Strict Guidelines:
 1. Ensure the 'title' field is always populated. If not clear, synthesize a suitable title from the page main headers.
-2. For 'preface' and 'concept', translate or summarize into fluent and professional Chinese art curatorial style.
-3. For 'artworks', only extract concrete works of art explicitly listed or described in the text with their captions. If no specific artworks are listed, leave 'artworks' as an empty array []. Keep artist names and artwork titles in their original language (usually English/French/German/Italian) or original spelling.
+2. For 'preface' and 'concept', translate or summarize into fluent and professional Chinese art curatorial style. For 'preface_en' and 'concept_en', extract and summarize the high-density exhibition description in English, filtering out generic navigation/ticketing information.
+3. For 'artworks', extract concrete works of art explicitly listed or described in the text with their captions. If no specific artworks are listed or described, but the page is a dedicated solo or group exhibition of specific artists, you MUST synthesize at least one artwork entry for each primary artist, setting 'artist_name' to the artist's full name, and 'work_title' to 'Selected Works' (or '代表作品' / '参展作品'), so that the artists are correctly linked to the exhibition in the database. Keep artist names in their original language/spelling.
 4. Ensure 'city' is populated, using the Default City if not explicitly found in the text.
+5. Extract 'biographies' (biographies of artists and collaborators in original English, keeping each biography relatively concise, around 2-3 sentences per collaborator to highlight their key roles and achievements) and 'credits' (all curators, video game development, playtesters, and special thanks in original English, formatted in clean Markdown lists or sections) exactly as listed on the page. Keep lists of playtesters and special thanks concise if they are extremely long. For 'biographies_cn', translate the primary artist biography into a short, elegant Chinese biography/intro.
 """
 
         # Choose the right model depending on the active provider
@@ -133,7 +144,8 @@ Strict Guidelines:
                 {"role": "user", "content": user_prompt}
             ],
             "temperature": 0.1,
-            "response_format": {"type": "json_object"}
+            "response_format": {"type": "json_object"},
+            "max_tokens": 4096
         }
         
         endpoint = f"{self.base_url.rstrip('/')}/chat/completions"
@@ -156,6 +168,11 @@ Strict Guidelines:
                 
                 # Parse and validate with Pydantic
                 parsed_json = json.loads(content)
+                if isinstance(parsed_json, list):
+                    if len(parsed_json) > 0:
+                        parsed_json = parsed_json[0]
+                    else:
+                        parsed_json = {}
                 validated_data = ExhibitionModel(**parsed_json)
                 
                 # Convert back to standard dict

@@ -265,11 +265,11 @@ def get_exhibitions(
             params.append(end_year)
             
         if query:
-            # Dynamic multi-field search (title, curators, location, preface, concept, or search on artist names in artworks)
+            # Dynamic multi-field search (title, curators, location, preface, concept, preface_en, concept_en, or search on artist names in artworks)
             subquery = """
                 id IN (
                     SELECT id FROM exhibitions 
-                    WHERE title LIKE ? OR preface LIKE ? OR concept LIKE ? OR curators LIKE ? OR location LIKE ?
+                    WHERE title LIKE ? OR preface LIKE ? OR concept LIKE ? OR curators LIKE ? OR location LIKE ? OR preface_en LIKE ? OR concept_en LIKE ?
                     UNION
                     SELECT exhibition_id FROM artworks 
                     WHERE artist_name LIKE ? OR work_title LIKE ?
@@ -277,7 +277,7 @@ def get_exhibitions(
             """
             where_clauses.append(subquery)
             like_query = f"%{query}%"
-            params.extend([like_query] * 7)
+            params.extend([like_query] * 9)
             
         where_str = " AND ".join(where_clauses)
         

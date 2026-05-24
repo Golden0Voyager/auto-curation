@@ -149,6 +149,29 @@ class ExhibitionScraper:
                         stats["failed"] += 1
                         continue
 
+                    # Extract and attach image links deterministically (saves disk & tokens)
+                    from bs4 import BeautifulSoup
+                    from urllib.parse import urljoin
+                    import json
+                    image_urls = []
+                    try:
+                        soup = BeautifulSoup(response.text, "html.parser")
+                        for img in soup.find_all("img", src=True):
+                            src = img["src"].strip()
+                            full_img_url = urljoin(url, src)
+                            if any(kw in full_img_url.lower() for kw in ["logo", "icon", "avatar", "pixel", "tracking", "badge", "nav", "footer"]):
+                                continue
+                            if not any(ext in full_img_url.lower() for ext in [".jpg", ".jpeg", ".png", ".webp"]):
+                                continue
+                            image_urls.append(full_img_url)
+                        image_urls = list(dict.fromkeys(image_urls))[:8]
+                    except Exception as e:
+                        logger.error(f"Error extracting image links: {e}")
+                    parsed_data["images"] = json.dumps(image_urls)
+
+                if parsed_data and "images" not in parsed_data:
+                    parsed_data["images"] = "[]"
+
                 # Enrich with parser metadata
                 parsed_data["source"] = parser.source
                 parsed_data["url"] = url

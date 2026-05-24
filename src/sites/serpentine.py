@@ -50,13 +50,25 @@ class SerpentineParser(BaseSiteParser):
         logger.info(f"[Serpentine] Will crawl {len(urls)} pages (including {max_pages} archive pages).")
         return urls
 
+    EVENT_KEYWORDS = [
+        "talk", "workshop", "symposium", "seminar", "conference", "lecture", "conversation",
+        "screening", "film", "performance", "concert", "recital", "study-evening", "celebration",
+        "launch", "reading", "discussion", "panel", "gala", "dinner", "salon", "tour", "school-visit",
+        "podcast", "marathon", "park-nights", "saturday-talks", "book-club", "study-day"
+    ]
+
     def get_exhibition_urls(self, client: httpx.Client, since_year: Optional[int] = None) -> List[str]:
         """Fetch all pages and extract real exhibition detail URLs.
         
-        Filters out pagination links (archive/page/N/) and category filter URLs.
+        Uses CSS card/teaser selectors to group entries, extracts their category type links
+        (e.g., ?type=events), and filters out non-exhibition events, index, and archive pages.
         """
         list_urls = self.get_list_urls(since_year=since_year)
         all_found: Set[str] = set()
+        event_pattern = re.compile(
+            r"\b(" + "|".join(self.EVENT_KEYWORDS) + r")s?\b|(-talks|-nights|workshop|symposium|seminar|conference|lecture|conversation|screening|performance|concert|launch|reading|discussion|panel|tour|podcast|marathon)",
+            re.IGNORECASE
+        )
 
         for list_url in list_urls:
             try:
@@ -64,29 +76,73 @@ class SerpentineParser(BaseSiteParser):
                 response.raise_for_status()
                 soup = BeautifulSoup(response.text, "html.parser")
                 
-                for a_tag in soup.find_all("a", href=True):
-                    href = a_tag["href"].strip()
-                    full_url = urljoin(list_url, href)
-                    
-                    # Must match exhibition pattern
-                    if not re.search(r"serpentinegalleries\.org/whats-on/[a-zA-Z0-9][a-zA-Z0-9_-]+", full_url):
-                        continue
-                    
-                    # Exclude: archive/, archive/page/N/, ?type=... filter URLs
-                    path = full_url.replace("https://www.serpentinegalleries.org", "")
-                    if re.search(r"^/whats-on/archive(/page/\d+)?/?$", path):
-                        continue
-                    if "?" in full_url:
-                        continue
-                    if re.search(r"/whats-on/$", full_url):
-                        continue
-                    
-                    all_found.add(full_url.rstrip("/") + "/")
+                # 1. Group by card/teaser container for higher precision
+                teasers = soup.find_all("section", class_="teaser")
+                if not teasers:
+                    teasers = soup.select(".card, .teaser, [class*='teaser'], [class*='card']")
+                
+                if teasers:
+                    for teaser in teasers:
+                        detail_url = None
+                        is_event = False
+                        
+                        # Find the category / type links inside this card
+                        for a_tag in teaser.find_all("a", href=True):
+                            href = a_tag["href"].strip()
+                            full_url = urljoin(list_url, href)
+                            
+                            # Check if the card is labeled as an event, live art, publication, etc.
+                            if "?type=" in full_url:
+                                for event_type in ["events", "live", "publication", "digital", "education", "research"]:
+                                    if f"type={event_type}" in full_url:
+                                        is_event = True
+                                        break
+                                        
+                        # Find the actual detail page link
+                        for a_tag in teaser.find_all("a", href=True):
+                            href = a_tag["href"].strip()
+                            full_url = urljoin(list_url, href)
+                            
+                            # Must match whats-on detail page pattern and not contain ? (query params) or index pages
+                            if re.search(r"serpentinegalleries\.org/whats-on/[a-zA-Z0-9][a-zA-Z0-9_-]+/?$", full_url):
+                                if "?" not in full_url and "/archive/" not in full_url and not full_url.endswith("/whats-on/"):
+                                    detail_url = full_url.rstrip("/") + "/"
+                                    break
+                        
+                        # Double-check title or URL against event keyword filters
+                        if detail_url:
+                            title_el = teaser.find("h3")
+                            title_text = title_el.get_text(strip=True) if title_el else ""
+                            if event_pattern.search(detail_url) or event_pattern.search(title_text):
+                                is_event = True
+                            
+                            if not is_event:
+                                all_found.add(detail_url)
+                else:
+                    # 2. Fallback to standard tag parsing if layout changes
+                    for a_tag in soup.find_all("a", href=True):
+                        href = a_tag["href"].strip()
+                        full_url = urljoin(list_url, href)
+                        
+                        # Must match exhibition pattern
+                        if not re.search(r"serpentinegalleries\.org/whats-on/[a-zA-Z0-9][a-zA-Z0-9_-]+/?$", full_url):
+                            continue
+                        
+                        # Exclude: archive paths, query params, index links
+                        if "/archive/" in full_url or "?" in full_url or full_url.endswith("/whats-on/"):
+                            continue
+                            
+                        # Exclude by keyword
+                        title_text = a_tag.get_text(strip=True)
+                        if event_pattern.search(full_url) or event_pattern.search(title_text):
+                            continue
+                        
+                        all_found.add(full_url.rstrip("/") + "/")
                     
             except Exception as e:
                 logger.error(f"[Serpentine] Error fetching {list_url}: {e}")
                 continue
 
         urls = sorted(list(all_found))
-        logger.info(f"[Serpentine] Discovered {len(urls)} real exhibition URLs.")
+        logger.info(f"[Serpentine] Discovered {len(urls)} real, clean exhibition URLs (filtered out non-exhibition events).")
         return urls

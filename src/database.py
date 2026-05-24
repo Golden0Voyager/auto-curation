@@ -68,7 +68,34 @@ class ExhibitionDatabase:
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_start_date ON exhibitions(start_date);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_parser_key ON exhibitions(parser_key);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_artworks_exhibition ON artworks(exhibition_id);")
-        
+        # Check and migrate exhibitions schema for preface_en and concept_en (Bilingual Curation)
+        try:
+            cursor.execute("ALTER TABLE exhibitions ADD COLUMN preface_en TEXT;")
+            cursor.execute("ALTER TABLE exhibitions ADD COLUMN concept_en TEXT;")
+        except sqlite3.OperationalError:
+            pass
+
+        # Check and migrate exhibitions schema for biographies, biographies_cn, and credits (Literature Curation)
+        try:
+            cursor.execute("ALTER TABLE exhibitions ADD COLUMN biographies TEXT;")
+        except sqlite3.OperationalError:
+            pass
+
+        try:
+            cursor.execute("ALTER TABLE exhibitions ADD COLUMN biographies_cn TEXT;")
+        except sqlite3.OperationalError:
+            pass
+
+        try:
+            cursor.execute("ALTER TABLE exhibitions ADD COLUMN credits TEXT;")
+        except sqlite3.OperationalError:
+            pass
+
+        try:
+            cursor.execute("ALTER TABLE exhibitions ADD COLUMN images TEXT;")
+        except sqlite3.OperationalError:
+            pass
+
         conn.commit()
         conn.close()
         logger.info(f"Database initialized at {self.db_path}")
@@ -97,8 +124,8 @@ class ExhibitionDatabase:
             # 1. Insert into exhibitions table using INSERT OR IGNORE
             cursor.execute("""
                 INSERT OR IGNORE INTO exhibitions (
-                    source, title, preface, concept, curators, start_date, end_date, location, city, url, parser_key, institution_type
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    source, title, preface, concept, curators, start_date, end_date, location, city, url, parser_key, institution_type, preface_en, concept_en, biographies, biographies_cn, credits, images
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 ex_data.get("source"),
                 ex_data.get("title"),
@@ -111,8 +138,15 @@ class ExhibitionDatabase:
                 ex_data.get("city"),
                 ex_data.get("url"),
                 ex_data.get("parser_key"),
-                ex_data.get("institution_type", "museum")
+                ex_data.get("institution_type", "museum"),
+                ex_data.get("preface_en"),
+                ex_data.get("concept_en"),
+                ex_data.get("biographies"),
+                ex_data.get("biographies_cn"),
+                ex_data.get("credits"),
+                ex_data.get("images", "[]")
             ))
+
             
             ex_id = None
             if cursor.rowcount > 0:

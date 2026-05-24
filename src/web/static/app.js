@@ -9,6 +9,10 @@ let timelineChart = null;
 let mediumChart = null;
 let networkChart = null;
 
+// Bilingual priority and caching controls
+let currentBilingualMode = "cn-top"; // cn-top or en-top
+let activeExhibitionData = null; // Caches details for instant bilingual toggling
+
 // Initialize when DOM loaded
 document.addEventListener("DOMContentLoaded", () => {
   // Initialize Lucide Icons
@@ -72,6 +76,16 @@ function setupEventListeners() {
 
   // Close Modal Button
   document.getElementById("close-modal-btn").addEventListener("click", hideExhibitionModal);
+  
+  // Bilingual Priority Toggle listener
+  const toggleBtn = document.getElementById("bilingual-toggle");
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", () => {
+      currentBilingualMode = (currentBilingualMode === "cn-top") ? "en-top" : "cn-top";
+      updateBilingualSliderUI();
+      renderBilingualTexts();
+    });
+  }
   
   // Close Modal on clicking outside
   document.getElementById("detail-modal").addEventListener("click", (e) => {
@@ -562,6 +576,11 @@ async function showExhibitionModal(id) {
     const res = await fetch(`/api/exhibitions/${id}`);
     const ex = await res.json();
     
+    // Cache for instant bilingual priority toggle
+    activeExhibitionData = ex;
+    currentBilingualMode = "cn-top";
+    updateBilingualSliderUI();
+    
     // Render Modal metadata
     document.getElementById("modal-source").textContent = ex.source;
     document.getElementById("modal-title").textContent = ex.title;
@@ -579,9 +598,40 @@ async function showExhibitionModal(id) {
     
     document.getElementById("modal-art-count").textContent = `${ex.artworks.length} 件`;
     
-    // Details texts
-    document.getElementById("modal-preface").textContent = ex.preface || "该展览未提供独立前言文本或正在解析中。";
-    document.getElementById("modal-concept").textContent = ex.concept || "学术策展理念由大模型从网页中抽取整合，本展览未进行概念提炼。";
+    // Render images gallery if available (saves disk & tokens, directly links remote urls)
+    const imgContainer = document.getElementById("modal-images-container");
+    const imgList = document.getElementById("modal-images-list");
+    if (imgContainer && imgList) {
+      imgList.innerHTML = "";
+      let image_urls = [];
+      try {
+        if (ex.images) {
+          image_urls = typeof ex.images === "string" ? JSON.parse(ex.images) : ex.images;
+        }
+      } catch (err) {
+        image_urls = [];
+      }
+      
+      if (image_urls && image_urls.length > 0) {
+        imgContainer.classList.remove("hidden");
+        image_urls.forEach(imgUrl => {
+          const img = document.createElement("img");
+          img.src = imgUrl;
+          img.className = "h-36 rounded-xl border border-slate-800/80 snap-start object-cover hover:scale-[1.03] transition-transform duration-300 cursor-pointer shadow-md bg-slate-900/50";
+          img.alt = "Exhibition Install Shot";
+          // Click to open high-res remote image directly in new tab
+          img.addEventListener("click", () => {
+            window.open(imgUrl, "_blank");
+          });
+          imgList.appendChild(img);
+        });
+      } else {
+        imgContainer.classList.add("hidden");
+      }
+    }
+    
+    // Details texts - Render stacked CN/EN bilingual texts
+    renderBilingualTexts();
     
     // Action link
     const urlBtn = document.getElementById("modal-url");
@@ -629,4 +679,112 @@ function hideExhibitionModal() {
   const modal = document.getElementById("detail-modal");
   modal.classList.remove("opacity-100");
   setTimeout(() => modal.classList.add("hidden"), 300);
+}
+
+// Updates the bilingual slider toggle switch visuals
+function updateBilingualSliderUI() {
+  const slider = document.getElementById("bilingual-slider");
+  const btnCn = document.getElementById("btn-cn-top");
+  const btnEn = document.getElementById("btn-en-top");
+  
+  if (!slider) return;
+  
+  if (currentBilingualMode === "cn-top") {
+    slider.style.left = "2.5px";
+    btnCn.className = "flex-1 py-1 text-center z-10 transition-colors duration-300 text-slate-100 font-bold";
+    btnEn.className = "flex-1 py-1 text-center z-10 transition-colors duration-300 text-slate-400 font-normal";
+  } else {
+    slider.style.left = "calc(50% + 2px)";
+    btnCn.className = "flex-1 py-1 text-center z-10 transition-colors duration-300 text-slate-400 font-normal";
+    btnEn.className = "flex-1 py-1 text-center z-10 transition-colors duration-300 text-slate-100 font-bold";
+  }
+}
+
+// Renders the cached exhibition details bilingual text fields based on current priority mode
+function renderBilingualTexts() {
+  if (!activeExhibitionData) return;
+  
+  const ex = activeExhibitionData;
+  const cnPreface = ex.preface || "该展览未提供独立前言文本或正在解析中。";
+  const enPreface = ex.preface_en || "The raw English preface is not available for this record (old records only contain Chinese translations).";
+  
+  const cnConcept = ex.concept || "学术策展理念由大模型从网页中抽取整合，本展览未进行概念提炼。";
+  const enConcept = ex.concept_en || "No original English curatorial concept theoretical details extracted for this record.";
+  
+  const pUpper = document.getElementById("preface-upper-block");
+  const pLower = document.getElementById("preface-lower-block");
+  const cUpper = document.getElementById("concept-upper-block");
+  const cLower = document.getElementById("concept-lower-block");
+  
+  const bioSection = document.getElementById("modal-biographies-section");
+  const creditsSection = document.getElementById("modal-credits-section");
+  const bUpper = document.getElementById("biographies-upper-block");
+  const bLower = document.getElementById("biographies-lower-block");
+  const bSeparator = document.getElementById("biographies-separator");
+  const creditsContent = document.getElementById("credits-content");
+
+  // Apply smooth fade transitions
+  const applyFade = (el, text) => {
+    if (!el) return;
+    el.style.opacity = "0.2";
+    setTimeout(() => {
+      el.textContent = text;
+      el.style.opacity = "1";
+    }, 100);
+  };
+  
+  // 1. Standard Preface and Concept rendering
+  if (currentBilingualMode === "cn-top") {
+    applyFade(pUpper, cnPreface);
+    applyFade(pLower, enPreface);
+    applyFade(cUpper, cnConcept);
+    applyFade(cLower, enConcept);
+  } else {
+    applyFade(pUpper, enPreface);
+    applyFade(pLower, cnPreface);
+    applyFade(cUpper, enConcept);
+    applyFade(cLower, cnConcept);
+  }
+
+  // 2. Biographies Section rendering (Bilingual Stacked layout)
+  if (ex.biographies || ex.biographies_cn) {
+    if (bioSection) bioSection.classList.remove("hidden");
+    
+    const cnBio = ex.biographies_cn || "暂无艺术家的简短中文介绍。";
+    const enBio = ex.biographies || "No English biographies available for this record.";
+    
+    // If only one language is available, adjust separators and blocks
+    if (!ex.biographies_cn || !ex.biographies) {
+      if (bSeparator) bSeparator.style.display = "none";
+      if (ex.biographies_cn) {
+        if (bUpper) { bUpper.style.display = "block"; bUpper.textContent = cnBio; }
+        if (bLower) bLower.style.display = "none";
+      } else {
+        if (bUpper) { bUpper.style.display = "block"; bUpper.textContent = enBio; }
+        if (bLower) bLower.style.display = "none";
+      }
+    } else {
+      if (bSeparator) bSeparator.style.display = "block";
+      if (bUpper) bUpper.style.display = "block";
+      if (bLower) bLower.style.display = "block";
+      
+      if (currentBilingualMode === "cn-top") {
+        applyFade(bUpper, cnBio);
+        applyFade(bLower, enBio);
+      } else {
+        applyFade(bUpper, enBio);
+        applyFade(bLower, cnBio);
+      }
+    }
+  } else {
+    if (bioSection) bioSection.classList.add("hidden");
+  }
+
+  // 3. Credits Section rendering
+  if (ex.credits && ex.credits.trim() !== "") {
+    if (creditsSection) creditsSection.classList.remove("hidden");
+    if (creditsContent) applyFade(creditsContent, ex.credits);
+  } else {
+    if (creditsSection) creditsSection.classList.add("hidden");
+  }
 }
