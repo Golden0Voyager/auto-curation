@@ -9,25 +9,88 @@ let timelineChart = null;
 let mediumChart = null;
 let networkChart = null;
 
-// Bilingual priority and caching controls
-let currentBilingualMode = "cn-top"; // cn-top or en-top
-let activeExhibitionData = null; // Caches details for instant bilingual toggling
+// i18n Global State
+let appLanguage = 'zh';
+let bilingualEnabled = false;
+let currentBilingualMode = "cn-top";
+let activeExhibitionData = null;
+let i18nReady = false;
+
+// Initialize i18next
+function initI18n() {
+  return new Promise((resolve) => {
+    i18next
+      .use(i18nextHttpBackend)
+      .use(i18nextBrowserLanguageDetector)
+      .init({
+        fallbackLng: 'zh',
+        debug: false,
+        backend: {
+          loadPath: '/static/locales/{{lng}}/translation.json'
+        },
+        detection: {
+          order: ['localStorage', 'navigator'],
+          caches: ['localStorage'],
+          lookupLocalStorage: 'i18nextLng'
+        }
+      }, (err, t) => {
+        if (err) console.error('i18next init error:', err);
+        appLanguage = i18next.language || 'zh';
+        // Load bilingual preference
+        const savedBilingual = localStorage.getItem('bilingualEnabled');
+        if (savedBilingual !== null) {
+          bilingualEnabled = savedBilingual === 'true';
+        }
+        i18nReady = true;
+        resolve();
+      });
+  });
+}
+
+// Update all DOM elements with data-i18n attributes
+function updateStaticTexts() {
+  if (!i18nReady) return;
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    // Support attribute bindings like [placeholder]key
+    if (key.startsWith('[')) {
+      const match = key.match(/\[(.+?)\](.+)/);
+      if (match) {
+        const attr = match[1];
+        const realKey = match[2];
+        el.setAttribute(attr, i18next.t(realKey));
+      }
+    } else {
+      el.textContent = i18next.t(key);
+    }
+  });
+
+  // Update HTML lang attribute
+  document.documentElement.lang = appLanguage === 'zh' ? 'zh-CN' : 'en';
+}
 
 // Initialize when DOM loaded
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // Initialize i18next first
+  await initI18n();
+
+  // Update all static UI texts
+  updateStaticTexts();
+
   // Initialize Lucide Icons
   lucide.createIcons();
-  
+
   // Setup Event Listeners
   setupEventListeners();
-  
+
   // Fetch initial dashboard stats & build dynamic filters
   fetchStatsAndSetupFilters();
-  
+
   // Fetch & Draw charts
   loadTimelineChart();
   loadNetworkChart();
-  
+
   // Load exhibitions gallery
   loadExhibitionsGallery();
 });
