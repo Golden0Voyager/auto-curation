@@ -317,7 +317,7 @@ async function loadTimelineChart() {
   
   // Show skeleton loading
   timelineChart.showLoading({
-    text: "策展河流加载中...",
+    text: i18nReady ? i18next.t('gallery.count_loading') : "策展河流加载中...",
     color: "#e2b755",
     textColor: "#a0aec0",
     maskColor: "rgba(8, 9, 13, 0.45)"
@@ -486,7 +486,7 @@ async function loadNetworkChart() {
   networkChart = echarts.init(dom);
   
   networkChart.showLoading({
-    text: "引力星云运转中...",
+    text: i18nReady ? i18next.t('gallery.count_loading') : "引力星云运转中...",
     color: "#5ef3e8",
     textColor: "#a0aec0",
     maskColor: "rgba(8, 9, 13, 0.45)"
@@ -519,9 +519,9 @@ async function loadNetworkChart() {
         trigger: "item",
         formatter: (params) => {
           if (params.dataType === "node") {
-            return `🌟 艺术家: <strong class="text-amber-400">${params.data.name}</strong><br/>展览收录作品数: ${params.data.value} 件`;
+            return `🌟 ${i18nReady ? i18next.t('modal.table_artist') : '艺术家'}: <strong class="text-amber-400">${params.data.name}</strong><br/>${i18nReady ? i18next.t('modal.artwork_count', {count: params.data.value}) : '展览收录作品数: ' + params.data.value + ' 件'}`;
           } else {
-            return `🔗 共同参展关联:<br/>${params.data.source} ✖ ${params.data.target}<br/>共同出场次数: <strong class="text-cyan-400">${params.data.value}</strong> 次`;
+            return `🔗 ${i18nReady ? i18next.t('chart.network_legend') : '共同参展关联:'}<br/>${params.data.source} ✖ ${params.data.target}<br/>${i18nReady ? i18next.t('chart.network_legend_edge').replace('。', '') : '共同出场次数'}: <strong class="text-cyan-400">${params.data.value}</strong> ${i18nReady ? i18next.t('gallery.card_artworks', {count: ''}).replace('{{count}}', '').trim() || '次' : '次'}`;
           }
         },
         backgroundColor: "rgba(16, 20, 30, 0.95)",
@@ -621,13 +621,15 @@ async function loadExhibitionsGallery() {
     grid.innerHTML = "";
     loader.classList.add("hidden");
     
-    countDisplay.textContent = `匹配到 ${result.total} 个展览`;
+    countDisplay.textContent = i18nReady
+      ? i18next.t('gallery.count_result', {count: result.total})
+      : `匹配到 ${result.total} 个展览`;
     
     if (result.data.length === 0) {
       grid.innerHTML = `
         <div class="col-span-full py-16 flex flex-col items-center justify-center text-slate-500 border border-dashed border-slate-800 rounded-2xl bg-slate-900/10">
           <i data-lucide="info" class="w-8 h-8 text-amber-500/50 mb-2"></i>
-          <span class="text-xs">在当前筛选条件下，未捕获任何当代艺术展览</span>
+          <span class="text-xs" data-i18n="gallery.empty_title">在当前筛选条件下，未捕获任何当代艺术展览</span>
         </div>
       `;
       lucide.createIcons();
@@ -636,12 +638,12 @@ async function loadExhibitionsGallery() {
     
     result.data.forEach(ex => {
       // Setup timeline label text
-      let dateText = ex.start_date || "未知日期";
+      let dateText = ex.start_date || (i18nReady ? i18next.t('gallery.card_date_unknown') : "未知日期");
       if (ex.end_date) dateText += ` ~ ${ex.end_date}`;
-      
-      const curators = (ex.curators && ex.curators.length > 0) 
-        ? ex.curators.join(", ") 
-        : "馆方学术委员会 / 独立策展人";
+
+      const curators = (ex.curators && ex.curators.length > 0)
+        ? ex.curators.join(", ")
+        : (i18nReady ? i18next.t('modal.curators_default') : "馆方学术委员会 / 独立策展人");
         
       const card = document.createElement("div");
       card.className = "ex_card glass-panel p-4 flex flex-col justify-between gap-3 border border-slate-800/80 bg-slate-900/30";
@@ -672,7 +674,7 @@ async function loadExhibitionsGallery() {
               ${ex.source}
             </span>
             <span class="text-[10px] text-slate-500 flex items-center gap-1 font-space">
-              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-500/50"></i> ${ex.city || "全球"}
+              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-500/50"></i> ${ex.city || (i18nReady ? i18next.t('gallery.card_city_global') : "全球")}
             </span>
           </div>
           
@@ -683,7 +685,7 @@ async function loadExhibitionsGallery() {
           </h3>
           
           <div class="text-[10px] text-slate-400 font-light flex items-center gap-1 leading-relaxed mt-1">
-            <i data-lucide="user" class="w-3 h-3 text-amber-500/40"></i> 策展: ${curators}
+            <i data-lucide="user" class="w-3 h-3 text-amber-500/40"></i> ${i18nReady ? i18next.t('gallery.card_curators', {curators: curators}) : `策展: ${curators}`}
           </div>
         </div>
         
@@ -692,7 +694,7 @@ async function loadExhibitionsGallery() {
             <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-600"></i> ${dateText}
           </span>
           <span class="px-2 py-0.5 rounded bg-cyan-950/40 text-cyan-400 font-bold border border-cyan-950">
-            ${ex.artwork_count} 件作品
+            ${i18nReady ? i18next.t('gallery.card_artworks', {count: ex.artwork_count}) : `${ex.artwork_count} 件作品`}
           </span>
         </div>
       `;
@@ -731,18 +733,20 @@ async function showExhibitionModal(id) {
     document.getElementById("modal-source").textContent = ex.source;
     document.getElementById("modal-title").textContent = ex.title;
     
-    let dateText = ex.start_date || "未知";
-    if (ex.end_date) dateText += ` 至 ${ex.end_date}`;
+    let dateText = ex.start_date || (i18nReady ? i18next.t('common.unknown') : "未知");
+    if (ex.end_date) dateText += (i18nReady ? i18next.t('modal.date_separator') : " 至 ") + ex.end_date;
     document.getElementById("modal-date").textContent = dateText;
-    
-    document.getElementById("modal-city").innerHTML = `<i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-500"></i> ${ex.city || "美术馆展厅"} (${ex.location || "展厅展位"})`;
-    
-    const curators = (ex.curators && ex.curators.length > 0) 
-      ? ex.curators.join(", ") 
-      : "联合策划 / 特邀学者";
+
+    document.getElementById("modal-city").innerHTML = `<i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-500"></i> ${ex.city || (i18nReady ? i18next.t('common.unknown') : "美术馆展厅")} (${ex.location || (i18nReady ? i18next.t('common.unknown') : "展厅展位")})`;
+
+    const curators = (ex.curators && ex.curators.length > 0)
+      ? ex.curators.join(", ")
+      : (i18nReady ? i18next.t('modal.curators_default') : "联合策划 / 特邀学者");
     document.getElementById("modal-curators").textContent = curators;
-    
-    document.getElementById("modal-art-count").textContent = `${ex.artworks.length} 件`;
+
+    document.getElementById("modal-art-count").textContent = i18nReady
+      ? i18next.t('modal.artwork_count', {count: ex.artworks.length})
+      : `${ex.artworks.length} 件`;
 
     // Render Modal tags
     const modalTags = document.getElementById("modal-tags");
@@ -817,7 +821,7 @@ async function showExhibitionModal(id) {
     if (ex.artworks.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="5" class="py-8 text-center text-slate-500 italic">该展览暂未关联具体代表作品数据 (由爬虫采集补充中)</td>
+          <td colspan="5" class="py-8 text-center text-slate-500 italic" data-i18n="modal.artworks_empty">该展览暂未关联具体代表作品数据 (由爬虫采集补充中)</td>
         </tr>
       `;
     } else {
@@ -825,11 +829,11 @@ async function showExhibitionModal(id) {
         const tr = document.createElement("tr");
         tr.className = "hover:bg-slate-900/60 transition-colors";
         tr.innerHTML = `
-          <td class="py-2 px-3 font-semibold text-amber-400/90">${art.artist_name || "未知艺术家"}</td>
-          <td class="py-2 px-3 italic font-medium text-slate-100">${art.work_title || "无题"}</td>
-          <td class="py-2 px-3 font-space text-[10px]">${art.work_year || "未标注"}</td>
-          <td class="py-2 px-3 text-slate-400 font-light text-[11px]">${art.medium || "-"}</td>
-          <td class="py-2 px-3 text-slate-400 font-light font-space text-[10px]">${art.dimensions || "-"}</td>
+          <td class="py-2 px-3 font-semibold text-amber-400/90">${art.artist_name || (i18nReady ? i18next.t('modal.artist_unknown') : "未知艺术家")}</td>
+          <td class="py-2 px-3 italic font-medium text-slate-100">${art.work_title || (i18nReady ? i18next.t('modal.work_untitled') : "无题")}</td>
+          <td class="py-2 px-3 font-space text-[10px]">${art.work_year || (i18nReady ? i18next.t('modal.year_unknown') : "未标注")}</td>
+          <td class="py-2 px-3 text-slate-400 font-light text-[11px]">${art.medium || (i18nReady ? i18next.t('modal.medium_unknown') : "-")}</td>
+          <td class="py-2 px-3 text-slate-400 font-light font-space text-[10px]">${art.dimensions || (i18nReady ? i18next.t('modal.dimensions_unknown') : "-")}</td>
         `;
         tbody.appendChild(tr);
       });
