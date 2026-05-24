@@ -1,5 +1,6 @@
 import logging
 import re
+from enum import Enum
 from typing import List, Set, Optional
 import httpx
 from bs4 import BeautifulSoup
@@ -9,23 +10,46 @@ logger = logging.getLogger("auto_curation.sites.base")
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Cache-Control": "max-age=0",
 }
+
+
+class ParserStrategy(Enum):
+    """Scraping strategy for a parser. Determines which pipeline the scraper uses."""
+    HTML_LLM = "html_llm"        # Default: scrape HTML, send to LLM
+    CSV_LOCAL = "csv_local"      # Parse local CSV file
+    CSV_REMOTE = "csv_remote"    # Download and parse remote CSV
+    REST_API = "rest_api"        # Call REST API endpoint
+    SPARQL = "sparql"            # Wikidata-style SPARQL
+    ARTWORK_ONLY = "artwork_only"  # No exhibitions, only artworks (e.g. NGA)
+
 
 class BaseSiteParser:
     """Base class for all art institution site crawlers.
-    
+
     Supports multi-page and historical archive crawling via the `list_urls` property.
     Subclasses can override `list_urls` to return a dynamic list of pages (e.g., by year).
     """
-    
+
     source: str = "Generic"
     city: str = "Generic"
     list_url: str = ""
-    
+    strategy: ParserStrategy = ParserStrategy.HTML_LLM
+    parser_key: str = ""  # Registration key; falls back to derived class name
+    institution_type: str = "museum"  # museum, biennial, triennial, gallery
+
     # Additional archive/historical listing URLs (e.g., past exhibitions pages)
     extra_list_urls: List[str] = []
-    
+
     # URL patterns or prefixes to match for detailed exhibition pages
     link_patterns: List[str] = []
 
