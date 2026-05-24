@@ -726,7 +726,7 @@ async function showExhibitionModal(id) {
     
     // Cache for instant bilingual priority toggle
     activeExhibitionData = ex;
-    currentBilingualMode = "cn-top";
+    currentBilingualMode = (appLanguage === 'zh') ? 'cn-top' : 'en-top';
     updateBilingualSliderUI();
     
     // Render Modal metadata
@@ -855,12 +855,18 @@ function hideExhibitionModal() {
 
 // Updates the bilingual slider toggle switch visuals
 function updateBilingualSliderUI() {
+  const toggleContainer = document.getElementById("bilingual-toggle");
   const slider = document.getElementById("bilingual-slider");
   const btnCn = document.getElementById("btn-cn-top");
   const btnEn = document.getElementById("btn-en-top");
-  
-  if (!slider) return;
-  
+
+  // Hide/show entire bilingual toggle bar
+  if (toggleContainer && toggleContainer.parentElement) {
+    toggleContainer.parentElement.style.display = bilingualEnabled ? 'flex' : 'none';
+  }
+
+  if (!bilingualEnabled || !slider) return;
+
   if (currentBilingualMode === "cn-top") {
     slider.style.left = "2.5px";
     btnCn.className = "flex-1 py-1 text-center z-10 transition-colors duration-300 text-slate-100 font-bold";
@@ -875,25 +881,39 @@ function updateBilingualSliderUI() {
 // Renders the cached exhibition details bilingual text fields based on current priority mode
 function renderBilingualTexts() {
   if (!activeExhibitionData) return;
-  
+
   const ex = activeExhibitionData;
-  const cnPreface = ex.preface || "该展览未提供独立前言文本或正在解析中。";
-  const enPreface = ex.preface_en || "The raw English preface is not available for this record (old records only contain Chinese translations).";
-  
-  const cnConcept = ex.concept || "学术策展理念由大模型从网页中抽取整合，本展览未进行概念提炼。";
-  const enConcept = ex.concept_en || "No original English curatorial concept theoretical details extracted for this record.";
-  
+
+  // Helper: get localized text with fallback
+  const getText = (primaryKey, fallbackKey, primaryValue, fallbackValue) => {
+    const hasPrimary = primaryValue && primaryValue.trim();
+    const hasFallback = fallbackValue && fallbackValue.trim();
+
+    if (hasPrimary) return primaryValue;
+    if (hasFallback) {
+      const hint = i18nReady ? i18next.t('modal.fallback_hint', {lang: primaryKey === 'zh' ? '中文' : 'English'}) : '[原文仅中文可用] ';
+      return hint + fallbackValue;
+    }
+    return i18nReady ? i18next.t(fallbackKey) : (primaryKey === 'zh' ? '该展览未提供独立前言文本或正在解析中。' : 'The raw English preface is not available for this record.');
+  };
+
   const pUpper = document.getElementById("preface-upper-block");
   const pLower = document.getElementById("preface-lower-block");
   const cUpper = document.getElementById("concept-upper-block");
   const cLower = document.getElementById("concept-lower-block");
-  
+
   const bioSection = document.getElementById("modal-biographies-section");
   const creditsSection = document.getElementById("modal-credits-section");
   const bUpper = document.getElementById("biographies-upper-block");
   const bLower = document.getElementById("biographies-lower-block");
   const bSeparator = document.getElementById("biographies-separator");
   const creditsContent = document.getElementById("credits-content");
+
+  // Find separators via parent children index
+  const pStack = document.getElementById("preface-stack");
+  const cStack = document.getElementById("concept-stack");
+  const pSeparator = pStack ? pStack.children[1] : null;
+  const cSeparator = cStack ? cStack.children[1] : null;
 
   // Apply smooth fade transitions
   const applyFade = (el, text) => {
@@ -904,48 +924,77 @@ function renderBilingualTexts() {
       el.style.opacity = "1";
     }, 100);
   };
-  
-  // 1. Standard Preface and Concept rendering
-  if (currentBilingualMode === "cn-top") {
-    applyFade(pUpper, cnPreface);
-    applyFade(pLower, enPreface);
-    applyFade(cUpper, cnConcept);
-    applyFade(cLower, enConcept);
+
+  if (bilingualEnabled) {
+    // BILINGUAL MODE: show both blocks
+    if (pLower) pLower.style.display = 'block';
+    if (pSeparator) pSeparator.style.display = 'block';
+    if (cLower) cLower.style.display = 'block';
+    if (cSeparator) cSeparator.style.display = 'block';
+
+    const cnPreface = getText('zh', 'modal.preface_missing_cn', ex.preface, ex.preface_en);
+    const enPreface = getText('en', 'modal.preface_missing_en', ex.preface_en, ex.preface);
+    const cnConcept = getText('zh', 'modal.concept_missing_cn', ex.concept, ex.concept_en);
+    const enConcept = getText('en', 'modal.concept_missing_en', ex.concept_en, ex.concept);
+
+    if (currentBilingualMode === "cn-top") {
+      applyFade(pUpper, cnPreface);
+      applyFade(pLower, enPreface);
+      applyFade(cUpper, cnConcept);
+      applyFade(cLower, enConcept);
+    } else {
+      applyFade(pUpper, enPreface);
+      applyFade(pLower, cnPreface);
+      applyFade(cUpper, enConcept);
+      applyFade(cLower, cnConcept);
+    }
   } else {
-    applyFade(pUpper, enPreface);
-    applyFade(pLower, cnPreface);
-    applyFade(cUpper, enConcept);
-    applyFade(cLower, cnConcept);
+    // MONOLINGUAL MODE: hide lower blocks and separators
+    if (pLower) pLower.style.display = 'none';
+    if (pSeparator) pSeparator.style.display = 'none';
+    if (cLower) cLower.style.display = 'none';
+    if (cSeparator) cSeparator.style.display = 'none';
+
+    const preface = appLanguage === 'zh'
+      ? getText('zh', 'modal.preface_missing_cn', ex.preface, ex.preface_en)
+      : getText('en', 'modal.preface_missing_en', ex.preface_en, ex.preface);
+    const concept = appLanguage === 'zh'
+      ? getText('zh', 'modal.concept_missing_cn', ex.concept, ex.concept_en)
+      : getText('en', 'modal.concept_missing_en', ex.concept_en, ex.concept);
+
+    applyFade(pUpper, preface);
+    applyFade(cUpper, concept);
   }
 
-  // 2. Biographies Section rendering (Bilingual Stacked layout)
-  if (ex.biographies || ex.biographies_cn) {
+  // 2. Biographies Section rendering
+  const hasBio = (ex.biographies && ex.biographies.trim()) || (ex.biographies_cn && ex.biographies_cn.trim());
+  if (hasBio) {
     if (bioSection) bioSection.classList.remove("hidden");
-    
-    const cnBio = ex.biographies_cn || "暂无艺术家的简短中文介绍。";
-    const enBio = ex.biographies || "No English biographies available for this record.";
-    
-    // If only one language is available, adjust separators and blocks
-    if (!ex.biographies_cn || !ex.biographies) {
-      if (bSeparator) bSeparator.style.display = "none";
-      if (ex.biographies_cn) {
-        if (bUpper) { bUpper.style.display = "block"; bUpper.textContent = cnBio; }
-        if (bLower) bLower.style.display = "none";
-      } else {
-        if (bUpper) { bUpper.style.display = "block"; bUpper.textContent = enBio; }
-        if (bLower) bLower.style.display = "none";
-      }
-    } else {
+
+    if (bilingualEnabled) {
       if (bSeparator) bSeparator.style.display = "block";
       if (bUpper) bUpper.style.display = "block";
       if (bLower) bLower.style.display = "block";
-      
+
+      const cnBio = getText('zh', 'modal.biographies_missing_cn', ex.biographies_cn, ex.biographies);
+      const enBio = getText('en', 'modal.biographies_missing_en', ex.biographies, ex.biographies_cn);
+
       if (currentBilingualMode === "cn-top") {
         applyFade(bUpper, cnBio);
         applyFade(bLower, enBio);
       } else {
         applyFade(bUpper, enBio);
         applyFade(bLower, cnBio);
+      }
+    } else {
+      if (bSeparator) bSeparator.style.display = "none";
+      if (bLower) bLower.style.display = "none";
+      if (bUpper) {
+        bUpper.style.display = "block";
+        const bio = appLanguage === 'zh'
+          ? getText('zh', 'modal.biographies_missing_cn', ex.biographies_cn, ex.biographies)
+          : getText('en', 'modal.biographies_missing_en', ex.biographies, ex.biographies_cn);
+        applyFade(bUpper, bio);
       }
     }
   } else {
