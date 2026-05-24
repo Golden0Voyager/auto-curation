@@ -357,6 +357,23 @@ async function loadNetworkChart() {
     const data = await res.json();
     networkChart.hideLoading();
     
+    // 动态映射共同参展频次，定制高格调金青网络粗细与弧度
+    data.links.forEach(link => {
+      let color = "rgba(255, 255, 255, 0.05)"; // 合作 2 次：弱纽带（淡白微芒）
+      if (link.value >= 5) {
+        color = "rgba(226, 183, 85, 0.35)";  // 合作 >= 5 次：强纽带（黄金盟友，香槟金发光粗线）
+      } else if (link.value >= 3) {
+        color = "rgba(94, 243, 232, 0.18)";  // 合作 >= 3 次：中纽带（学术同盟，荧光青线）
+      }
+      
+      link.lineStyle = {
+        width: Math.min(3.5, 0.6 + link.value * 0.45), // 随合作频次线性变宽
+        color: color,
+        curveness: 0.16 // 微弯优美弧度，避免生硬直线，营造手绘星盘感
+      };
+    });
+
+    
     const option = {
       tooltip: {
         trigger: "item",
@@ -401,16 +418,19 @@ async function loadNetworkChart() {
           },
 
           lineStyle: {
-            color: "rgba(255, 255, 255, 0.11)",
-            width: 1,
-            curveness: 0.1
+            color: "rgba(255, 255, 255, 0.05)",
+            width: 0.8,
+            curveness: 0.16
           },
           emphasis: {
             focus: "adjacency",
             lineStyle: {
-              width: 3,
-              color: "#5ef3e8"
+              width: 4.0,
+              color: "#5ef3e8",
+              shadowColor: "rgba(94, 243, 232, 0.6)",
+              shadowBlur: 12
             },
+
             label: {
               show: true,
               color: "#ffffff",
