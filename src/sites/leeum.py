@@ -11,6 +11,7 @@ class LeeumParser(BaseSiteParser):
     parser_key = "leeum"
     institution_type = "museum"
     list_url = "https://www.leeum.org/en/exhibitions"
+    use_playwright = True
     link_patterns = [
         r"leeum\.org/en/exhibitions/[^/]+",
     ]
