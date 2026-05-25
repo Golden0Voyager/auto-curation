@@ -9,7 +9,7 @@ class SharjahBiennaleParser(BaseSiteParser):
     city = "Sharjah"
     parser_key = "sharjah_biennale"
     institution_type = "biennial"
-    list_url = "https://sharjahart.org/sharjah-biennial"
+    list_url = "https://www.sharjahart.org/en/sharjah-biennial/"
     link_patterns = [
-        r"sharjahart\.org/sharjah-biennial/[^/]+",
+        r"sharjahart\.org/en/sharjah-biennial/sb-\d+",
     ]
