@@ -12,5 +12,5 @@ class MOMATParser(BaseSiteParser):
     institution_type = "museum"
     list_url = "https://www.momat.go.jp/exhibitions"
     link_patterns = [
-        r"momat\.go\.jp/english/exhibitions/[^/]+",
+        r"momat\.go\.jp/exhibitions/[^/]+",
     ]
