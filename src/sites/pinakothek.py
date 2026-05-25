@@ -11,5 +11,5 @@ class PinakothekParser(BaseSiteParser):
     institution_type = "museum"
     list_url = "https://www.pinakothek.de/en/exhibitions"
     link_patterns = [
-        r"pinakothek\.de/en/exhibition/[^/]+",
+        r"pinakothek\.de/en/exhibitions/[^/]+",
     ]
