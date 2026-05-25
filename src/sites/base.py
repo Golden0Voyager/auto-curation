@@ -53,6 +53,9 @@ class BaseSiteParser:
     # URL patterns or prefixes to match for detailed exhibition pages
     link_patterns: List[str] = []
 
+    # SSL verification flag; set to False for sites with certificate hostname mismatches
+    verify_ssl: bool = True
+
     def get_list_urls(self, since_year: Optional[int] = None) -> List[str]:
         """Returns all listing URLs to crawl (current + historical).
         
@@ -82,7 +85,12 @@ class BaseSiteParser:
         for list_url in list_urls:
             try:
                 logger.info(f"[{self.source}] Fetching listing page: {list_url}")
-                response = client.get(list_url, headers=HEADERS, follow_redirects=True)
+                # Use a temporary client with verify=False if SSL is disabled for this parser
+                if not self.verify_ssl:
+                    with httpx.Client(verify=False, follow_redirects=True) as temp_client:
+                        response = temp_client.get(list_url, headers=HEADERS)
+                else:
+                    response = client.get(list_url, headers=HEADERS, follow_redirects=True)
                 response.raise_for_status()
                 
                 soup = BeautifulSoup(response.text, "html.parser")
