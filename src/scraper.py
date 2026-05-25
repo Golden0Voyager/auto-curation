@@ -37,7 +37,7 @@ class ExhibitionScraper:
         self.client = httpx.Client(headers={
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             "Accept-Language": "en-US,en;q=0.9",
-        }, follow_redirects=True, timeout=30.0)
+        }, follow_redirects=True, timeout=60.0)
 
     def scrape_site(
         self,
