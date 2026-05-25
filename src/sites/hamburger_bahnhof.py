@@ -11,6 +11,7 @@ class HamburgerBahnhofParser(BaseSiteParser):
     parser_key = "hamburger_bahnhof"
     institution_type = "museum"
     list_url = "https://www.hamburgerbahnhof.de/en/exhibitions"
+    verify_ssl = False
     link_patterns = [
         r"hamburgerbahnhof\.de/en/exhibitions/[^/]+",
     ]
