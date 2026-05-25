@@ -11,6 +11,7 @@ class NewMuseumParser(BaseSiteParser):
     parser_key = "new_museum"
     institution_type = "museum"
     list_url = "https://www.newmuseum.org/exhibitions"
+    use_playwright = True
     link_patterns = [
-        r"newmuseum\.org/exhibitions/[^/]+",
+        r"newmuseum\.org/exhibition/[^/]+",
     ]
