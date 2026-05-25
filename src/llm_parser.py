@@ -8,8 +8,8 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger("auto_curation.llm_parser")
 
 class ArtworkModel(BaseModel):
-    artist_name: str = Field(..., description="Name of the artist")
-    work_title: Optional[str] = Field("Untitled", description="Title of the artwork")
+    artist_name: Optional[str] = Field(None, description="Name of the artist")
+    work_title: Optional[str] = Field(None, description="Title of the artwork")
     work_year: Optional[str] = Field(None, description="Year of creation")
     medium: Optional[str] = Field(None, description="Materials/medium of the artwork")
     dimensions: Optional[str] = Field(None, description="Physical dimensions")
@@ -33,58 +33,88 @@ class ExhibitionModel(BaseModel):
 
 
 class LLMExhibitionParser:
-    """Uses Gemini API via OpenAI-compatible endpoint to parse cleaned HTML text into structured JSON."""
-    
+    """Uses multiple LLM providers (SenseNova -> Gemini -> SiliconFlow) to parse cleaned HTML text into structured JSON.
+
+    When the primary provider returns low-quality results (e.g., content-filtered N/A responses),
+    automatically falls back to the next available provider.
+    """
+
     def __init__(self):
+        self.providers: List[Dict[str, str]] = []
+
         # Primary: SenseNova (free DeepSeek models)
-        self.api_key = os.getenv("SENSENOVA_API_KEY")
-        self.base_url = os.getenv("SENSENOVA_BASE_URL", "https://api.sensenova.cn/compatible-mode/v2")
-        self.provider = "sensenova"
+        sensenova_key = os.getenv("SENSENOVA_API_KEY")
+        if sensenova_key:
+            self.providers.append({
+                "name": "sensenova",
+                "api_key": sensenova_key,
+                "base_url": os.getenv("SENSENOVA_BASE_URL", "https://api.sensenova.cn/compatible-mode/v2"),
+                "model": "DeepSeek-V3-1"
+            })
 
         # Fallback 1: Gemini
-        if not self.api_key:
-            self.api_key = os.getenv("GEMINI_API_KEY")
-            self.base_url = os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
-            self.provider = "gemini"
-            logger.info("SENSENOVA_API_KEY not found, falling back to Gemini.")
+        gemini_key = os.getenv("GEMINI_API_KEY")
+        if gemini_key:
+            self.providers.append({
+                "name": "gemini",
+                "api_key": gemini_key,
+                "base_url": os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/"),
+                "model": "gemini-2.5-flash"
+            })
 
         # Fallback 2: SiliconFlow
-        if not self.api_key:
-            self.api_key = os.getenv("SILICONFLOW_API_KEY")
-            self.base_url = os.getenv("SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1")
-            self.provider = "siliconflow"
-            logger.info("GEMINI_API_KEY not found, falling back to SiliconFlow.")
+        siliconflow_key = os.getenv("SILICONFLOW_API_KEY")
+        if siliconflow_key:
+            self.providers.append({
+                "name": "siliconflow",
+                "api_key": siliconflow_key,
+                "base_url": os.getenv("SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1"),
+                "model": "deepseek-ai/DeepSeek-V3"
+            })
 
-        if not self.api_key:
+        if not self.providers:
             logger.warning("No LLM API keys found in the environment! LLM parsing will fail.")
 
-    def parse_exhibition_text(self, text: str, source: str, default_city: str = "") -> Optional[Dict[str, Any]]:
-        """Sends clean text to LLM and returns structured exhibition data.
-        
-        Args:
-            text: The cleaned, high-density text content of the exhibition page.
-            source: The name of the institution (e.g. 'MoMA').
-            default_city: Default city if not found in the text.
-            
-        Returns:
-            A dictionary matching the ExhibitionModel schema, or None if failed.
-        """
-        if not self.api_key:
-            logger.error("Cannot parse text: API key is missing.")
-            return None
-            
+    def _is_valid_result(self, data: Dict[str, Any]) -> bool:
+        """Heuristic to detect content-filtered or low-quality LLM responses."""
+        title = data.get("title")
+        if not title or title in ("N/A", "n/a", "NA", "null", ""):
+            return False
+        # If both dates are missing AND text content is negligible, treat as filtered
+        has_dates = bool(data.get("start_date") or data.get("end_date"))
+        text_content = " ".join(filter(None, [
+            data.get("preface", ""),
+            data.get("concept", ""),
+        ]))
+        if not has_dates and len(text_content.strip()) < 30:
+            return False
+        return True
+
+    def _call_provider(
+        self,
+        text: str,
+        source: str,
+        default_city: str,
+        provider: Dict[str, str]
+    ) -> Optional[Dict[str, Any]]:
+        """Send a single request to one provider and return parsed data or None."""
+        api_key = provider["api_key"]
+        base_url = provider["base_url"]
+        model_name = provider["model"]
+        provider_name = provider["name"]
+
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
-        
+
         system_prompt = (
             "You are an expert contemporary art curator and metadata extractor.\n"
             "Your task is to analyze the raw text/markdown extracted from an art museum or biennial's exhibition page, "
             "and extract structured metadata into a precise JSON format.\n\n"
             "Respond ONLY with a valid JSON object matching the requested schema. Do not include markdown code block formatting (like ```json or ```). Only output raw JSON."
         )
-        
+
         user_prompt = f"""
 Institution: {source}
 Default City: {default_city}
@@ -129,14 +159,6 @@ Strict Guidelines:
 5. Extract 'biographies' (biographies of artists and collaborators in original English, keeping each biography relatively concise, around 2-3 sentences per collaborator to highlight their key roles and achievements) and 'credits' (all curators, video game development, playtesters, and special thanks in original English, formatted in clean Markdown lists or sections) exactly as listed on the page. Keep lists of playtesters and special thanks concise if they are extremely long. For 'biographies_cn', translate the primary artist biography into a short, elegant Chinese biography/intro.
 """
 
-        # Choose the right model depending on the active provider
-        if self.provider == "sensenova":
-            model_name = "DeepSeek-V3-1"
-        elif self.provider == "gemini":
-            model_name = "gemini-2.5-flash"
-        else:
-            model_name = "deepseek-ai/DeepSeek-V3"  # siliconflow fallback
-            
         payload = {
             "model": model_name,
             "messages": [
@@ -144,46 +166,78 @@ Strict Guidelines:
                 {"role": "user", "content": user_prompt}
             ],
             "temperature": 0.1,
-            "response_format": {"type": "json_object"},
-            "max_tokens": 4096
+            "max_tokens": 8192,
+            "response_format": {"type": "json_object"}
         }
-        
-        endpoint = f"{self.base_url.rstrip('/')}/chat/completions"
-        
+
+        endpoint = f"{base_url.rstrip('/')}/chat/completions"
+        content = ""
+
         try:
-            logger.info(f"Sending LLM parsing request to {model_name}...")
+            logger.info(f"[{provider_name}] Sending LLM parsing request ({model_name})...")
             with httpx.Client(timeout=60.0) as client:
                 response = client.post(endpoint, headers=headers, json=payload)
                 response.raise_for_status()
-                
+
                 result = response.json()
                 content = result["choices"][0]["message"]["content"].strip()
-                
+
                 # Strip markdown code blocks if the model ignored our request
                 if content.startswith("```"):
                     content = content.split("```")[1]
                     if content.startswith("json"):
                         content = content[4:]
                     content = content.strip("` \n")
-                
+
                 # Parse and validate with Pydantic
                 parsed_json = json.loads(content)
                 if isinstance(parsed_json, list):
-                    if len(parsed_json) > 0:
+                    if parsed_json and isinstance(parsed_json[0], dict):
                         parsed_json = parsed_json[0]
                     else:
-                        parsed_json = {}
+                        logger.error(f"[{provider_name}] LLM returned a list instead of a dict: {content[:200]}...")
+                        return None
                 validated_data = ExhibitionModel(**parsed_json)
-                
-                # Convert back to standard dict
                 return validated_data.model_dump()
-                
+
         except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP error calling LLM API: {e.response.status_code} - {e.response.text}")
+            logger.warning(f"[{provider_name}] HTTP error: {e.response.status_code} - {e.response.text[:200]}")
             return None
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to decode LLM response as JSON. Content was: {content[:200]}...")
+            logger.warning(f"[{provider_name}] JSON decode error. Content: {content[:200]}...")
             return None
         except Exception as e:
-            logger.error(f"Error parsing exhibition text: {e}", exc_info=True)
+            logger.warning(f"[{provider_name}] Error: {e}", exc_info=False)
             return None
+
+    def parse_exhibition_text(self, text: str, source: str, default_city: str = "") -> Optional[Dict[str, Any]]:
+        """Sends clean text to LLM and returns structured exhibition data.
+
+        Iterates over all configured providers; when a provider returns a low-quality
+        (likely content-filtered) response, automatically tries the next one.
+
+        Args:
+            text: The cleaned, high-density text content of the exhibition page.
+            source: The name of the institution (e.g. 'MoMA').
+            default_city: Default city if not found in the text.
+
+        Returns:
+            A dictionary matching the ExhibitionModel schema, or None if all providers failed.
+        """
+        if not self.providers:
+            logger.error("Cannot parse text: no LLM providers configured.")
+            return None
+
+        for provider in self.providers:
+            result = self._call_provider(text, source, default_city, provider)
+            if result and self._is_valid_result(result):
+                logger.info(f"[{provider['name']}] Successfully parsed exhibition '{result.get('title')}'")
+                return result
+            if result:
+                logger.warning(
+                    f"[{provider['name']}] Result failed quality check (title={result.get('title')!r}). "
+                    "Trying next provider..."
+                )
+
+        logger.error("All LLM providers failed or returned low-quality results.")
+        return None
