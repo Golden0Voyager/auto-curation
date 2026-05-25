@@ -11,5 +11,5 @@ class TaipeiBiennialParser(BaseSiteParser):
     institution_type = "biennial"
     list_url = "https://www.tfam.museum/Exhibition/Exhibition.aspx?ddlLang=en"
     link_patterns = [
-        r"tfam\.museum/Exhibition/ExhibitionDetail\.aspx\?[^\"]+",
+        r"tfam\.museum/Exhibition/ExhibitionTheme\.aspx\?[^\"]+",
     ]
