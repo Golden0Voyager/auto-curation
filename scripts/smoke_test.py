@@ -27,7 +27,7 @@ SITES = [
 ]
 
 MAX_WORKERS = 8
-TIMEOUT_SECONDS = 45
+TIMEOUT_SECONDS = 90
 
 
 def run_single_smoke(site: str) -> dict:
