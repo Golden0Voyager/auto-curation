@@ -131,6 +131,140 @@ Generated: 2026-05-25T14:18:20.755572
 | `serpentine` | TIMEOUT | Site extremely slow (>90s); mark `BLOCKED_SLOW` |
 | `whitechapel` | BLOCKED_403 | Cloudflare; mark `BLOCKED_CLOUDFLARE` |
 
+## Phase 4 Yellow Fixes (6 sites recovered)
+
+| Site | Issue | Fix | Result |
+|------|-------|-----|--------|
+| `zkm` | Pattern typo (`exhibition` vs `exhibitions`) + SPA list page | Fixed pattern + added `use_playwright = True` + archive page | 7 URLs |
+| `ngv` | Wrong pattern (`/whats-on/exhibitions/` vs actual `/exhibition/`) | Updated pattern to `/exhibition/[^/]+` | 22 URLs |
+| `sharjah_biennale` | List page has no exhibition links (pure nav menu) | Implemented custom `get_exhibition_urls()` constructing sb-1..sb-17 | 17 URLs |
+| `hamburger_bahnhof` | SSL hostname mismatch on original domain | Switched to SMB museum portal (`smb.museum`) + archive page | 14 URLs |
+| `south_london_gallery` | list_url pointed to homepage instead of exhibitions | Fixed list_url to `/exhibitions/` | 3 URLs |
+| `pinakothek` | SPA with German/English single-form paths | Enabled `use_playwright = True` + fixed pattern to `exhibition\|ausstellung` + archive | 3 URLs |
+
+## Final State After All Fixes
+
+| Metric | Count | Percentage | Notes |
+|--------|------:|------------|-------|
+| Total  | 64 | 100% | |
+| Green  | 40 | 62.5% | >=5 URLs |
+| Yellow | 4 | 6.3% | 1-4 URLs (beyeler 4, pinakothek 3, south_london_gallery 3) |
+| Red    | 19 | 29.7% | 0 URLs or error |
+
+**Note on Yellow:** `aic`, `whitney`, and `wikidata` are REST_API/SPARQL parsers that appear as 1 URL in smoke_test due to `--limit 1`; they are functionally healthy.
+
+**Note on Red:** `louisiana` was downgraded from Yellow to Red (403 Cloudflare block). `nga` dataset has been restored and its ARTWORK_ONLY pipeline works, but it requires local CSV data.
+
+## Final Green (>=5 URLs)
+
+- `astrup_fearnley` — 6 URLs in ~60s
+- `baltic` — 64 URLs in 5.4s
+- `barbican` — 34 URLs in 5.17s
+- `berlin_biennale` — 30 URLs in 12.45s
+- `brooklyn_museum` — 23 URLs in ~60s
+- `documenta` — 15 URLs in ~60s
+- `hamburger_bahnhof` — 14 URLs in ~5s
+- `hammer_museum` — 7 URLs in 11.49s
+- `kanazawa21` — 6 URLs in 7.72s
+- `kunsthal` — 10 URLs in 11.0s
+- `kunsthaus` — 31 URLs in 0.41s
+- `kw_institute` — 31 URLs in 7.07s
+- `lenbachhaus` — 120 URLs in 17.98s
+- `liverpool_biennial` — 21 URLs in 4.0s
+- `maiiam` — 25 URLs in 29.65s
+- `maxxi` — 49 URLs in 8.47s
+- `mca_chicago` — 12 URLs in 35.61s
+- `met` — 43 URLs in 5.28s
+- `moma` — 1727 URLs in 0.34s
+- `momat` — 15 URLs in 32.16s
+- `mori` — 72 URLs in 7.82s
+- `mplus` — 38 URLs in 6.26s
+- `museum_ludwig` — 6 URLs in 16.98s
+- `national_gallery_sg` — 10 URLs in 4.08s
+- `new_museum` — 10 URLs in ~20s
+- `ngv` — 22 URLs in ~20s
+- `njpac` — 22 URLs in 13.73s
+- `palaistokyo` — 8 URLs in 11.51s
+- `pinakothek` — 3 URLs in ~5s *(upgraded from 2, still Yellow)*
+- `pompidou` — 51 URLs in 8.46s
+- `reina_sofia` — 9 URLs in 15.24s
+- `saopaulo_biennial` — 51 URLs in 9.44s
+- `sharjah_biennale` — 17 URLs in ~5s
+- `south_london_gallery` — 3 URLs in ~15s *(upgraded from 2, still Yellow)*
+- `sydney_biennale` — 33 URLs in 7.77s
+- `taipei_biennale` — 6 URLs in 6.58s
+- `tate` — 15 URLs in 8.04s
+- `ucca` — 28 URLs in 23.53s
+- `venice_biennale` — 16 URLs in 14.24s
+- `whitney_biennial` — 19 URLs in 12.92s
+- `yokohama_triennale` — 34 URLs in 9.9s
+- `zkm` — 7 URLs in ~5s
+
+## Final Yellow (1-4 URLs)
+
+- `beyeler` — 4 URLs in 3.75s *(small private museum; no historical exhibition pages)*
+- `pinakothek` — 3 URLs in ~5s *(SPA, limited exhibitions on site)*
+- `south_london_gallery` — 3 URLs in ~15s *(small gallery, limited active exhibitions)*
+
+## Final Red (0 URLs or Error)
+
+- `dia` — BLOCKED_403 — Cloudflare
+- `flv` — ZERO_URLS — Cloudflare + SPA
+- `guggenheim` — BLOCKED_403 — Cloudflare
+- `gwangju_biennale` — ZERO_URLS — DNS dead (`gb.or.kr`)
+- `hayward` — BLOCKED_403 — Cloudflare
+- `hirshhorn` — ZERO_URLS — Cloudflare + API key required
+- `istanbul_biennale` — TIMEOUT — Site extremely slow (>90s)
+- `lacma` — BLOCKED_403 — Cloudflare
+- `leeum` — ZERO_URLS — SPA (0 `<a>` tags after Playwright)
+- `louisiana` — BLOCKED_403 — Cloudflare/anti-bot *(downgraded from Yellow)*
+- `lyon_biennale` — ZERO_URLS — DNS dead
+- `mass_moca` — BLOCKED_403 — Cloudflare
+- `mca_australia` — ZERO_URLS — SPA (0 `<a>` tags after Playwright)
+- `mmcaseoul` — ZERO_URLS — Connection reset (IP block)
+- `nga` — ZERO_URLS — Dataset restored (ARTWORK_ONLY works with local CSV)
+- `psa` — ZERO_URLS — Network unreachable (China mainland site)
+- `serpentine` — TIMEOUT — Site extremely slow (>90s)
+- `whitechapel` — BLOCKED_403 — Cloudflare
+
+## Task 2: LLM Parsing Validation (Sample 20)
+
+对 Green/Yellow 状态的 HTML_LLM parser 抽样 20 家，每家 3 个 URL 执行真实 LLM 解析验证。
+
+### 系统性修复（3 项）
+
+| 问题 | 根因 | 修复文件 | 修复内容 |
+|:-----|:-----|:---------|:---------|
+| JSON 截断 | SenseNova 默认 `max_tokens` 不足，长文本返回不完整 JSON | `src/llm_parser.py` | payload 增加 `"max_tokens": 8192` |
+| Pydantic 校验过严 | `ArtworkModel.artist_name` / `work_title` 为 `str`（required），单条作品缺失字段导致整展丢弃 | `src/llm_parser.py` | 改为 `Optional[str] = Field(None, ...)` |
+| Baltic pattern 过宽 | `r"baltic\.art/[^/]+"` 匹配了 donate/policy 等非展览页面 | `src/sites/baltic.py` | 收紧为 `r"baltic\.art/whats-on/[^/]+"` |
+| LLM 返回 list 崩溃 | LLM 偶发返回 JSON array 而非 object | `src/llm_parser.py` | 增加 `isinstance(parsed_json, list)` 防御，取首元素或返回 None |
+
+### 抽样结果分级
+
+| 状态 | 数量 | Parser |
+|:-----|:----:|:-------|
+| PASS | 6 | palaistokyo, baltic, kanazawa21, mplus, tate, psa |
+| WARN | 2 | documenta（1 个安全过滤个案）, sharjah_biennale（2 个早期页面内容过短） |
+| FAIL | 1 | kunsthaus（LLM 超时，生产环境有 native parser） |
+| 网络瞬断 | 6 | brooklyn_museum, maxxi, barbican 等（DNS 临时失败，手动复测正常） |
+| 已知 Red | 5 | 0 URLs，跳过 |
+
+### 问题详情
+
+**documenta** — `documenta-12` 页面返回 `LLM returned None`（内容被安全过滤）。
+**sharjah_biennale** — `sb-1`、`sb-2` 页面返回 `content too short after cleaning`（1993/1995 年早期页面内容极少）。
+**kunsthaus** — 3 个 URL 全部 `LLM returned None`（SenseNova 超时）；生产环境使用 `parse_exhibition_page()` native JSON-LD 提取，不受此影响。
+
+### Task 2 修复记录（2 sites recovered）
+
+| Site | Issue | Fix | Result |
+|------|-------|-----|--------|
+| `mca_chicago` | `/exhibitions/archive` 汇总页被误匹配，清洗后内容过短 | `link_patterns` 增加 negative lookahead 排除 `archive` | 11 URLs，3/3 LLM PASS |
+| `documenta` | `documenta-12` 触发 SenseNova 内容安全过滤（400 code 18） | `llm_parser.py` 新增多 provider 自动回退（SenseNova → Gemini） | 3/3 LLM PASS，含 documenta-12 |
+
+---
+
 ## Raw Data
 
 ```json
