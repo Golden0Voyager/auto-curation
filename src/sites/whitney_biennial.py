@@ -9,7 +9,7 @@ class WhitneyBiennialParser(BaseSiteParser):
     city = "New York"
     parser_key = "whitney_biennial"
     institution_type = "biennial"
-    list_url = "https://whitney.org/whitney-biennial"
+    list_url = "https://whitney.org/exhibitions"
     link_patterns = [
-        r"whitney\.org/whitney-biennial/[^/]+",
+        r"whitney\.org/exhibitions/[^/]+",
     ]
