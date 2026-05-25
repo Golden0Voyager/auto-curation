@@ -7,9 +7,9 @@ Generated: 2026-05-25T14:18:20.755572
 | Metric | Count | Percentage |
 |--------|------:|------------|
 | Total  | 64 | 100% |
-| Green  | 32 | 50.0% |
+| Green  | 36 | 56.3% |
 | Yellow | 11 | 17.2% |
-| Red    | 21 | 32.8% |
+| Red    | 17 | 26.6% |
 
 ## Fixes Applied (10 sites recovered)
 
@@ -26,12 +26,25 @@ Generated: 2026-05-25T14:18:20.755572
 | `pompidou` | No exhibition links on page | Changed to `/en/program/calendar` | 51 URLs |
 | `pinakothek` | Typo in pattern (`exhibition` vs `exhibitions`) | Fixed typo | 2 URLs |
 
+## Phase 4 Additional Fixes (4 sites recovered)
+
+| Site | Issue | Fix | Result |
+|------|-------|-----|--------|
+| `new_museum` | SPA (Next.js), no static links | Added `use_playwright = True` + fixed pattern to `/exhibition/` | 10 URLs |
+| `documenta` | TIMEOUT (>45s) | Increased global timeout to 90s | 15 URLs |
+| `brooklyn_museum` | TIMEOUT (>45s) | Increased global timeout to 90s | 23 URLs |
+| `astrup_fearnley` | TIMEOUT (>45s) | Increased global timeout to 90s | 6 URLs |
+
 ## Green (>=5 URLs)
 
 - `baltic` — 64 URLs in 5.4s
+- `astrup_fearnley` — 6 URLs in ~60s
 - `barbican` — 34 URLs in 5.17s
 - `berlin_biennale` — 30 URLs in 12.45s
+- `brooklyn_museum` — 23 URLs in ~60s
+- `documenta` — 15 URLs in ~60s
 - `hammer_museum` — 7 URLs in 11.49s
+- `new_museum` — 10 URLs in ~20s
 - `kanazawa21` — 6 URLs in 7.72s
 - `kunsthal` — 10 URLs in 11.0s
 - `kunsthaus` — 31 URLs in 0.41s
@@ -77,10 +90,7 @@ Generated: 2026-05-25T14:18:20.755572
 
 ## Red (0 URLs or Error)
 
-- `astrup_fearnley` — TIMEOUT — Timed out after 45s
-- `brooklyn_museum` — TIMEOUT — Timed out after 45s
 - `dia` — BLOCKED_403 — 2026-05-25 14:16:35,355 [INFO] auto_curation.database: Database initialized at exhibitions.db 🚀 采集 D
-- `documenta` — TIMEOUT — Timed out after 45s
 - `flv` — ZERO_URLS — 2026-05-25 14:16:36,629 [INFO] auto_curation.database: Database initialized at exhibitions.db 🚀 采集 F
 - `guggenheim` — BLOCKED_403 — 2026-05-25 14:16:38,137 [INFO] auto_curation.database: Database initialized at exhibitions.db 🚀 采集 G
 - `gwangju_biennale` — ZERO_URLS — 2026-05-25 14:16:38,479 [INFO] auto_curation.database: Database initialized at exhibitions.db 🚀 采集 G
@@ -93,8 +103,7 @@ Generated: 2026-05-25T14:18:20.755572
 - `mass_moca` — BLOCKED_403 — 2026-05-25 14:16:55,225 [INFO] auto_curation.database: Database initialized at exhibitions.db 🚀 采集 M
 - `mca_australia` — ZERO_URLS — 2026-05-25 14:17:04,066 [INFO] auto_curation.database: Database initialized at exhibitions.db 🚀 采集 M
 - `mmcaseoul` — ZERO_URLS — 2026-05-25 14:17:10,967 [INFO] auto_curation.database: Database initialized at exhibitions.db 🚀 采集 M
-- `new_museum` — ZERO_URLS — 2026-05-25 14:17:21,379 [INFO] auto_curation.database: Database initialized at exhibitions.db 🚀 采集 N
-- `nga` — ZERO_URLS — 2026-05-25 14:17:23,282 [INFO] auto_curation.database: Database initialized at exhibitions.db 🚀 采集 N
+- `nga` — ZERO_URLS (数据集已恢复，ARTWORK_ONLY 策略正常) — 2026-05-25 14:17:23,282 [INFO] auto_curation.database: Database initialized at exhibitions.db 🚀 采集 N
 - `psa` — ZERO_URLS — 2026-05-25 14:17:28,487 [INFO] auto_curation.database: Database initialized at exhibitions.db 🚀 采集 P
 - `serpentine` — TIMEOUT — Timed out after 45s
 - `whitechapel` — BLOCKED_403 — 2026-05-25 14:17:48,882 [INFO] auto_curation.database: Database initialized at exhibitions.db 🚀 采集 W
@@ -103,10 +112,7 @@ Generated: 2026-05-25T14:18:20.755572
 
 | Site | Status | Recommendation |
 |------|--------|----------------|
-| `astrup_fearnley` | TIMEOUT | Site extremely slow (>45s); try longer timeout or mark `BLOCKED_SLOW` |
-| `brooklyn_museum` | TIMEOUT | Site extremely slow; mark `BLOCKED_SLOW` |
 | `dia` | BLOCKED_403 | Cloudflare / server block; mark `BLOCKED_CLOUDFLARE` |
-| `documenta` | TIMEOUT | Site slow, 90s timeout works; adjust timeout or mark `BLOCKED_SLOW` |
 | `flv` | ZERO_URLS (403) | Server blocks + SPA; mark `BLOCKED_SPA` |
 | `guggenheim` | BLOCKED_403 | Cloudflare; mark `BLOCKED_CLOUDFLARE` |
 | `gwangju_biennale` | ZERO_URLS | DNS failure (`gb.or.kr` dead); find new domain or mark `BLOCKED_DNS` |
