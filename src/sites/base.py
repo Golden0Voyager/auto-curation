@@ -66,6 +66,9 @@ class BaseSiteParser:
     # SPA flag; set to True for React/Vue/Next.js sites that require browser rendering
     use_playwright: bool = False
 
+    # Use curl_cffi to impersonate browser TLS/JA3 fingerprint; set to True for Cloudflare-protected sites
+    use_curl_cffi: bool = False
+
     def get_list_urls(self, since_year: Optional[int] = None) -> List[str]:
         """Returns all listing URLs to crawl (current + historical).
         
@@ -98,15 +101,26 @@ class BaseSiteParser:
         for list_url in list_urls:
             try:
                 logger.info(f"[{self.source}] Fetching listing page: {list_url}")
-                # Use a temporary client with verify=False if SSL is disabled for this parser
-                if not self.verify_ssl:
+                # Use curl_cffi for Cloudflare bypass, temporary httpx for SSL issues, or the shared client
+                if self.use_curl_cffi:
+                    from curl_cffi import requests as curl_requests
+
+                    response = curl_requests.get(
+                        list_url, headers=HEADERS, impersonate="chrome124", timeout=30
+                    )
+                    response.raise_for_status()
+                    page_html = response.text
+                elif not self.verify_ssl:
                     with httpx.Client(verify=False, follow_redirects=True) as temp_client:
                         response = temp_client.get(list_url, headers=HEADERS)
+                        response.raise_for_status()
+                        page_html = response.text
                 else:
                     response = client.get(list_url, headers=HEADERS, follow_redirects=True)
-                response.raise_for_status()
+                    response.raise_for_status()
+                    page_html = response.text
 
-                soup = BeautifulSoup(response.text, "html.parser")
+                soup = BeautifulSoup(page_html, "html.parser")
 
                 for a_tag in soup.find_all("a", href=True):
                     href = a_tag["href"].strip()
