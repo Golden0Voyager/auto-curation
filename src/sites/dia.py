@@ -10,6 +10,7 @@ class DiaParser(BaseSiteParser):
     city = "New York"
     parser_key = "dia"
     institution_type = "museum"
+    status = "BLOCKED_CLOUDFLARE"
     list_url = "https://www.diaart.org/exhibition"
     link_patterns = [
         r"diaart\.org/exhibition/[^/]+",
