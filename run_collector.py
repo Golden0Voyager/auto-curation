@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import asyncio
 import sys
 import logging
 from datetime import date
@@ -69,6 +70,7 @@ def main():
     arg_parser.add_argument("--force", action="store_true", help="重新抓取已存入 DB 的展览（跳过去重检查）")
     arg_parser.add_argument("--dry-run", action="store_true", help="模拟运行：只抓取和解析，不写入数据库")
     arg_parser.add_argument("--verbose", action="store_true", help="输出详细 DEBUG 日志")
+    arg_parser.add_argument("--concurrent", action="store_true", help="启用异步并发采集（仅对 HTML 策略生效）")
     arg_parser.add_argument("--db", type=str, default="exhibitions.db", help="SQLite 数据库文件路径（默认: exhibitions.db）")
 
     args = arg_parser.parse_args()
@@ -94,13 +96,21 @@ def main():
             print(f"🚀 全量采集所有 10 大机构中... 数据库: {args.db}")
             if args.dry_run:
                 print("⚠️  [DRY-RUN] 模拟运行，不写入数据库。")
-            results = scraper.scrape_all_sites(
-                limit_per_site=args.limit,
-                force=args.force,
-                dry_run=args.dry_run,
-                since_year=args.since
-            )
-            
+            if args.concurrent:
+                results = asyncio.run(scraper.ascrape_all_sites(
+                    limit_per_site=args.limit,
+                    force=args.force,
+                    dry_run=args.dry_run,
+                    since_year=args.since
+                ))
+            else:
+                results = scraper.scrape_all_sites(
+                    limit_per_site=args.limit,
+                    force=args.force,
+                    dry_run=args.dry_run,
+                    since_year=args.since
+                )
+
             print("\n📊 全量采集汇总报告:")
             print("=" * 70)
             total_saved = 0
@@ -127,15 +137,24 @@ def main():
             print(f"🚀 采集 {SITES[site_key].source}... 数据库: {args.db}")
             if args.dry_run:
                 print("⚠️  [DRY-RUN] 模拟运行，不写入数据库。")
-                
-            res = scraper.scrape_site(
-                site_key,
-                limit=args.limit,
-                force=args.force,
-                dry_run=args.dry_run,
-                since_year=args.since
-            )
-            
+
+            if args.concurrent:
+                res = asyncio.run(scraper.ascrape_site(
+                    site_key,
+                    limit=args.limit,
+                    force=args.force,
+                    dry_run=args.dry_run,
+                    since_year=args.since
+                ))
+            else:
+                res = scraper.scrape_site(
+                    site_key,
+                    limit=args.limit,
+                    force=args.force,
+                    dry_run=args.dry_run,
+                    since_year=args.since
+                )
+
             print("\n📊 采集结果报告:")
             print("=" * 50)
             print(f" 机构名称   : {res['site']}")
