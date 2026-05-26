@@ -25,6 +25,7 @@ class HirshhornParser:
     city = "Washington D.C."
     strategy = ParserStrategy.REST_API
     parser_key = "hirshhorn"
+    status = "BLOCKED_API_KEY"
     list_url = "https://hirshhorn.si.edu/exhibitions/"
 
     def get_list_urls(self, since_year: Optional[int] = None) -> List[str]:
