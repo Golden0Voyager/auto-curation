@@ -10,6 +10,7 @@ class NewMuseumParser(BaseSiteParser):
     city = "New York"
     parser_key = "new_museum"
     institution_type = "museum"
+    status = "BLOCKED_SPA"
     list_url = "https://www.newmuseum.org/exhibitions"
     use_playwright = True
     link_patterns = [
