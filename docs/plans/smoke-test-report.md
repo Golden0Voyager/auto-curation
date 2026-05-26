@@ -269,6 +269,8 @@ Generated: 2026-05-25T14:18:20.755572
 |------|-------|-----|--------|
 | `lacma` | Cloudflare 403 阻断 | `use_curl_cffi = True` + 修正 link pattern | 29 URLs，LLM PASS |
 | `whitechapel` | Cloudflare 403 阻断 | `use_curl_cffi = True` | 10 URLs，LLM PASS |
+| `mass_moca` | Cloudflare 403 阻断 | `use_curl_cffi = True` | 35 URLs，LLM PASS |
+| `hayward` | Cloudflare 403 阻断 + pattern 过宽匹配查询参数 | `use_curl_cffi = True` + 收紧 pattern 为 `[a-z0-9-]+` | 3 URLs，LLM PASS |
 
 ---
 
