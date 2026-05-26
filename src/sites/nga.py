@@ -37,6 +37,7 @@ class NGAParser:
     city = "Washington D.C."
     strategy = ParserStrategy.ARTWORK_ONLY
     parser_key = "nga"
+    status = "BLOCKED_DATA"
     list_url = NGA_OBJECTS_PATH
 
     def get_list_urls(self, since_year: Optional[int] = None) -> List[str]:
