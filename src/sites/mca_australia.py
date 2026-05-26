@@ -10,6 +10,7 @@ class MCAAustraliaParser(BaseSiteParser):
     city = "Sydney"
     parser_key = "mca_australia"
     institution_type = "museum"
+    status = "BLOCKED_SPA"
     list_url = "https://www.mca.com.au/exhibitions/"
     use_playwright = True
     link_patterns = [
