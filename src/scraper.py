@@ -1,9 +1,11 @@
 import logging
+import asyncio
 import httpx
 from typing import Dict, List, Any, Optional
 from datetime import date
 from src.database import ExhibitionDatabase
 from src.llm_parser import LLMExhibitionParser
+from src.cache import LLMResponseCache
 from src.sites import SITES
 from src.sites.base import ParserStrategy
 
@@ -31,13 +33,14 @@ class ExhibitionScraper:
         ParserStrategy.ARTWORK_ONLY: "_scrape_artwork_only",
     }
 
-    def __init__(self, db_path: str = "exhibitions.db"):
+    def __init__(self, db_path: str = "exhibitions.db", max_concurrency: int = 10):
         self.db = ExhibitionDatabase(db_path)
-        self.parser = LLMExhibitionParser()
+        self.parser = LLMExhibitionParser(cache=LLMResponseCache(db_path))
         self.client = httpx.Client(headers={
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             "Accept-Language": "en-US,en;q=0.9",
         }, follow_redirects=True, timeout=30.0)
+        self.max_concurrency = max_concurrency
 
     def scrape_site(
         self,
@@ -69,6 +72,37 @@ class ExhibitionScraper:
             f"| strategy={strategy.value}{' | since=' + str(since_year) if since_year else ''}"
         )
         return handler(parser, limit=limit, force=force, dry_run=dry_run, since_year=since_year)
+
+    async def ascrape_site(
+        self,
+        site_key: str,
+        limit: Optional[int] = None,
+        force: bool = False,
+        dry_run: bool = False,
+        since_year: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """Asynchronous version: concurrent scraping for a single institution."""
+        if site_key not in SITES:
+            logger.error(f"Site key '{site_key}' is not registered.")
+            return {"error": f"Site '{site_key}' not found"}
+
+        parser = SITES[site_key]
+        strategy = getattr(parser, "strategy", ParserStrategy.HTML_LLM)
+        handler_name = self.STRATEGY_HANDLERS.get(strategy)
+
+        if not handler_name:
+            logger.error(f"No handler for strategy {strategy} on {site_key}")
+            return {"error": f"Unknown strategy {strategy}"}
+
+        if strategy != ParserStrategy.HTML_LLM:
+            handler = getattr(self, handler_name)
+            return handler(parser, limit=limit, force=force, dry_run=dry_run, since_year=since_year)
+
+        logger.info(
+            f"[ASYNC] Starting scrape for '{parser.source}' (City: {parser.city}) "
+            f"| strategy={strategy.value}{' | since=' + str(since_year) if since_year else ''}"
+        )
+        return await self._scrape_html_async(parser, limit=limit, force=force, dry_run=dry_run, since_year=since_year)
 
     # ------------------------------------------------------------------
     # Strategy handlers
@@ -175,6 +209,110 @@ class ExhibitionScraper:
                 stats["failed"] += 1
 
         logger.info(f"Done: '{parser.source}' | {stats}")
+        return stats
+
+    async def _scrape_html_async(
+        self,
+        parser,
+        limit: Optional[int] = None,
+        force: bool = False,
+        dry_run: bool = False,
+        since_year: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """Async concurrent HTML scraping pipeline. URL discovery is synchronous;
+        detail page fetching and LLM parsing run under asyncio.Semaphore."""
+        urls = parser.get_exhibition_urls(self.client, since_year=since_year)
+        if not urls:
+            logger.warning(f"No exhibition URLs discovered for {parser.source}.")
+            return {"site": parser.source, "discovered": 0, "parsed": 0, "saved": 0, "skipped": 0, "failed": 0}
+
+        stats = {
+            "site": parser.source,
+            "discovered": len(urls),
+            "parsed": 0,
+            "saved": 0,
+            "skipped": 0,
+            "failed": 0
+        }
+
+        has_native_parser = hasattr(parser, "parse_exhibition_page") and callable(getattr(parser, "parse_exhibition_page"))
+        if has_native_parser:
+            logger.info(f"[{parser.source}] Parser provides native page extraction; LLM step will be skipped.")
+
+        target_urls = urls if limit is None else urls[:limit]
+        semaphore = asyncio.Semaphore(self.max_concurrency)
+
+        async def _process_one(url: str) -> None:
+            async with semaphore:
+                logger.info(f"[ASYNC] Processing: {url}")
+
+                try:
+                    if not force and not dry_run:
+                        existing = await asyncio.to_thread(self.db.get_exhibition_by_url, url)
+                        if existing:
+                            logger.info(f"-> Skip: already in DB (ID: {existing['id']})")
+                            stats["skipped"] += 1
+                            return
+                    elif force and not dry_run:
+                        logger.info(f"-> Force active: Deleting existing DB entry for URL to ensure clean overwrite: {url}")
+                        await asyncio.to_thread(self.db.delete_exhibition_by_url, url)
+
+                    parsed_data = None
+
+                    if has_native_parser:
+                        parsed_data = parser.parse_exhibition_page(self.client, url)
+                        if parsed_data:
+                            logger.info(f"[{parser.source}] Native extraction succeeded for {url}")
+
+                    if not parsed_data:
+                        async with httpx.AsyncClient(headers={
+                            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                            "Accept-Language": "en-US,en;q=0.9",
+                        }, follow_redirects=True, timeout=30.0) as async_client:
+                            response = await async_client.get(url)
+                            response.raise_for_status()
+                            html_text = response.text
+
+                        clean_text = parser.clean_html(html_text)
+                        if not clean_text or len(clean_text.strip()) < 100:
+                            logger.warning(f"Content too short/empty for {url}. Skipping.")
+                            stats["failed"] += 1
+                            return
+
+                        logger.info(f"Sending {len(clean_text)} chars to LLM (async)...")
+                        parsed_data = await self.parser.parse_exhibition_text_async(
+                            clean_text, parser.source, parser.city
+                        )
+                        if not parsed_data:
+                            logger.error(f"-> LLM parsing failed for: {url}")
+                            stats["failed"] += 1
+                            return
+
+                    parsed_data["source"] = parser.source
+                    parsed_data["url"] = url
+                    parsed_data["parser_key"] = getattr(parser, "parser_key", "")
+                    parsed_data["institution_type"] = getattr(parser, "institution_type", "museum")
+                    if not parsed_data.get("city"):
+                        parsed_data["city"] = parser.city
+
+                    stats["parsed"] += 1
+
+                    if dry_run:
+                        logger.info(f"[DRY-RUN] '{parsed_data['title']}': {len(parsed_data.get('artworks', []))} artworks extracted.")
+                        stats["saved"] += 1
+                    else:
+                        ex_id = await asyncio.to_thread(self.db.insert_exhibition, parsed_data)
+                        if ex_id:
+                            stats["saved"] += 1
+                        else:
+                            stats["failed"] += 1
+
+                except Exception as e:
+                    logger.error(f"Error processing {url}: {e}", exc_info=True)
+                    stats["failed"] += 1
+
+        await asyncio.gather(*[asyncio.create_task(_process_one(url)) for url in target_urls])
+        logger.info(f"[ASYNC] Done: '{parser.source}' | {stats}")
         return stats
 
     def _scrape_csv(
@@ -362,6 +500,44 @@ class ExhibitionScraper:
                 since_year=since_year
             )
             results.append(res)
+        return results
+
+    async def ascrape_all_sites(
+        self,
+        limit_per_site: Optional[int] = None,
+        force: bool = False,
+        dry_run: bool = False,
+        since_year: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
+        """Async concurrent version: scrapes all HTML-based institutions in parallel."""
+        html_site_keys = [
+            k for k, p in SITES.items()
+            if getattr(p, "strategy", ParserStrategy.HTML_LLM) == ParserStrategy.HTML_LLM
+        ]
+        logger.info(f"[ASYNC] Starting bulk scraper for {len(html_site_keys)} HTML-based institutions.")
+
+        async def _scrape_one(site_key: str) -> Dict[str, Any]:
+            return await self.ascrape_site(
+                site_key,
+                limit=limit_per_site,
+                force=force,
+                dry_run=dry_run,
+                since_year=since_year
+            )
+
+        results = await asyncio.gather(*[asyncio.create_task(_scrape_one(k)) for k in html_site_keys])
+
+        other_keys = [k for k in SITES if k not in html_site_keys]
+        for site_key in other_keys:
+            res = self.scrape_site(
+                site_key,
+                limit=limit_per_site,
+                force=force,
+                dry_run=dry_run,
+                since_year=since_year
+            )
+            results.append(res)
+
         return results
 
     def close(self):
