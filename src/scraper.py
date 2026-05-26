@@ -149,9 +149,23 @@ class ExhibitionScraper:
                         response.raise_for_status()
                         page_html = response.text
                     else:
-                        response = self.client.get(url)
-                        response.raise_for_status()
-                        page_html = response.text
+                        try:
+                            response = self.client.get(url)
+                            response.raise_for_status()
+                            page_html = response.text
+                        except httpx.HTTPStatusError as e:
+                            if e.response.status_code == 403:
+                                logger.warning(f"HTTP 403 for {url}, trying Scrapling fallback...")
+                                try:
+                                    from scrapling import Fetcher
+
+                                    scrapling_resp = Fetcher().get(url, timeout=30)
+                                    page_html = scrapling_resp.html_content
+                                except Exception as se:
+                                    logger.error(f"Scrapling fallback failed for {url}: {se}")
+                                    raise
+                            else:
+                                raise
 
                     clean_text = parser.clean_html(page_html)
 
