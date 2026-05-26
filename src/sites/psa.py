@@ -24,7 +24,6 @@ class PSAParser:
     city = "Shanghai"
     strategy = ParserStrategy.HTML_LLM
     parser_key = "psa"
-    status = "NEEDS_PLAYWRIGHT"
     list_url = "https://www.powerstationofart.com/whats-on/exhibitions"
     link_patterns = [
         r"/whats-on/exhibitions/[^/]+$",
@@ -47,8 +46,8 @@ class PSAParser:
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=True)
                 page = browser.new_page()
-                page.goto(self.list_url, wait_until="networkidle", timeout=90000)
-                page.wait_for_timeout(8000)
+                page.goto(self.list_url, wait_until="domcontentloaded", timeout=60000)
+                page.wait_for_timeout(5000)
                 html = page.content()
                 browser.close()
         except Exception as e:
@@ -72,8 +71,8 @@ class PSAParser:
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=True)
                 page = browser.new_page()
-                page.goto(url, wait_until="networkidle", timeout=90000)
-                page.wait_for_timeout(8000)
+                page.goto(url, wait_until="domcontentloaded", timeout=60000)
+                page.wait_for_timeout(5000)
                 html = page.content()
                 browser.close()
         except Exception as e:
