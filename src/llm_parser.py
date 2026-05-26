@@ -1,9 +1,11 @@
 import os
 import json
 import logging
+import asyncio
 import httpx
 from typing import Dict, List, Any, Optional
 from pydantic import BaseModel, Field
+from src.cache import LLMResponseCache, make_cache_key
 
 logger = logging.getLogger("auto_curation.llm_parser")
 
@@ -28,8 +30,8 @@ class ExhibitionModel(BaseModel):
 
 class LLMExhibitionParser:
     """Uses Gemini API via OpenAI-compatible endpoint to parse cleaned HTML text into structured JSON."""
-    
-    def __init__(self):
+
+    def __init__(self, cache: Optional[LLMResponseCache] = None):
         # Primary: SenseNova (free DeepSeek models)
         self.api_key = os.getenv("SENSENOVA_API_KEY")
         self.base_url = os.getenv("SENSENOVA_BASE_URL", "https://api.sensenova.cn/compatible-mode/v2")
@@ -52,6 +54,10 @@ class LLMExhibitionParser:
         if not self.api_key:
             logger.warning("No LLM API keys found in the environment! LLM parsing will fail.")
 
+        self.cache = cache
+        if self.cache:
+            logger.info("LLM response caching enabled.")
+
     def parse_exhibition_text(self, text: str, source: str, default_city: str = "") -> Optional[Dict[str, Any]]:
         """Sends clean text to LLM and returns structured exhibition data.
         
@@ -66,7 +72,14 @@ class LLMExhibitionParser:
         if not self.api_key:
             logger.error("Cannot parse text: API key is missing.")
             return None
-            
+
+        cache_key = make_cache_key(f"{source}:{default_city}", text)
+        if self.cache:
+            cached = self.cache.get(cache_key)
+            if cached is not None:
+                logger.info(f"Cache hit for {source} exhibition text (key: {cache_key[:8]}...)")
+                return cached
+
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -157,10 +170,129 @@ Strict Guidelines:
                 # Parse and validate with Pydantic
                 parsed_json = json.loads(content)
                 validated_data = ExhibitionModel(**parsed_json)
-                
+
                 # Convert back to standard dict
-                return validated_data.model_dump()
+                data = validated_data.model_dump()
+                if self.cache:
+                    self.cache.set(cache_key, f"{source}:{default_city}", source, data)
+                return data
                 
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error calling LLM API: {e.response.status_code} - {e.response.text}")
+            return None
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to decode LLM response as JSON. Content was: {content[:200]}...")
+            return None
+        except Exception as e:
+            logger.error(f"Error parsing exhibition text: {e}", exc_info=True)
+            return None
+
+    async def parse_exhibition_text_async(self, text: str, source: str, default_city: str = "") -> Optional[Dict[str, Any]]:
+        """Asynchronous version: sends cleaned text to LLM and returns structured exhibition data, with caching."""
+        if not self.api_key:
+            logger.error("Cannot parse text: API key is missing.")
+            return None
+
+        cache_key = make_cache_key(f"{source}:{default_city}", text)
+        if self.cache:
+            cached = await asyncio.to_thread(self.cache.get, cache_key)
+            if cached is not None:
+                logger.info(f"Cache hit for {source} exhibition text (key: {cache_key[:8]}...)")
+                return cached
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        system_prompt = (
+            "You are an expert contemporary art curator and metadata extractor.\n"
+            "Your task is to analyze the raw text/markdown extracted from an art museum or biennial's exhibition page, "
+            "and extract structured metadata into a precise JSON format.\n\n"
+            "Respond ONLY with a valid JSON object matching the requested schema. Do not include markdown code block formatting (like ```json or ```). Only output raw JSON."
+        )
+
+        user_prompt = f"""
+Institution: {source}
+Default City: {default_city}
+
+Analyze the following raw text/markdown and extract the structured metadata.
+
+=== TEXT ===
+{text}
+=== END TEXT ===
+
+Extract this JSON Schema exactly:
+{{
+  "title": "Exhibition title or theme (required, string)",
+  "preface": "Detailed exhibition preface/introduction/description in Chinese (string or null)",
+  "concept": "Specific curatorial concept or theoretical background in Chinese if mentioned (string or null)",
+  "curators": ["List of curators (array of strings)"],
+  "start_date": "Exhibition start date, e.g. 2026-05-23 (string or null)",
+  "end_date": "Exhibition end date, e.g. 2026-11-22 (string or null)",
+  "location": "Gallery name or gallery number inside the museum, e.g. Floor 3, Gallery 302 (string or null)",
+  "city": "Host city (string or null)",
+  "artworks": [
+    {{
+      "artist_name": "Name of the artist (required, string)",
+      "work_title": "Title of the artwork in original language/English (required, string)",
+      "work_year": "Year of creation (string or null)",
+      "medium": "Medium/materials used, e.g. Oil on canvas, video, wood (string or null)",
+      "dimensions": "Dimensions of the artwork, e.g. 120 x 200 cm (string or null)",
+      "caption": "Full combined caption label string (string or null)"
+    }}
+  ]
+}}
+
+Strict Guidelines:
+1. Ensure the 'title' field is always populated. If not clear, synthesize a suitable title from the page main headers.
+2. For 'preface' and 'concept', translate or summarize into fluent and professional Chinese art curatorial style.
+3. For 'artworks', only extract concrete works of art explicitly listed or described in the text with their captions. If no specific artworks are listed, leave 'artworks' as an empty array []. Keep artist names and artwork titles in their original language (usually English/French/German/Italian) or original spelling.
+4. Ensure 'city' is populated, using the Default City if not explicitly found in the text.
+"""
+
+        if self.provider == "sensenova":
+            model_name = "DeepSeek-V3-1"
+        elif self.provider == "gemini":
+            model_name = "gemini-2.5-flash"
+        else:
+            model_name = "deepseek-ai/DeepSeek-V3"
+
+        payload = {
+            "model": model_name,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            "temperature": 0.1,
+            "response_format": {"type": "json_object"}
+        }
+
+        endpoint = f"{self.base_url.rstrip('/')}/chat/completions"
+
+        try:
+            logger.info(f"Sending async LLM parsing request to {model_name}...")
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(endpoint, headers=headers, json=payload)
+                response.raise_for_status()
+
+                result = response.json()
+                content = result["choices"][0]["message"]["content"].strip()
+
+                if content.startswith("```"):
+                    content = content.split("```")[1]
+                    if content.startswith("json"):
+                        content = content[4:]
+                    content = content.strip("` \n")
+
+                parsed_json = json.loads(content)
+                validated_data = ExhibitionModel(**parsed_json)
+
+                data = validated_data.model_dump()
+                if self.cache:
+                    await asyncio.to_thread(self.cache.set, cache_key, f"{source}:{default_city}", source, data)
+                return data
+
         except httpx.HTTPStatusError as e:
             logger.error(f"HTTP error calling LLM API: {e.response.status_code} - {e.response.text}")
             return None
