@@ -9,6 +9,7 @@ class LouisianaParser(BaseSiteParser):
     city = "Humlebæk"
     parser_key = "louisiana"
     institution_type = "museum"
+    status = "BLOCKED_CLOUDFLARE"
     list_url = "https://louisiana.dk/en/exhibition/"
     link_patterns = [
         r"louisiana\.dk/en/exhibition/[^/]+",
