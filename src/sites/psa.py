@@ -24,6 +24,7 @@ class PSAParser:
     city = "Shanghai"
     strategy = ParserStrategy.HTML_LLM
     parser_key = "psa"
+    status = "NEEDS_PLAYWRIGHT"
     list_url = "https://www.powerstationofart.com/whats-on/exhibitions"
     link_patterns = [
         r"/whats-on/exhibitions/[^/]+$",
