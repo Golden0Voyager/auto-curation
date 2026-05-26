@@ -10,6 +10,7 @@ class FLVParser(BaseSiteParser):
     city = "Paris"
     parser_key = "flv"
     institution_type = "museum"
+    status = "BLOCKED_SPA"
     list_url = "https://www.fondationlouisvuitton.fr/en.html"
     link_patterns = [
         r"fondationlouisvuitton\.fr/en/exhibitions/[^/]+",
