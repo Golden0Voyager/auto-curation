@@ -10,8 +10,8 @@ class LeeumParser(BaseSiteParser):
     city = "Seoul"
     parser_key = "leeum"
     institution_type = "museum"
-    list_url = "https://www.leeumhoam.org/en/exhibitions"
+    list_url = "https://www.leeumhoam.org/leeum/exhibition"
     use_playwright = True
     link_patterns = [
-        r"leeumhoam\.org/en/exhibitions/[^/]+",
+        r"leeumhoam\.org/leeum/exhibition/\d+",
     ]
