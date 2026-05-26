@@ -150,9 +150,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Fetch initial dashboard stats & build dynamic filters
   fetchStatsAndSetupFilters();
 
-  // Fetch & Draw charts
+  // Fetch & Draw charts (staggered init: network chart deferred to reduce main-thread jank)
   loadTimelineChart();
-  loadNetworkChart();
+  setTimeout(() => loadNetworkChart(), 250);
 
   // Load exhibitions gallery
   loadExhibitionsGallery();
@@ -220,11 +220,15 @@ function setupEventListeners() {
     }
   });
 
-  // Respond to window resize dynamically
+  // Respond to window resize with debounce to avoid thrashing charts
+  let resizeDebounce;
   window.addEventListener("resize", () => {
-    if (timelineChart) timelineChart.resize();
-    if (mediumChart) mediumChart.resize();
-    if (networkChart) networkChart.resize();
+    clearTimeout(resizeDebounce);
+    resizeDebounce = setTimeout(() => {
+      if (timelineChart) timelineChart.resize();
+      if (mediumChart) mediumChart.resize();
+      if (networkChart) networkChart.resize();
+    }, 150);
   });
 }
 
@@ -493,23 +497,75 @@ async function loadNetworkChart() {
   });
   
   try {
-    const res = await fetch("/api/network?limit_artists=120&min_cooccurrence=2");
+    const res = await fetch("/api/network?limit_artists=80&min_cooccurrence=2");
     const data = await res.json();
     networkChart.hideLoading();
     
-    // 动态映射共同参展频次，定制高格调金青网络粗细与弧度
-    data.links.forEach(link => {
-      let color = "rgba(255, 255, 255, 0.05)"; // 合作 2 次：弱纽带（淡白微芒）
-      if (link.value >= 5) {
-        color = "rgba(226, 183, 85, 0.35)";  // 合作 >= 5 次：强纽带（黄金盟友，香槟金发光粗线）
-      } else if (link.value >= 3) {
-        color = "rgba(94, 243, 232, 0.18)";  // 合作 >= 3 次：中纽带（学术同盟，荧光青线）
+    // 视觉映射：节点大小 & 颜色按作品数分档，让核心艺术家一眼可辨
+    const maxWorks = Math.max(...data.nodes.map(n => n.value));
+    const minWorks = Math.min(...data.nodes.map(n => n.value));
+
+    data.nodes.forEach(node => {
+      const normalized = maxWorks === minWorks ? 0.5 : (node.value - minWorks) / (maxWorks - minWorks);
+      node.symbolSize = 8 + normalized * 36; // 8px ~ 44px
+
+      let color, borderColor, shadowBlur;
+      if (node.value >= 30) {
+        color = '#e2b755';
+        borderColor = '#fcd34d';
+        shadowBlur = 20;
+      } else if (node.value >= 15) {
+        color = '#d97706';
+        borderColor = '#e2b755';
+        shadowBlur = 10;
+      } else if (node.value >= 8) {
+        color = '#0d9488';
+        borderColor = '#5eead4';
+        shadowBlur = 5;
+      } else {
+        color = '#334155';
+        borderColor = '#475569';
+        shadowBlur = 0;
       }
-      
-      link.lineStyle = {
-        width: Math.min(3.5, 0.6 + link.value * 0.45), // 随合作频次线性变宽
+
+      node.itemStyle = {
         color: color,
-        curveness: 0.16 // 微弯优美弧度，避免生硬直线，营造手绘星盘感
+        borderColor: borderColor,
+        borderWidth: node.value >= 15 ? 2.5 : 1,
+        shadowBlur: shadowBlur,
+        shadowColor: color
+      };
+    });
+
+    // 动态映射共同参展频次，连线粗细、颜色、发光随合作强度渐变
+    data.links.forEach(link => {
+      let color, width, shadowBlur, shadowColor;
+
+      if (link.value >= 5) {
+        color = "rgba(226, 183, 85, 0.65)";
+        width = 3.5;
+        shadowBlur = 10;
+        shadowColor = "rgba(226, 183, 85, 0.4)";
+      } else if (link.value === 4) {
+        color = "rgba(226, 183, 85, 0.35)";
+        width = 2.5;
+        shadowBlur = 0;
+      } else if (link.value === 3) {
+        color = "rgba(94, 243, 232, 0.25)";
+        width = 1.8;
+        shadowBlur = 0;
+      } else {
+        color = "rgba(255, 255, 255, 0.04)";
+        width = 1.0;
+        shadowBlur = 0;
+      }
+
+      link.lineStyle = {
+        width: width,
+        color: color,
+        curveness: 0.2,
+        shadowBlur: shadowBlur,
+        shadowColor: shadowColor
       };
     });
 
@@ -540,21 +596,22 @@ async function loadNetworkChart() {
             show: true,
             position: "right",
             formatter: (params) => {
-              // 仅当艺术家作品计数大于 22 时，才在常态显示其名字，大幅净化空间堆叠
-              return params.data.value > 22 ? params.name : "";
+              // 作品数 > 8 即显示名字，让更多艺术家可被识别
+              return params.data.value > 8 ? params.name : "";
             },
-            color: "#a0aec0",
-            fontSize: 8.5,
+            color: (params) => params.data.value >= 20 ? "#ffffff" : "#94a3b8",
+            fontSize: (params) => params.data.value >= 20 ? 11 : 9,
+            fontWeight: (params) => params.data.value >= 20 ? "bold" : "normal",
             fontFamily: "Space Grotesk"
           },
           labelLayout: {
             hideOverlap: true
           },
           force: {
-            repulsion: 260, // 调高斥力，拉开间距
-            gravity: 0.04,   // 降低聚集引力
-            edgeLength: 95,  // 增长连线以利字距
-            layoutAnimation: true
+            repulsion: 300,
+            gravity: 0.03,
+            edgeLength: [60, 150],
+            layoutAnimation: false
           },
 
           lineStyle: {
