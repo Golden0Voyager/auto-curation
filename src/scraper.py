@@ -134,10 +134,26 @@ class ExhibitionScraper:
 
                 # 2. Fall back to LLM pipeline
                 if not parsed_data:
-                    response = self.client.get(url)
-                    response.raise_for_status()
+                    if getattr(parser, "use_curl_cffi", False):
+                        from curl_cffi import requests as curl_requests
 
-                    clean_text = parser.clean_html(response.text)
+                        response = curl_requests.get(
+                            url,
+                            headers={
+                                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                                "Accept-Language": "en-US,en;q=0.9",
+                            },
+                            impersonate="chrome124",
+                            timeout=30,
+                        )
+                        response.raise_for_status()
+                        page_html = response.text
+                    else:
+                        response = self.client.get(url)
+                        response.raise_for_status()
+                        page_html = response.text
+
+                    clean_text = parser.clean_html(page_html)
 
                     if not clean_text or len(clean_text.strip()) < 100:
                         logger.warning(f"Content too short/empty for {url}. Skipping.")
