@@ -263,6 +263,13 @@ Generated: 2026-05-25T14:18:20.755572
 | `mca_chicago` | `/exhibitions/archive` 汇总页被误匹配，清洗后内容过短 | `link_patterns` 增加 negative lookahead 排除 `archive` | 11 URLs，3/3 LLM PASS |
 | `documenta` | `documenta-12` 触发 SenseNova 内容安全过滤（400 code 18） | `llm_parser.py` 新增多 provider 自动回退（SenseNova → Gemini） | 3/3 LLM PASS，含 documenta-12 |
 
+### Task 3 修复记录（2 sites recovered）
+
+| Site | Issue | Fix | Result |
+|------|-------|-----|--------|
+| `lacma` | Cloudflare 403 阻断 | `use_curl_cffi = True` + 修正 link pattern | 29 URLs，LLM PASS |
+| `whitechapel` | Cloudflare 403 阻断 | `use_curl_cffi = True` | 10 URLs，LLM PASS |
+
 ---
 
 ## Raw Data
