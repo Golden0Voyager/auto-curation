@@ -21,8 +21,8 @@ class SerpentineParser(BaseSiteParser):
     list_url = "https://www.serpentinegalleries.org/whats-on/"
     
     # Max archive pages to crawl per run (each page ~10 exhibitions)
-    # Default 150 pages to cover full history; use --since to limit
-    MAX_ARCHIVE_PAGES = 150
+    # Limit to 20 pages to avoid timeout; use --since to limit further
+    MAX_ARCHIVE_PAGES = 20
     
     link_patterns = [r"serpentinegalleries\.org/whats-on/[a-zA-Z0-9][a-zA-Z0-9_-]+/?$"]
 
