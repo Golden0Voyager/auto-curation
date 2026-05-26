@@ -15,3 +15,4 @@ class MASSMocaParser(BaseSiteParser):
         r"massmoca\.org/event/[^/]+",
         r"massmoca\.org/exhibitions/[^/]+",
     ]
+    use_curl_cffi = True

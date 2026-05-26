@@ -9,7 +9,7 @@ class SouthLondonGalleryParser(BaseSiteParser):
     city = "London"
     parser_key = "south_london_gallery"
     institution_type = "museum"
-    list_url = "https://www.southlondongallery.org/"
+    list_url = "https://www.southlondongallery.org/exhibitions/"
     link_patterns = [
-        r"southlondongallery\.org/exhibitions/[^/]+",
+        r"southlondongallery\.org/exhibitions/[^/]+/$",
     ]

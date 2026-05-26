@@ -12,5 +12,6 @@ class LACMAParser(BaseSiteParser):
     institution_type = "museum"
     list_url = "https://www.lacma.org/exhibitions"
     link_patterns = [
-        r"lacma\.org/exhibitions/[^/]+",
+        r"lacma\.org/art/exhibition/[^/]+",
     ]
+    use_curl_cffi = True

@@ -12,5 +12,6 @@ class HaywardParser(BaseSiteParser):
     institution_type = "museum"
     list_url = "https://www.southbankcentre.co.uk/venues/hayward-gallery"
     link_patterns = [
-        r"southbankcentre\.co\.uk/whats-on/[^/]+",
+        r"southbankcentre\.co\.uk/whats-on/[a-z0-9-]+",
     ]
+    use_curl_cffi = True

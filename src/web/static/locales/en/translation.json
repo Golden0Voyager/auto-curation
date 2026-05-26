@@ -1,0 +1,77 @@
+{
+  "header": {
+    "brand_title": "CurationInsight - Global Contemporary Art Exhibition Intelligence",
+    "brand_subtitle": "GLOBAL CONTEMPORARY ART EXHIBITION INTELLIGENCE",
+    "metric_exhibitions": "Total Exhibitions",
+    "metric_artworks": "Structured Artworks",
+    "metric_museums": "Institutions"
+  },
+  "settings": {
+    "language": "Language",
+    "bilingual": "Bilingual",
+    "bilingual_on": "On",
+    "bilingual_off": "Off"
+  },
+  "filter": {
+    "title": "Interactive Controls",
+    "search_placeholder": "Search exhibitions, artists, mediums, or curatorial terms...",
+    "source_label": "Institution Filter",
+    "source_all": "All Institutions",
+    "year_range_label": "Exhibition Year Range",
+    "year_range_to": "to"
+  },
+  "chart": {
+    "timeline_title": "Curatorial Timeline River (Exhibition Trends)",
+    "medium_title": "Medium Polar Distribution (Art Material Composition)",
+    "network_title": "Artist Co-Exhibition Social Network Star Map",
+    "network_hint": "Drag nodes / Double-click to drill",
+    "network_legend": "Relationship Discovery:",
+    "network_legend_node": "Node size represents total artworks in global exhibitions.",
+    "network_legend_edge": "Edges represent co-participation in the same exhibitions."
+  },
+  "gallery": {
+    "title": "Exhibition Discovery Gallery",
+    "count_loading": "Searching...",
+    "count_result": "{{count}} exhibitions matched",
+    "empty_title": "No contemporary art exhibitions found under current filters.",
+    "card_curators": "Curated by: {{curators}}",
+    "card_artworks": "{{count}} artworks",
+    "card_date_unknown": "Unknown date",
+    "card_city_global": "Global"
+  },
+  "modal": {
+    "close": "Close",
+    "date_separator": " to ",
+    "curators_default": "Joint curation / Guest scholars",
+    "artwork_count": "{{count}} artworks",
+    "preface_title": "Exhibition Preface",
+    "concept_title": "Curatorial Concept",
+    "biographies_title": "Artist & Team Biographies",
+    "credits_title": "Credits & Production",
+    "artworks_title": "Structured Artworks Catalogue",
+    "artworks_empty": "No specific representative artworks linked to this exhibition yet (crawler supplementation in progress).",
+    "table_artist": "Artist",
+    "table_title": "Title",
+    "table_year": "Year",
+    "table_medium": "Medium",
+    "table_dimensions": "Dimensions",
+    "artist_unknown": "Unknown artist",
+    "work_untitled": "Untitled",
+    "year_unknown": "N/A",
+    "medium_unknown": "-",
+    "dimensions_unknown": "-",
+    "bilingual_mode": "Bilingual Curation Mode",
+    "bilingual_cn_top": "CN Top",
+    "bilingual_en_top": "EN Top",
+    "visit_website": "Visit Official Exhibition Page",
+    "preface_missing_cn": "No independent preface text available or still parsing.",
+    "preface_missing_en": "The raw English preface is not available for this record.",
+    "concept_missing_cn": "Curatorial concept not yet extracted for this exhibition.",
+    "concept_missing_en": "No original English curatorial concept theoretical details extracted for this record.",
+    "biographies_missing_cn": "No brief Chinese artist biography available.",
+    "biographies_missing_en": "No English biographies available for this record."
+  },
+  "common": {
+    "unknown": "Unknown"
+  }
+}

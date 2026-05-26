@@ -11,5 +11,5 @@ class NGVParser(BaseSiteParser):
     institution_type = "museum"
     list_url = "https://www.ngv.vic.gov.au/whats-on/exhibitions/"
     link_patterns = [
-        r"ngv\.vic\.gov\.au/whats-on/exhibitions/[^/]+",
+        r"ngv\.vic\.gov\.au/exhibition/[^/]+",
     ]

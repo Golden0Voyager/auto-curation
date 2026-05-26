@@ -8,6 +8,13 @@ from urllib.parse import urljoin
 
 logger = logging.getLogger("auto_curation.sites.base")
 
+# Playwright is an optional dependency for SPA scraping
+try:
+    from playwright.sync_api import sync_playwright
+    HAS_PLAYWRIGHT = True
+except Exception:
+    HAS_PLAYWRIGHT = False
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
@@ -53,6 +60,15 @@ class BaseSiteParser:
     # URL patterns or prefixes to match for detailed exhibition pages
     link_patterns: List[str] = []
 
+    # SSL verification flag; set to False for sites with certificate hostname mismatches
+    verify_ssl: bool = True
+
+    # SPA flag; set to True for React/Vue/Next.js sites that require browser rendering
+    use_playwright: bool = False
+
+    # Use curl_cffi to impersonate browser TLS/JA3 fingerprint; set to True for Cloudflare-protected sites
+    use_curl_cffi: bool = False
+
     def get_list_urls(self, since_year: Optional[int] = None) -> List[str]:
         """Returns all listing URLs to crawl (current + historical).
         
@@ -67,46 +83,112 @@ class BaseSiteParser:
 
     def get_exhibition_urls(self, client: httpx.Client, since_year: Optional[int] = None) -> List[str]:
         """Fetches all listing pages and extracts detail page URLs.
-        
+
         Args:
             client: The HTTP client to use.
             since_year: If provided, only return URLs from listing pages for that year and later.
         """
+        if self.use_playwright:
+            return self._get_exhibition_urls_playwright(since_year=since_year)
+
         list_urls = self.get_list_urls(since_year=since_year)
         if not list_urls:
             logger.error(f"No list URLs configured for parser {self.source}")
             return []
-            
+
         all_found: Set[str] = set()
 
         for list_url in list_urls:
             try:
                 logger.info(f"[{self.source}] Fetching listing page: {list_url}")
-                response = client.get(list_url, headers=HEADERS, follow_redirects=True)
-                response.raise_for_status()
-                
-                soup = BeautifulSoup(response.text, "html.parser")
-                
+                # Use curl_cffi for Cloudflare bypass, temporary httpx for SSL issues, or the shared client
+                if self.use_curl_cffi:
+                    from curl_cffi import requests as curl_requests
+
+                    response = curl_requests.get(
+                        list_url, headers=HEADERS, impersonate="chrome124", timeout=30
+                    )
+                    response.raise_for_status()
+                    page_html = response.text
+                elif not self.verify_ssl:
+                    with httpx.Client(verify=False, follow_redirects=True) as temp_client:
+                        response = temp_client.get(list_url, headers=HEADERS)
+                        response.raise_for_status()
+                        page_html = response.text
+                else:
+                    response = client.get(list_url, headers=HEADERS, follow_redirects=True)
+                    response.raise_for_status()
+                    page_html = response.text
+
+                soup = BeautifulSoup(page_html, "html.parser")
+
                 for a_tag in soup.find_all("a", href=True):
                     href = a_tag["href"].strip()
                     full_url = urljoin(list_url, href)
-                    
+
                     # Exclude exact list URL itself
                     if full_url.rstrip("/") in [u.rstrip("/") for u in list_urls]:
                         continue
-                    
+
                     # Check against link patterns
                     for pattern in self.link_patterns:
                         if re.search(pattern, full_url) or re.search(pattern, href):
                             all_found.add(full_url)
                             break
-                            
+
             except Exception as e:
                 logger.error(f"[{self.source}] Error fetching listing page {list_url}: {e}", exc_info=True)
                 continue
 
         urls = sorted(list(all_found))
         logger.info(f"[{self.source}] Total discovered: {len(urls)} exhibition URLs across {len(list_urls)} listing page(s).")
+        return urls
+
+    def _get_exhibition_urls_playwright(self, since_year: Optional[int] = None) -> List[str]:
+        """SPA fallback: use Playwright to render the listing page and extract links."""
+        if not HAS_PLAYWRIGHT:
+            logger.error(
+                f"[{self.source}] Playwright is required but not installed. "
+                "Install it with: uv pip install playwright && python -m playwright install chromium"
+            )
+            return []
+
+        list_urls = self.get_list_urls(since_year=since_year)
+        if not list_urls:
+            logger.error(f"No list URLs configured for parser {self.source}")
+            return []
+
+        all_found: Set[str] = set()
+
+        for list_url in list_urls:
+            try:
+                logger.info(f"[{self.source}] Rendering listing page with Playwright: {list_url}")
+                with sync_playwright() as p:
+                    browser = p.chromium.launch(headless=True)
+                    page = browser.new_page()
+                    page.goto(list_url, wait_until="domcontentloaded", timeout=60000)
+                    page.wait_for_timeout(10000)
+                    html = page.content()
+                    browser.close()
+            except Exception as e:
+                logger.error(f"[{self.source}] Playwright failed to load listing page {list_url}: {e}")
+                continue
+
+            soup = BeautifulSoup(html, "html.parser")
+            for a_tag in soup.find_all("a", href=True):
+                href = a_tag["href"].strip()
+                full_url = urljoin(list_url, href)
+
+                if full_url.rstrip("/") in [u.rstrip("/") for u in list_urls]:
+                    continue
+
+                for pattern in self.link_patterns:
+                    if re.search(pattern, full_url) or re.search(pattern, href):
+                        all_found.add(full_url)
+                        break
+
+        urls = sorted(list(all_found))
+        logger.info(f"[{self.source}] Total discovered (Playwright): {len(urls)} exhibition URLs.")
         return urls
             
     def clean_html(self, html: str) -> str:

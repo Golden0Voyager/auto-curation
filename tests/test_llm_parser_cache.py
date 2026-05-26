@@ -38,7 +38,7 @@ def test_llm_parser_cache_miss_sets_cache(monkeypatch):
     fake_response = MagicMock()
     fake_response.status_code = 200
     fake_response.json.return_value = {
-        "choices": [{"message": {"content": '{"title":"New Show","city":"Paris","artworks":[]}'}}]
+        "choices": [{"message": {"content": '{"title":"New Show","city":"Paris","start_date":"2026-01-01","artworks":[]}'}}]
     }
     fake_response.raise_for_status = MagicMock()
 

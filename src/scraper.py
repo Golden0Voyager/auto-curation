@@ -39,7 +39,7 @@ class ExhibitionScraper:
         self.client = httpx.Client(headers={
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             "Accept-Language": "en-US,en;q=0.9",
-        }, follow_redirects=True, timeout=30.0)
+        }, follow_redirects=True, timeout=60.0)
         self.max_concurrency = max_concurrency
 
     def scrape_site(
@@ -153,6 +153,9 @@ class ExhibitionScraper:
                     logger.info(f"-> Skip: already in DB (ID: {existing['id']})")
                     stats["skipped"] += 1
                     continue
+            elif force and not dry_run:
+                logger.info(f"-> Force active: Deleting existing DB entry for URL to ensure clean overwrite: {url}")
+                self.db.delete_exhibition_by_url(url)
 
             try:
                 parsed_data = None
@@ -165,10 +168,40 @@ class ExhibitionScraper:
 
                 # 2. Fall back to LLM pipeline
                 if not parsed_data:
-                    response = self.client.get(url)
-                    response.raise_for_status()
+                    if getattr(parser, "use_curl_cffi", False):
+                        from curl_cffi import requests as curl_requests
 
-                    clean_text = parser.clean_html(response.text)
+                        response = curl_requests.get(
+                            url,
+                            headers={
+                                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                                "Accept-Language": "en-US,en;q=0.9",
+                            },
+                            impersonate="chrome124",
+                            timeout=30,
+                        )
+                        response.raise_for_status()
+                        page_html = response.text
+                    else:
+                        try:
+                            response = self.client.get(url)
+                            response.raise_for_status()
+                            page_html = response.text
+                        except httpx.HTTPStatusError as e:
+                            if e.response.status_code == 403:
+                                logger.warning(f"HTTP 403 for {url}, trying Scrapling fallback...")
+                                try:
+                                    from scrapling import Fetcher
+
+                                    scrapling_resp = Fetcher().get(url, timeout=30)
+                                    page_html = scrapling_resp.html_content
+                                except Exception as se:
+                                    logger.error(f"Scrapling fallback failed for {url}: {se}")
+                                    raise
+                            else:
+                                raise
+
+                    clean_text = parser.clean_html(page_html)
 
                     if not clean_text or len(clean_text.strip()) < 100:
                         logger.warning(f"Content too short/empty for {url}. Skipping.")
@@ -183,6 +216,29 @@ class ExhibitionScraper:
                         stats["failed"] += 1
                         continue
 
+                    # Extract and attach image links deterministically (saves disk & tokens)
+                    from bs4 import BeautifulSoup
+                    from urllib.parse import urljoin
+                    import json
+                    image_urls = []
+                    try:
+                        soup = BeautifulSoup(response.text, "html.parser")
+                        for img in soup.find_all("img", src=True):
+                            src = img["src"].strip()
+                            full_img_url = urljoin(url, src)
+                            if any(kw in full_img_url.lower() for kw in ["logo", "icon", "avatar", "pixel", "tracking", "badge", "nav", "footer"]):
+                                continue
+                            if not any(ext in full_img_url.lower() for ext in [".jpg", ".jpeg", ".png", ".webp"]):
+                                continue
+                            image_urls.append(full_img_url)
+                        image_urls = list(dict.fromkeys(image_urls))[:8]
+                    except Exception as e:
+                        logger.error(f"Error extracting image links: {e}")
+                    parsed_data["images"] = json.dumps(image_urls)
+
+                if parsed_data and "images" not in parsed_data:
+                    parsed_data["images"] = "[]"
+
                 # Enrich with parser metadata
                 parsed_data["source"] = parser.source
                 parsed_data["url"] = url
@@ -190,6 +246,12 @@ class ExhibitionScraper:
                 parsed_data["institution_type"] = getattr(parser, "institution_type", "museum")
                 if not parsed_data.get("city"):
                     parsed_data["city"] = parser.city
+
+                # Attach category tags if cached in parser
+                if hasattr(parser, "_url_tags") and url in parser._url_tags:
+                    parsed_data["tags"] = parser._url_tags[url]
+                else:
+                    parsed_data["tags"] = "[]"
 
                 stats["parsed"] += 1
                 processed_count += 1

@@ -24,3 +24,7 @@ exhibitions.db
 data/met_collection/MetObjects.csv
 data/moma_collection/Artworks.csv
 data/nga_collection/objects.csv
+# Skill-generated analysis artifacts
+.understand-anything/
+.codegraph/
+docs/superpowers/

@@ -10,6 +10,7 @@ class SaoPauloBiennialParser(BaseSiteParser):
     parser_key = "saopaulo_biennial"
     institution_type = "biennial"
     list_url = "https://www.bienal.org.br"
+    verify_ssl = False
     link_patterns = [
         r"bienal\.org\.br/[^/]+",
     ]

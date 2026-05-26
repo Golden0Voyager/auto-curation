@@ -11,5 +11,6 @@ class MCAChicagoParser(BaseSiteParser):
     institution_type = "museum"
     list_url = "https://mcachicago.org/exhibitions"
     link_patterns = [
-        r"mcachicago\.org/exhibitions/.+",
+        # Exclude archive listing page; only match individual exhibition slugs
+        r"mcachicago\.org/exhibitions/(?!archive(?:/|$))[^/\s?]+",
     ]

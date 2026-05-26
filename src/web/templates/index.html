@@ -38,7 +38,7 @@
   <div class="max-w-[1800px] mx-auto p-4 md:p-6 lg:p-8 flex flex-col min-h-screen gap-6">
     
     <!-- HEADER: Cinematic Branding & Macro Metrics -->
-    <header class="glass-panel p-6 flex flex-col md:flex-row justify-between items-center gap-6 border-b gold-glow-border">
+    <header class="glass-panel p-6 flex flex-col lg:flex-row justify-between items-center gap-6 border-b gold-glow-border">
       <div class="flex flex-col gap-1 items-center md:items-start">
         <h1 class="header-title text-2xl md:text-3xl lg:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-amber-600 gold-glow">
           CURATION INSIGHT
@@ -48,21 +48,47 @@
         </p>
       </div>
       
-      <!-- Metrics Dashboard -->
-      <div class="flex items-center gap-6 md:gap-12">
-        <div class="flex flex-col items-center">
-          <span class="text-xs text-slate-400 uppercase tracking-widest font-space font-medium">展览总收录</span>
-          <span id="metric-exhibitions" class="text-2xl md:text-3xl font-extrabold font-space text-amber-400 gold-glow">8,076</span>
+      <!-- Metrics Dashboard + Settings -->
+      <div class="flex flex-wrap items-center justify-center gap-6 md:gap-8">
+
+        <!-- Metrics Dashboard -->
+        <div class="flex items-center gap-6 md:gap-12">
+          <div class="flex flex-col items-center">
+            <span class="text-xs text-slate-400 uppercase tracking-widest font-space font-medium" data-i18n="header.metric_exhibitions">展览总收录</span>
+            <span id="metric-exhibitions" class="text-2xl md:text-3xl font-extrabold font-space text-amber-400 gold-glow">8,076</span>
+          </div>
+          <div class="h-8 w-[1px] bg-slate-800"></div>
+          <div class="flex flex-col items-center">
+            <span class="text-xs text-slate-400 uppercase tracking-widest font-space font-medium" data-i18n="header.metric_artworks">结构化作品</span>
+            <span id="metric-artworks" class="text-2xl md:text-3xl font-extrabold font-space text-cyan-400 cyan-glow">32,288</span>
+          </div>
+          <div class="h-8 w-[1px] bg-slate-800"></div>
+          <div class="flex flex-col items-center">
+            <span class="text-xs text-slate-400 uppercase tracking-widest font-space font-medium" data-i18n="header.metric_museums">覆盖艺术机构</span>
+            <span id="metric-museums" class="text-2xl md:text-3xl font-extrabold font-space text-indigo-400">7</span>
+          </div>
         </div>
-        <div class="h-8 w-[1px] bg-slate-800"></div>
-        <div class="flex flex-col items-center">
-          <span class="text-xs text-slate-400 uppercase tracking-widest font-space font-medium">结构化作品</span>
-          <span id="metric-artworks" class="text-2xl md:text-3xl font-extrabold font-space text-cyan-400 cyan-glow">32,288</span>
+
+      </div>
+
+      <!-- Language & Bilingual Settings -->
+      <div class="w-[280px] flex items-center justify-center lg:justify-end gap-4 shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] text-slate-500 uppercase tracking-wider font-space" data-i18n="settings.language">语言</span>
+          <div class="flex items-center p-0.5 bg-slate-950/60 rounded-lg border border-slate-800/80">
+            <button id="lang-zh-btn" class="px-2.5 py-1 text-[10px] rounded-md transition-all duration-200 font-space active" onclick="setLanguage('zh')">中</button>
+            <button id="lang-en-btn" class="px-2.5 py-1 text-[10px] rounded-md transition-all duration-200 font-space text-slate-400" onclick="setLanguage('en')">EN</button>
+          </div>
         </div>
-        <div class="h-8 w-[1px] bg-slate-800"></div>
-        <div class="flex flex-col items-center">
-          <span class="text-xs text-slate-400 uppercase tracking-widest font-space font-medium">覆盖艺术机构</span>
-          <span id="metric-museums" class="text-2xl md:text-3xl font-extrabold font-space text-indigo-400">7</span>
+
+        <div class="h-4 w-[1px] bg-slate-800"></div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] text-slate-500 uppercase tracking-wider font-space" data-i18n="settings.bilingual">双语对照</span>
+          <button id="bilingual-toggle-btn" class="relative w-9 h-5 rounded-full bg-slate-800 border border-slate-700 transition-all duration-300" onclick="toggleBilingual()">
+            <span id="bilingual-toggle-knob" class="absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-slate-500 transition-all duration-300"></span>
+          </button>
+          <span id="bilingual-status-text" class="text-[10px] text-slate-500 font-space" data-i18n="settings.bilingual_off">关闭</span>
         </div>
       </div>
     </header>
@@ -76,21 +102,21 @@
         <!-- Interactive Controls -->
         <div class="glass-panel p-5 flex flex-col gap-4">
           <h2 class="text-sm font-semibold tracking-wider text-amber-400 flex items-center gap-2">
-            <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> 智能过滤器
+            <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> <span data-i18n="filter.title">智能过滤器</span>
           </h2>
           
           <!-- Search input -->
           <div class="relative">
-            <input type="text" id="search-input" placeholder="检索展览、艺术家、媒介或策展词..." 
-                   class="w-full pl-10 pr-4 py-2 glass-input text-sm font-light">
+            <input type="text" id="search-input" placeholder="检索展览、艺术家、媒介或策展词..."
+                   class="w-full pl-10 pr-4 py-2 glass-input text-sm font-light" data-i18n="[placeholder]filter.search_placeholder">
             <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-500"></i>
           </div>
           
           <!-- Museum Select Buttons Grid -->
           <div class="flex flex-col gap-2">
-            <span class="text-xs text-slate-400">机构筛选</span>
+            <span class="text-xs text-slate-400" data-i18n="filter.source_label">机构筛选</span>
             <div id="museum-filters" class="flex flex-wrap gap-1.5">
-              <button class="px-3 py-1.5 text-xs glass-btn active" data-source="">全部机构</button>
+              <button class="px-3 py-1.5 text-xs glass-btn active" data-source="" data-i18n="filter.source_all">全部机构</button>
               <!-- Populated dynamically -->
             </div>
           </div>
@@ -98,12 +124,12 @@
           <!-- Year Range Slider -->
           <div class="flex flex-col gap-2 pt-2">
             <div class="flex justify-between items-center text-xs text-slate-400">
-              <span>展期年份段</span>
+              <span data-i18n="filter.year_range_label">展期年份段</span>
               <span id="year-range-display" class="font-space text-amber-400 font-semibold">1929 - 2026</span>
             </div>
             <div class="flex items-center gap-3">
               <input type="range" id="start-year" min="1929" max="2026" value="1929" class="w-full accent-amber-500">
-              <span class="text-xs text-slate-500">至</span>
+              <span class="text-xs text-slate-500" data-i18n="filter.year_range_to">至</span>
               <input type="range" id="end-year" min="1929" max="2026" value="2026" class="w-full accent-amber-500">
             </div>
           </div>
@@ -112,7 +138,7 @@
         <!-- Timeline Rivers Graph -->
         <div class="glass-panel p-5 flex-1 flex flex-col gap-3 min-h-[300px]">
           <h2 class="text-sm font-semibold tracking-wider text-amber-400 flex items-center gap-2">
-            <i data-lucide="trending-up" class="w-4 h-4"></i> 时光策展河流 (展览变迁趋势)
+            <i data-lucide="trending-up" class="w-4 h-4"></i> <span data-i18n="chart.timeline_title">时光策展河流 (展览变迁趋势)</span>
           </h2>
           <div id="timeline-chart" class="w-full flex-1 min-h-[220px]">
             <!-- Chart goes here -->
@@ -122,7 +148,7 @@
         <!-- Medium polar distribution -->
         <div class="glass-panel p-5 flex-1 flex flex-col gap-3 min-h-[300px]">
           <h2 class="text-sm font-semibold tracking-wider text-amber-400 flex items-center gap-2">
-            <i data-lucide="pie-chart" class="w-4 h-4"></i> 媒介极坐标分布 (艺术材质占比)
+            <i data-lucide="pie-chart" class="w-4 h-4"></i> <span data-i18n="chart.medium_title">媒介极坐标分布 (艺术材质占比)</span>
           </h2>
           <div id="medium-chart" class="w-full flex-1 min-h-[220px]">
             <!-- Chart goes here -->
@@ -137,10 +163,10 @@
         <div class="glass-panel p-5 flex flex-col gap-3 min-h-[420px] relative">
           <div class="flex justify-between items-center">
             <h2 class="text-sm font-semibold tracking-wider text-cyan-400 flex items-center gap-2">
-              <i data-lucide="orbit" class="w-4 h-4 cyan-glow"></i> 艺术家参展社交网络星空图 (共同参展关系)
+              <i data-lucide="orbit" class="w-4 h-4 cyan-glow"></i> <span data-i18n="chart.network_title">艺术家参展社交网络星空图 (共同参展关系)</span>
             </h2>
             <div class="text-xs text-slate-500 flex items-center gap-1.5">
-              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span> 拖拽星点/双击下钻
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span> <span data-i18n="chart.network_hint">拖拽星点/双击下钻</span>
             </div>
           </div>
           
@@ -150,9 +176,9 @@
           
           <!-- Floating instructions overlay -->
           <div class="absolute bottom-4 left-4 bg-slate-950/80 backdrop-blur-md px-3 py-2 rounded-lg border border-slate-800 text-[10px] text-slate-400 pointer-events-none flex flex-col gap-0.5 max-w-[200px] z-20">
-            <span class="text-slate-300 font-semibold mb-0.5">🌟 关系发现：</span>
-            <span>• 节点大小代表全球参展作品计数。</span>
-            <span>• 节点连线代表共同参与了相同的展览。</span>
+            <span class="text-slate-300 font-semibold mb-0.5" data-i18n="chart.network_legend">🌟 关系发现：</span>
+            <span data-i18n="chart.network_legend_node">• 节点大小代表全球参展作品计数。</span>
+            <span data-i18n="chart.network_legend_edge">• 节点连线代表共同参与了相同的展览。</span>
           </div>
         </div>
 
@@ -160,9 +186,9 @@
         <div class="flex flex-col gap-3 flex-1">
           <div class="flex justify-between items-center">
             <h2 class="text-sm font-semibold tracking-wider text-amber-400 flex items-center gap-2">
-              <i data-lucide="library" class="w-4 h-4"></i> 展览探索画廊
+              <i data-lucide="library" class="w-4 h-4"></i> <span data-i18n="gallery.title">展览探索画廊</span>
             </h2>
-            <span id="gallery-count" class="text-xs font-space text-slate-400">正在检索...</span>
+            <span id="gallery-count" class="text-xs font-space text-slate-400" data-i18n="gallery.count_loading">正在检索...</span>
           </div>
           
           <!-- Grid wrapper -->
@@ -175,7 +201,7 @@
             <div id="loading-overlay" class="absolute inset-0 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm rounded-2xl hidden transition-all duration-300">
               <div class="flex flex-col items-center gap-3">
                 <div class="loading-orbit"></div>
-                <span class="text-xs text-amber-400 tracking-widest font-space">正在提取艺术宝库数据...</span>
+                <span class="text-xs text-amber-400 tracking-widest font-space" data-i18n="gallery.loading_text">正在提取艺术宝库数据...</span>
               </div>
             </div>
           </div>
@@ -195,9 +221,10 @@
 
       <!-- Exhibition metadata -->
       <div class="flex flex-col gap-3 border-b border-slate-800 pb-6 pr-10">
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <span id="modal-source" class="px-2.5 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold uppercase tracking-wider font-space">MOMA</span>
           <span id="modal-city" class="text-xs text-slate-400 flex items-center gap-1"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-500"></i> New York</span>
+          <div id="modal-tags" class="flex flex-wrap gap-1"></div>
         </div>
         <h2 id="modal-title" class="text-xl md:text-2xl lg:text-3xl font-extrabold text-slate-50 font-cinzel leading-tight tracking-wider">
           MoMA Exhibitions: 1929-1989
@@ -209,41 +236,120 @@
         </div>
       </div>
 
-      <!-- Curatorial Concept / Preface (Grid breakdown) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="flex flex-col gap-2">
-          <h3 class="text-sm font-semibold tracking-wider text-amber-400 flex items-center gap-1.5">
-            <i data-lucide="book-open" class="w-4 h-4"></i> 展览简介 (Preface)
-          </h3>
-          <p id="modal-preface" class="text-sm text-slate-300 font-light leading-relaxed whitespace-pre-line max-h-[250px] overflow-y-auto pr-2">
-            暂无前言介绍
-          </p>
+      <!-- Exhibition Install Shots horizontal gallery -->
+      <div id="modal-images-container" class="hidden flex flex-col gap-2 bg-slate-950/20 p-3 rounded-xl border border-slate-900">
+        <div id="modal-images-list" class="flex gap-3 overflow-x-auto py-1 pr-2 no-scrollbar scroll-smooth snap-x">
+          <!-- Dynamically filled by JS -->
         </div>
-        <div class="flex flex-col gap-2">
+      </div>
+
+      <!-- Bilingual Priority Toggle capsule -->
+      <div class="flex justify-between items-center bg-slate-900/30 backdrop-blur-md px-4 py-2.5 rounded-xl border border-slate-800/80 text-xs">
+        <span class="text-slate-400 flex items-center gap-1.5 font-light"><i data-lucide="languages" class="w-4 h-4 text-cyan-400 animate-pulse"></i> <span data-i18n="modal.bilingual_mode">双语对照学术阅读模式 (Bilingual Curation Mode)</span></span>
+        
+        <!-- Toggle button capsule -->
+        <div id="bilingual-toggle" class="relative flex items-center p-0.5 bg-slate-950/80 rounded-lg border border-slate-800/80 cursor-pointer user-select-none w-48 font-space text-[10px]">
+          <div id="bilingual-slider" class="absolute top-0.5 left-0.5 bottom-0.5 w-[92px] bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-md transition-all duration-300"></div>
+          <div class="flex-1 py-1 text-center z-10 transition-colors duration-300 text-slate-100 font-bold" id="btn-cn-top" data-i18n="modal.bilingual_cn_top">中文置顶</div>
+          <div class="flex-1 py-1 text-center z-10 transition-colors duration-300 text-slate-400" id="btn-en-top" data-i18n="modal.bilingual_en_top">English Top</div>
+        </div>
+      </div>
+
+      <!-- Preface and Concept (Bilingual Stacked layout) -->
+      <div class="flex flex-col gap-6">
+        
+        <!-- Section 1: Preface Stack -->
+        <div class="flex flex-col gap-3 p-4 rounded-xl border border-slate-900 bg-slate-950/20">
           <h3 class="text-sm font-semibold tracking-wider text-amber-400 flex items-center gap-1.5">
-            <i data-lucide="sparkles" class="w-4 h-4"></i> 策展学术理念 (Concept)
+            <i data-lucide="book-open" class="w-4.5 h-4.5"></i> <span data-i18n="modal.preface_title">展览简介 (Preface)</span>
           </h3>
-          <p id="modal-concept" class="text-sm text-slate-300 font-light leading-relaxed whitespace-pre-line max-h-[250px] overflow-y-auto pr-2">
-            暂无策展学术理念
-          </p>
+          
+          <div id="preface-stack" class="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-2">
+            <!-- Upper Block -->
+            <div id="preface-upper-block" class="text-sm text-slate-100 font-normal leading-relaxed whitespace-pre-line transition-all duration-300">
+              <!-- Filled by JS -->
+            </div>
+            
+            <!-- Separator -->
+            <div class="h-[1px] bg-slate-800/40 my-1"></div>
+            
+            <!-- Lower Block -->
+            <div id="preface-lower-block" class="text-xs text-slate-400 font-light leading-relaxed italic whitespace-pre-line pl-3 border-l-2 border-slate-800/50 transition-all duration-300">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Concept Stack -->
+        <div class="flex flex-col gap-3 p-4 rounded-xl border border-slate-900 bg-slate-950/20">
+          <h3 class="text-sm font-semibold tracking-wider text-amber-400 flex items-center gap-1.5">
+            <i data-lucide="sparkles" class="w-4.5 h-4.5"></i> <span data-i18n="modal.concept_title">策展学术理念 (Concept)</span>
+          </h3>
+          
+          <div id="concept-stack" class="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-2">
+            <!-- Upper Block -->
+            <div id="concept-upper-block" class="text-sm text-slate-100 font-normal leading-relaxed whitespace-pre-line transition-all duration-300">
+              <!-- Filled by JS -->
+            </div>
+            
+            <!-- Separator -->
+            <div class="h-[1px] bg-slate-800/40 my-1"></div>
+            
+            <!-- Lower Block -->
+            <div id="concept-lower-block" class="text-xs text-slate-400 font-light leading-relaxed italic whitespace-pre-line pl-3 border-l-2 border-slate-800/50 transition-all duration-300">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+        </div>
+
+      <!-- Section 3: Biographies Stack -->
+      <div id="modal-biographies-section" class="flex flex-col gap-3 p-4 rounded-xl border border-slate-900 bg-slate-950/20 hidden">
+        <h3 class="text-sm font-semibold tracking-wider text-amber-400 flex items-center gap-1.5">
+          <i data-lucide="user-check" class="w-4.5 h-4.5"></i> <span data-i18n="modal.biographies_title">艺术家与合作团队传记 (Biographies)</span>
+        </h3>
+        
+        <div id="biographies-stack" class="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-2">
+          <!-- Upper Block -->
+          <div id="biographies-upper-block" class="text-sm text-slate-100 font-normal leading-relaxed whitespace-pre-line transition-all duration-300">
+            <!-- Filled by JS -->
+          </div>
+          
+          <!-- Separator -->
+          <div id="biographies-separator" class="h-[1px] bg-slate-800/40 my-1"></div>
+          
+          <!-- Lower Block -->
+          <div id="biographies-lower-block" class="text-xs text-slate-400 font-light leading-relaxed italic whitespace-pre-line pl-3 border-l-2 border-slate-800/50 transition-all duration-300">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Credits Stack -->
+      <div id="modal-credits-section" class="flex flex-col gap-3 p-4 rounded-xl border border-slate-900 bg-slate-950/20 hidden">
+        <h3 class="text-sm font-semibold tracking-wider text-cyan-400 flex items-center gap-1.5">
+          <i data-lucide="scroll" class="w-4.5 h-4.5"></i> <span data-i18n="modal.credits_title">学术鸣谢与制作团队 (Credits & Production)</span>
+        </h3>
+        
+        <div id="credits-content" class="text-xs text-slate-300 font-light leading-relaxed whitespace-pre-line max-h-[300px] overflow-y-auto pr-2 transition-all duration-300">
+          <!-- Filled by JS -->
         </div>
       </div>
 
       <!-- Structurized Artworks List -->
       <div class="flex flex-col gap-3 mt-2">
         <h3 class="text-sm font-semibold tracking-wider text-cyan-400 flex items-center gap-1.5">
-          <i data-lucide="grid" class="w-4 h-4 cyan-glow"></i> 参展艺术品图册 (Structure Artworks)
+          <i data-lucide="grid" class="w-4 h-4 cyan-glow"></i> <span data-i18n="modal.artworks_title">参展艺术品图册 (Structure Artworks)</span>
         </h3>
         
         <div class="max-h-[300px] overflow-y-auto border border-slate-800/80 rounded-xl bg-slate-950/60 p-2">
           <table class="w-full text-left text-xs border-collapse">
             <thead>
               <tr class="text-slate-400 border-b border-slate-800 pb-2">
-                <th class="py-2.5 px-3 font-semibold">艺术家 (Artist)</th>
-                <th class="py-2.5 px-3 font-semibold">作品标题 (Title)</th>
-                <th class="py-2.5 px-3 font-semibold">年份</th>
-                <th class="py-2.5 px-3 font-semibold">媒介 (Medium)</th>
-                <th class="py-2.5 px-3 font-semibold">尺寸 (Dimensions)</th>
+                <th class="py-2.5 px-3 font-semibold" data-i18n="modal.table_artist">艺术家 (Artist)</th>
+                <th class="py-2.5 px-3 font-semibold" data-i18n="modal.table_title">作品标题 (Title)</th>
+                <th class="py-2.5 px-3 font-semibold" data-i18n="modal.table_year">年份</th>
+                <th class="py-2.5 px-3 font-semibold" data-i18n="modal.table_medium">媒介 (Medium)</th>
+                <th class="py-2.5 px-3 font-semibold" data-i18n="modal.table_dimensions">尺寸 (Dimensions)</th>
               </tr>
             </thead>
             <tbody id="modal-artworks-tbody" class="divide-y divide-slate-900 text-slate-300 font-light">
@@ -256,15 +362,20 @@
       <!-- Footer details link -->
       <div class="flex justify-end pt-2 border-t border-slate-900">
         <a id="modal-url" href="#" target="_blank" class="text-xs text-amber-400 hover:underline flex items-center gap-1 font-space">
-          访问官方展览网页 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          <span data-i18n="modal.visit_website">访问官方展览网页</span> <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
         </a>
       </div>
     </div>
   </div>
 
+  <!-- i18next Internationalization -->
+  <script src="https://cdn.jsdelivr.net/npm/i18next@23.15.0/i18next.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/i18next-browser-languagedetector@7.2.0/i18nextBrowserLanguageDetector.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/i18next-http-backend@2.6.0/i18nextHttpBackend.min.js"></script>
+
   <!-- Apache ECharts JS Library -->
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
-  
+
   <!-- Dashboard Orchestration Application JS -->
   <script src="/static/app.js"></script>
 </body>

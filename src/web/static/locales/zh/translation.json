@@ -1,0 +1,77 @@
+{
+  "header": {
+    "brand_title": "CurationInsight - 全球当代艺术展览智能分析大屏",
+    "brand_subtitle": "GLOBAL CONTEMPORARY ART EXHIBITION INTELLIGENCE",
+    "metric_exhibitions": "展览总收录",
+    "metric_artworks": "结构化作品",
+    "metric_museums": "覆盖艺术机构"
+  },
+  "settings": {
+    "language": "语言",
+    "bilingual": "双语对照",
+    "bilingual_on": "开启",
+    "bilingual_off": "关闭"
+  },
+  "filter": {
+    "title": "智能过滤器",
+    "search_placeholder": "检索展览、艺术家、媒介或策展词...",
+    "source_label": "机构筛选",
+    "source_all": "全部机构",
+    "year_range_label": "展期年份段",
+    "year_range_to": "至"
+  },
+  "chart": {
+    "timeline_title": "时光策展河流 (展览变迁趋势)",
+    "medium_title": "媒介极坐标分布 (艺术材质占比)",
+    "network_title": "艺术家参展社交网络星空图 (共同参展关系)",
+    "network_hint": "拖拽星点/双击下钻",
+    "network_legend": "关系发现：",
+    "network_legend_node": "节点大小代表全球参展作品计数。",
+    "network_legend_edge": "节点连线代表共同参与了相同的展览。"
+  },
+  "gallery": {
+    "title": "展览探索画廊",
+    "count_loading": "正在检索...",
+    "count_result": "匹配到 {{count}} 个展览",
+    "empty_title": "在当前筛选条件下，未捕获任何当代艺术展览",
+    "card_curators": "策展: {{curators}}",
+    "card_artworks": "{{count}} 件作品",
+    "card_date_unknown": "未知日期",
+    "card_city_global": "全球"
+  },
+  "modal": {
+    "close": "关闭",
+    "date_separator": " 至 ",
+    "curators_default": "联合策划 / 特邀学者",
+    "artwork_count": "{{count}} 件",
+    "preface_title": "展览简介 (Preface)",
+    "concept_title": "策展学术理念 (Concept)",
+    "biographies_title": "艺术家与合作团队传记 (Biographies)",
+    "credits_title": "学术鸣谢与制作团队 (Credits & Production)",
+    "artworks_title": "参展艺术品图册 (Structure Artworks)",
+    "artworks_empty": "该展览暂未关联具体代表作品数据 (由爬虫采集补充中)",
+    "table_artist": "艺术家 (Artist)",
+    "table_title": "作品标题 (Title)",
+    "table_year": "年份",
+    "table_medium": "媒介 (Medium)",
+    "table_dimensions": "尺寸 (Dimensions)",
+    "artist_unknown": "未知艺术家",
+    "work_untitled": "无题",
+    "year_unknown": "未标注",
+    "medium_unknown": "-",
+    "dimensions_unknown": "-",
+    "bilingual_mode": "双语对照学术阅读模式 (Bilingual Curation Mode)",
+    "bilingual_cn_top": "中文置顶",
+    "bilingual_en_top": "English Top",
+    "visit_website": "访问官方展览网页",
+    "preface_missing_cn": "该展览未提供独立前言文本或正在解析中。",
+    "preface_missing_en": "The raw English preface is not available for this record.",
+    "concept_missing_cn": "学术策展理念由大模型从网页中抽取整合，本展览未进行概念提炼。",
+    "concept_missing_en": "No original English curatorial concept theoretical details extracted for this record.",
+    "biographies_missing_cn": "暂无艺术家的简短中文介绍。",
+    "biographies_missing_en": "No English biographies available for this record."
+  },
+  "common": {
+    "unknown": "未知"
+  }
+}

@@ -14,3 +14,4 @@ class WhitechapelParser(BaseSiteParser):
     link_patterns = [
         r"whitechapelgallery\.org/exhibitions/[^/]+",
     ]
+    use_curl_cffi = True

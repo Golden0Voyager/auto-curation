@@ -47,7 +47,7 @@ class PSAParser:
                 browser = p.chromium.launch(headless=True)
                 page = browser.new_page()
                 page.goto(self.list_url, wait_until="domcontentloaded", timeout=60000)
-                page.wait_for_timeout(10000)
+                page.wait_for_timeout(5000)
                 html = page.content()
                 browser.close()
         except Exception as e:
@@ -72,7 +72,7 @@ class PSAParser:
                 browser = p.chromium.launch(headless=True)
                 page = browser.new_page()
                 page.goto(url, wait_until="domcontentloaded", timeout=60000)
-                page.wait_for_timeout(8000)
+                page.wait_for_timeout(5000)
                 html = page.content()
                 browser.close()
         except Exception as e:

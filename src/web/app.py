@@ -3,7 +3,7 @@ import sqlite3
 import json
 import re
 from typing import Optional, List
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -265,11 +265,11 @@ def get_exhibitions(
             params.append(end_year)
             
         if query:
-            # Dynamic multi-field search (title, curators, location, preface, concept, or search on artist names in artworks)
+            # Dynamic multi-field search (title, curators, location, preface, concept, preface_en, concept_en, or search on artist names in artworks)
             subquery = """
                 id IN (
                     SELECT id FROM exhibitions 
-                    WHERE title LIKE ? OR preface LIKE ? OR concept LIKE ? OR curators LIKE ? OR location LIKE ?
+                    WHERE title LIKE ? OR preface LIKE ? OR concept LIKE ? OR curators LIKE ? OR location LIKE ? OR preface_en LIKE ? OR concept_en LIKE ?
                     UNION
                     SELECT exhibition_id FROM artworks 
                     WHERE artist_name LIKE ? OR work_title LIKE ?
@@ -277,7 +277,7 @@ def get_exhibitions(
             """
             where_clauses.append(subquery)
             like_query = f"%{query}%"
-            params.extend([like_query] * 7)
+            params.extend([like_query] * 9)
             
         where_str = " AND ".join(where_clauses)
         
@@ -287,7 +287,7 @@ def get_exhibitions(
         
         # 2. Main data query
         sql = f"""
-            SELECT id, source, title, curators, start_date, end_date, location, city, url
+            SELECT id, source, title, curators, start_date, end_date, location, city, url, tags
             FROM exhibitions 
             WHERE {where_str} 
             ORDER BY start_date DESC, id DESC 
@@ -304,6 +304,11 @@ def get_exhibitions(
             except json.JSONDecodeError:
                 ex_data["curators"] = [ex_data["curators"]] if ex_data.get("curators") else []
             
+            try:
+                ex_data["tags"] = json.loads(ex_data["tags"]) if ex_data.get("tags") else []
+            except json.JSONDecodeError:
+                ex_data["tags"] = []
+                
             # Subquery artwork count for dashboard grid preview
             cursor.execute("SELECT COUNT(*) FROM artworks WHERE exhibition_id = ?", (ex_data["id"],))
             ex_data["artwork_count"] = cursor.fetchone()[0]
@@ -336,6 +341,11 @@ def get_exhibition_details(exhibition_id: int):
         except json.JSONDecodeError:
             ex_data["curators"] = [ex_data["curators"]] if ex_data.get("curators") else []
             
+        try:
+            ex_data["tags"] = json.loads(ex_data["tags"]) if ex_data.get("tags") else []
+        except json.JSONDecodeError:
+            ex_data["tags"] = []
+            
         # Get all artworks
         cursor.execute("""
             SELECT id, artist_name, work_title, work_year, medium, dimensions, caption 
@@ -358,6 +368,10 @@ def get_index():
         with open(index_path, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>CurationInsight Dashboard</h1><p>Index file templates/index.html not found.</p>")
+
+@app.get("/favicon.ico", include_in_schema=False)
+def get_favicon():
+    return Response(content=b"", media_type="image/x-icon")
 
 # Mount static and templates folders properly
 # Since static dir might contain JS/CSS, let's mount it safely if it exists
