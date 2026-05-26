@@ -27,3 +27,4 @@ data/nga_collection/objects.csv
 # Skill-generated analysis artifacts
 .understand-anything/
 .codegraph/
+docs/superpowers/
