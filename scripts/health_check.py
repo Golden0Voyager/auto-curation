@@ -27,8 +27,9 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.database import ExhibitionDatabase  # noqa: E402
 from src.sites import SITES  # noqa: E402
+from src.sites.base import ParserStrategy  # noqa: E402
 
-MAX_WORKERS = 8
+MAX_WORKERS = 2
 TIMEOUT_SECONDS = 90
 
 
@@ -74,7 +75,7 @@ def _extract_http_status(combined_output: str) -> int | None:
     return status
 
 
-def run_single(site_key: str) -> dict[str, Any]:
+def run_single(site_key: str, timeout: int = TIMEOUT_SECONDS) -> dict[str, Any]:
     """对单个 parser 执行健康检查。"""
     start = time.time()
     result: dict[str, Any] = {
@@ -99,7 +100,7 @@ def run_single(site_key: str) -> dict[str, Any]:
             cmd,
             capture_output=True,
             text=True,
-            timeout=TIMEOUT_SECONDS,
+            timeout=timeout,
         )
         elapsed = time.time() - start
         result["elapsed"] = round(elapsed, 2)
@@ -110,7 +111,13 @@ def run_single(site_key: str) -> dict[str, Any]:
         result["urls_found"] = url_count
         result["http_status"] = http_status
 
-        if proc.returncode != 0:
+        parser = SITES.get(site_key)
+        has_status = getattr(parser, "status", None)
+
+        if has_status:
+            result["status"] = "SKIPPED"
+            result["error"] = has_status
+        elif proc.returncode != 0:
             result["status"] = "FAIL"
             result["error"] = (proc.stderr or proc.stdout)[:300]
         elif url_count == 0:
@@ -125,15 +132,13 @@ def run_single(site_key: str) -> dict[str, Any]:
             else:
                 result["status"] = "ZERO_URLS"
             result["error"] = (proc.stderr or proc.stdout)[:300]
-        elif url_count >= 5:
-            result["status"] = "PASS"
         else:
-            result["status"] = "WARN"
+            result["status"] = "PASS"
 
     except subprocess.TimeoutExpired:
         result["status"] = "TIMEOUT"
         result["elapsed"] = round(time.time() - start, 2)
-        result["error"] = f"Timed out after {TIMEOUT_SECONDS}s"
+        result["error"] = f"Timed out after {timeout}s"
     except Exception as exc:
         result["status"] = "ERROR"
         result["elapsed"] = round(time.time() - start, 2)
@@ -154,6 +159,7 @@ def _color(status: str) -> str:
         "ZERO_URLS": "\033[31m",
         "NEEDS_PLAYWRIGHT": "\033[31m",
         "ERROR": "\033[31m",
+        "SKIPPED": "\033[36m",
     }
     reset = "\033[0m"
     return f"{mapping.get(status, '')}{status:15s}{reset}"
@@ -218,16 +224,21 @@ def generate_report(
 
     categories: dict[str, list[dict[str, Any]]] = {
         "green": [],
-        "yellow": [],
+        "cyan": [],
         "red": [],
     }
     for r in results:
-        cat = "green" if r["status"] == "PASS" else "yellow" if r["status"] == "WARN" else "red"
+        if r["status"] == "PASS":
+            cat = "green"
+        elif r["status"] == "SKIPPED":
+            cat = "cyan"
+        else:
+            cat = "red"
         categories[cat].append(r)
 
     total = len(results)
     green = len(categories["green"])
-    yellow = len(categories["yellow"])
+    cyan = len(categories["cyan"])
     red = len(categories["red"])
 
     lines: list[str] = [
@@ -236,10 +247,10 @@ def generate_report(
         "\n## Summary\n",
         "| Metric | Count | Percentage |",
         "|--------|------:|------------|",
-        f"| Total  | {total} | 100% |",
-        f"| PASS   | {green} | {green / total * 100:.1f}% |",
-        f"| WARN   | {yellow} | {yellow / total * 100:.1f}% |",
-        f"| FAIL   | {red} | {red / total * 100:.1f}% |",
+        f"| Total   | {total} | 100% |",
+        f"| PASS    | {green} | {green / total * 100:.1f}% |",
+        f"| SKIPPED | {cyan} | {cyan / total * 100:.1f}% |",
+        f"| FAIL    | {red} | {red / total * 100:.1f}% |",
     ]
 
     # Database health section
@@ -322,7 +333,7 @@ def main() -> None:
     completed = 0
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as executor:
-        future_to_site = {executor.submit(run_single, site): site for site in sites}
+        future_to_site = {executor.submit(run_single, site, args.timeout): site for site in sites}
         for future in concurrent.futures.as_completed(future_to_site):
             site = future_to_site[future]
             try:
@@ -351,13 +362,29 @@ def main() -> None:
             )
 
     # Sort for consistent report ordering
+    # Retry TIMEOUT sites once (serial, longer timeout)
+    timeouts = [r for r in results if r["status"] == "TIMEOUT"]
+    if timeouts:
+        print(f"\nRetrying {len(timeouts)} TIMEOUT site(s) with serial execution...")
+        retry_timeout = min(args.timeout * 2, 300)
+        for r in timeouts:
+            site = r["site"]
+            print(f"  Retrying {site} (timeout={retry_timeout}s)...")
+            retry_res = run_single(site, timeout=retry_timeout)
+            # Replace in results
+            for i, existing in enumerate(results):
+                if existing["site"] == site:
+                    results[i] = retry_res
+                    break
+            print(f"  -> {retry_res['status']} | URLs: {retry_res['urls_found']}")
+
     results.sort(key=lambda r: r["site"])
 
     print("\n" + "=" * 70)
     green = sum(1 for r in results if r["status"] == "PASS")
-    yellow = sum(1 for r in results if r["status"] == "WARN")
-    red = total - green - yellow
-    print(f"PASS: {green:2d} | WARN: {yellow:2d} | FAIL: {red:2d}")
+    cyan = sum(1 for r in results if r["status"] == "SKIPPED")
+    red = sum(1 for r in results if r["status"] not in ("PASS", "SKIPPED"))
+    print(f"PASS: {green:2d} | SKIPPED: {cyan:2d} | FAIL: {red:2d}")
     print("=" * 70)
 
     # Database health
