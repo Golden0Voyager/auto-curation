@@ -11,5 +11,5 @@ class BalticParser(BaseSiteParser):
     institution_type = "museum"
     list_url = "https://www.baltic.art/"
     link_patterns = [
-        r"baltic\.art/[^/]+",
+        r"baltic\.art/whats-on/[^/]+",
     ]
