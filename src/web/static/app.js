@@ -16,6 +16,14 @@ let currentBilingualMode = "cn-top";
 let activeExhibitionData = null;
 let i18nReady = false;
 
+// Security: HTML entity encoder to prevent XSS from database fields
+function escapeHtml(text) {
+  if (text == null) return "";
+  const div = document.createElement("div");
+  div.textContent = String(text);
+  return div.innerHTML;
+}
+
 // Initialize i18next
 function initI18n() {
   return new Promise((resolve) => {
@@ -719,7 +727,7 @@ async function loadExhibitionsGallery() {
       if (Array.isArray(parsedTags) && parsedTags.length > 0) {
         tagsHtml = `
           <div class="flex flex-wrap gap-1 mt-0.5">
-            ${parsedTags.map(t => `<span class="px-1.5 py-0.2 rounded text-[7.5px] font-medium tracking-wide uppercase font-space bg-slate-800/80 border border-slate-700/40 text-slate-300">${t}</span>`).join('')}
+            ${parsedTags.map(t => `<span class="px-1.5 py-0.2 rounded text-[7.5px] font-medium tracking-wide uppercase font-space bg-slate-800/80 border border-slate-700/40 text-slate-300">${escapeHtml(t)}</span>`).join('')}
           </div>
         `;
       }
@@ -728,30 +736,30 @@ async function loadExhibitionsGallery() {
         <div class="flex flex-col gap-1.5">
           <div class="flex items-center justify-between gap-2">
             <span class="px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase font-space bg-amber-500/10 border border-amber-500/20 text-amber-400">
-              ${ex.source}
+              ${escapeHtml(ex.source)}
             </span>
             <span class="text-[10px] text-slate-500 flex items-center gap-1 font-space">
-              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-500/50"></i> ${ex.city || (i18nReady ? i18next.t('gallery.card_city_global') : "全球")}
+              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-500/50"></i> ${escapeHtml(ex.city) || (i18nReady ? i18next.t('gallery.card_city_global') : "全球")}
             </span>
           </div>
-          
+
           ${tagsHtml}
-          
+
           <h3 class="text-sm font-semibold text-slate-100 font-cinzel line-clamp-2 tracking-wide leading-snug group-hover:text-amber-400 mt-1">
-            ${ex.title}
+            ${escapeHtml(ex.title)}
           </h3>
-          
+
           <div class="text-[10px] text-slate-400 font-light flex items-center gap-1 leading-relaxed mt-1">
-            <i data-lucide="user" class="w-3 h-3 text-amber-500/40"></i> ${i18nReady ? i18next.t('gallery.card_curators', {curators: curators}) : `策展: ${curators}`}
+            <i data-lucide="user" class="w-3 h-3 text-amber-500/40"></i> ${i18nReady ? i18next.t('gallery.card_curators', {curators: escapeHtml(curators)}) : `策展: ${escapeHtml(curators)}`}
           </div>
         </div>
-        
+
         <div class="flex justify-between items-center border-t border-slate-900/60 pt-2 text-[10px] text-slate-500 font-space mt-1">
           <span class="flex items-center gap-1">
-            <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-600"></i> ${dateText}
+            <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-600"></i> ${escapeHtml(dateText)}
           </span>
           <span class="px-2 py-0.5 rounded bg-cyan-950/40 text-cyan-400 font-bold border border-cyan-950">
-            ${i18nReady ? i18next.t('gallery.card_artworks', {count: ex.artwork_count}) : `${ex.artwork_count} 件作品`}
+            ${i18nReady ? i18next.t('gallery.card_artworks', {count: ex.artwork_count}) : `${escapeHtml(ex.artwork_count)} 件作品`}
           </span>
         </div>
       `;
@@ -794,7 +802,9 @@ async function showExhibitionModal(id) {
     if (ex.end_date) dateText += (i18nReady ? i18next.t('modal.date_separator') : " 至 ") + ex.end_date;
     document.getElementById("modal-date").textContent = dateText;
 
-    document.getElementById("modal-city").innerHTML = `<i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-500"></i> ${ex.city || (i18nReady ? i18next.t('common.unknown') : "美术馆展厅")} (${ex.location || (i18nReady ? i18next.t('common.unknown') : "展厅展位")})`;
+    const modalCity = document.getElementById("modal-city");
+    modalCity.innerHTML = `<i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-500"></i> `;
+    modalCity.appendChild(document.createTextNode(`${escapeHtml(ex.city) || (i18nReady ? i18next.t('common.unknown') : "美术馆展厅")} (${escapeHtml(ex.location) || (i18nReady ? i18next.t('common.unknown') : "展厅展位")})`));
 
     const curators = (ex.curators && ex.curators.length > 0)
       ? ex.curators.join(", ")
@@ -886,11 +896,11 @@ async function showExhibitionModal(id) {
         const tr = document.createElement("tr");
         tr.className = "hover:bg-slate-900/60 transition-colors";
         tr.innerHTML = `
-          <td class="py-2 px-3 font-semibold text-amber-400/90">${art.artist_name || (i18nReady ? i18next.t('modal.artist_unknown') : "未知艺术家")}</td>
-          <td class="py-2 px-3 italic font-medium text-slate-100">${art.work_title || (i18nReady ? i18next.t('modal.work_untitled') : "无题")}</td>
-          <td class="py-2 px-3 font-space text-[10px]">${art.work_year || (i18nReady ? i18next.t('modal.year_unknown') : "未标注")}</td>
-          <td class="py-2 px-3 text-slate-400 font-light text-[11px]">${art.medium || (i18nReady ? i18next.t('modal.medium_unknown') : "-")}</td>
-          <td class="py-2 px-3 text-slate-400 font-light font-space text-[10px]">${art.dimensions || (i18nReady ? i18next.t('modal.dimensions_unknown') : "-")}</td>
+          <td class="py-2 px-3 font-semibold text-amber-400/90">${escapeHtml(art.artist_name) || (i18nReady ? i18next.t('modal.artist_unknown') : "未知艺术家")}</td>
+          <td class="py-2 px-3 italic font-medium text-slate-100">${escapeHtml(art.work_title) || (i18nReady ? i18next.t('modal.work_untitled') : "无题")}</td>
+          <td class="py-2 px-3 font-space text-[10px]">${escapeHtml(art.work_year) || (i18nReady ? i18next.t('modal.year_unknown') : "未标注")}</td>
+          <td class="py-2 px-3 text-slate-400 font-light text-[11px]">${escapeHtml(art.medium) || (i18nReady ? i18next.t('modal.medium_unknown') : "-")}</td>
+          <td class="py-2 px-3 text-slate-400 font-light font-space text-[10px]">${escapeHtml(art.dimensions) || (i18nReady ? i18next.t('modal.dimensions_unknown') : "-")}</td>
         `;
         tbody.appendChild(tr);
       });
