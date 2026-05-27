@@ -114,6 +114,24 @@ class ExhibitionDatabase:
         except sqlite3.OperationalError:
             pass
 
+        # Create scraper_runs table for operational tracking
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS scraper_runs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                parser_key TEXT NOT NULL,
+                started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                finished_at TIMESTAMP,
+                urls_discovered INTEGER DEFAULT 0,
+                urls_parsed INTEGER DEFAULT 0,
+                exhibitions_saved INTEGER DEFAULT 0,
+                exhibitions_failed INTEGER DEFAULT 0,
+                error_message TEXT,
+                run_type TEXT DEFAULT 'full'
+            );
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_scraper_runs_parser_key ON scraper_runs(parser_key);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_scraper_runs_started_at ON scraper_runs(started_at);")
+
         conn.commit()
         conn.close()
         logger.info(f"Database initialized at {self.db_path}")
@@ -301,5 +319,64 @@ class ExhibitionDatabase:
             cursor.execute("SELECT COUNT(*) as count FROM artworks")
             row = cursor.fetchone()
             return row["count"] if row else 0
+        finally:
+            conn.close()
+
+    # --- scraper_runs operational tracking ---
+
+    def start_scraper_run(self, parser_key: str, run_type: str = "full") -> int:
+        """Insert a new scraper run record and return its ID."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                INSERT INTO scraper_runs (parser_key, run_type)
+                VALUES (?, ?)
+            """, (parser_key, run_type))
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
+
+    def finish_scraper_run(
+        self,
+        run_id: int,
+        urls_discovered: int = 0,
+        urls_parsed: int = 0,
+        exhibitions_saved: int = 0,
+        exhibitions_failed: int = 0,
+        error_message: Optional[str] = None,
+    ) -> None:
+        """Update a scraper run record with completion stats."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                UPDATE scraper_runs
+                SET finished_at = CURRENT_TIMESTAMP,
+                    urls_discovered = ?,
+                    urls_parsed = ?,
+                    exhibitions_saved = ?,
+                    exhibitions_failed = ?,
+                    error_message = ?
+                WHERE id = ?
+            """, (urls_discovered, urls_parsed, exhibitions_saved, exhibitions_failed, error_message, run_id))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_last_scraper_run(self, parser_key: str) -> Optional[Dict[str, Any]]:
+        """Return the most recent scraper run for a parser."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT * FROM scraper_runs
+                WHERE parser_key = ?
+                ORDER BY started_at DESC
+                LIMIT 1
+            """, (parser_key,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
         finally:
             conn.close()
