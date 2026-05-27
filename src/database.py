@@ -15,10 +15,13 @@ class ExhibitionDatabase:
 
     def _get_connection(self) -> sqlite3.Connection:
         """Returns a thread-safe connection to the SQLite database with row factory enabled."""
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=30.0)
         conn.row_factory = sqlite3.Row
         # Enable Foreign Key support
         conn.execute("PRAGMA foreign_keys = ON;")
+        # Enable WAL mode for better concurrent write performance
+        conn.execute("PRAGMA journal_mode = WAL;")
+        conn.execute("PRAGMA synchronous = NORMAL;")
         return conn
 
     def _init_db(self):
@@ -68,6 +71,7 @@ class ExhibitionDatabase:
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_start_date ON exhibitions(start_date);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_parser_key ON exhibitions(parser_key);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_artworks_exhibition ON artworks(exhibition_id);")
+        cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_artworks_unique ON artworks(exhibition_id, artist_name, work_title);")
         # Check and migrate exhibitions schema for preface_en and concept_en (Bilingual Curation)
         try:
             cursor.execute("ALTER TABLE exhibitions ADD COLUMN preface_en TEXT;")
@@ -159,11 +163,11 @@ class ExhibitionDatabase:
                 ex_id = cursor.lastrowid
                 logger.info(f"Successfully inserted exhibition: '{ex_data.get('title')}' (ID: {ex_id})")
                 
-                # 2. Insert associated artworks
+                # 2. Insert associated artworks (ignore duplicates)
                 artworks = ex_data.get("artworks", [])
                 for art in artworks:
                     cursor.execute("""
-                        INSERT INTO artworks (
+                        INSERT OR IGNORE INTO artworks (
                             exhibition_id, artist_name, work_title, work_year, medium, dimensions, caption
                         ) VALUES (?, ?, ?, ?, ?, ?, ?)
                     """, (
