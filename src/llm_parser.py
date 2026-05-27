@@ -5,7 +5,17 @@ import asyncio
 import httpx
 from typing import Dict, List, Any, Optional
 from pydantic import BaseModel, Field, SecretStr
+from tenacity import stop_after_attempt, wait_exponential, retry_if_exception, Retrying, AsyncRetrying
 from src.cache import LLMResponseCache, make_cache_key
+
+
+def _is_retryable_error(exc: BaseException) -> bool:
+    """Determine if an exception warrants a retry."""
+    if isinstance(exc, (httpx.ConnectError, httpx.TimeoutException)):
+        return True
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code in (429, 502, 503, 504)
+    return False
 
 logger = logging.getLogger("auto_curation.llm_parser")
 
@@ -158,7 +168,12 @@ Strict Guidelines:
                 content = content[4:]
             content = content.strip("` \n")
 
-        parsed_json = json.loads(content)
+        try:
+            parsed_json = json.loads(content)
+        except json.JSONDecodeError as e:
+            logger.warning(f"[{provider_name}] Failed to decode LLM response as JSON: {e}. Content: {content[:200]}...")
+            return None
+
         if isinstance(parsed_json, list):
             if parsed_json and isinstance(parsed_json[0], dict):
                 parsed_json = parsed_json[0]
@@ -205,8 +220,15 @@ Strict Guidelines:
         try:
             logger.info(f"[{provider_name}] Sending LLM parsing request ({model_name})...")
             with httpx.Client(timeout=60.0) as client:
-                response = client.post(endpoint, headers=headers, json=payload)
-                response.raise_for_status()
+                for attempt in Retrying(
+                    stop=stop_after_attempt(3),
+                    wait=wait_exponential(multiplier=1, min=1, max=10),
+                    retry=retry_if_exception(_is_retryable_error),
+                    reraise=True,
+                ):
+                    with attempt:
+                        response = client.post(endpoint, headers=headers, json=payload)
+                        response.raise_for_status()
 
                 result = response.json()
                 choices = result.get("choices", [])
@@ -265,8 +287,15 @@ Strict Guidelines:
         try:
             logger.info(f"[{provider_name}] Sending async LLM parsing request ({model_name})...")
             async with httpx.AsyncClient(timeout=60.0) as client:
-                response = await client.post(endpoint, headers=headers, json=payload)
-                response.raise_for_status()
+                async for attempt in AsyncRetrying(
+                    stop=stop_after_attempt(3),
+                    wait=wait_exponential(multiplier=1, min=1, max=10),
+                    retry=retry_if_exception(_is_retryable_error),
+                    reraise=True,
+                ):
+                    with attempt:
+                        response = await client.post(endpoint, headers=headers, json=payload)
+                        response.raise_for_status()
 
                 result = response.json()
                 choices = result.get("choices", [])
