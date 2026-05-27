@@ -10,6 +10,8 @@ class BeyelerParser(BaseSiteParser):
     parser_key = "beyeler"
     institution_type = "museum"
     list_url = "https://www.fondationbeyeler.ch/en/exhibitions"
+    extra_list_urls = ["https://www.fondationbeyeler.ch/en/exhibitions/past-exhibitions"]
+    use_playwright = True
     link_patterns = [
-        r"fondationbeyeler\.ch/en/exhibitions/[^/]+",
+        r"fondationbeyeler\.ch/en/exhibitions(?:/past-exhibitions)?/[^/]+",
     ]
