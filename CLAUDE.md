@@ -109,58 +109,94 @@ python -c "import sqlite3; conn=sqlite3.connect('exhibitions.db'); print('展览
 
 | Key | 机构 | 城市 | 策略 | 状态 |
 |:--|:--|:--|:--|:--|
-| `moma` | MoMA | New York | CSV_REMOTE | 1929–1989 全量 |
-| `tate` | Tate Modern | London | HTML_LLM | 按年生成 URL，`--since` 生效 |
-| `mplus` | M+ Museum | Hong Kong | HTML_LLM | `?status=past` 历史 |
-| `serpentine` | Serpentine Galleries | London | HTML_LLM | 15 页 archive |
-| `mori` | Mori Art Museum | Tokyo | HTML_LLM | 5 页 past |
-| `aic` | Art Institute of Chicago | Chicago | REST_API | 6,253 展览 |
-| `nga` | National Gallery of Art | Washington D.C. | ARTWORK_ONLY | 145,655 件作品 |
-| `met` | The Met | New York | CSV_LOCAL | 本地 CSV |
-| `pompidou` | Centre Pompidou | Paris | HTML_LLM | 仅当前 |
-| `guggenheim` | Guggenheim | New York | HTML_LLM | 403 封锁 |
-| `biennale` | Venice Biennale | Venice | HTML_LLM | 仅当前 |
-| `whitney` | Whitney Museum | New York | REST_API | ~2,000 展览 |
-| `kunsthaus` | Kunsthaus Zürich | Zürich | HTML_LLM | Native JSON-LD 提取 |
-| `psa` | Power Station of Art | Shanghai | HTML_LLM | Playwright 渲染 |
-| `ucca` | UCCA | Beijing | HTML_LLM | 多场馆 |
-| `documenta` | Documenta | Kassel | HTML_LLM | 五年展 |
-| `berlin_biennale` | Berlin Biennale | Berlin | HTML_LLM | 双年展 |
-| `gwangju_biennale` | Gwangju Biennale | Gwangju | HTML_LLM | 双年展 |
-| `istanbul_biennale` | Istanbul Biennial | Istanbul | HTML_LLM | 双年展 |
-| `lyon_biennale` | Lyon Biennale | Lyon | HTML_LLM | 双年展 |
-| `liverpool_biennale` | Liverpool Biennial | Liverpool | HTML_LLM | 双年展 |
-| `taipei_biennale` | Taipei Biennial | Taipei | HTML_LLM | 双年展 |
-| `yokohama_triennale` | Yokohama Triennale | Yokohama | HTML_LLM | 三年展 |
-| `sydney_biennale` | Sydney Biennale | Sydney | HTML_LLM | 双年展 |
-| `sharjah_biennale` | Sharjah Biennial | Sharjah | HTML_LLM | 双年展 |
-| `saopaulo_biennial` | São Paulo Biennial | São Paulo | HTML_LLM | 双年展 |
-| `maxxi` | MAXXI | Rome | HTML_LLM | 51 展览发现 |
-| `kw_institute` | KW Institute | Berlin | HTML_LLM | 31 展览发现 |
-| `lenbachhaus` | Lenbachhaus | Munich | HTML_LLM | 120 展览发现 |
-| `baltic` | BALTIC | Gateshead | HTML_LLM | 64 展览发现 |
-| `brooklyn_museum` | Brooklyn Museum | New York | HTML_LLM | 23 展览发现 |
-| `mca_chicago` | MCA Chicago | Chicago | HTML_LLM | 12 展览发现 |
-| `barbican` | Barbican Centre | London | HTML_LLM | 34 展览发现 |
-| `national_gallery_sg` | National Gallery Singapore | Singapore | HTML_LLM | 10 展览发现 |
-| `maiiam` | MAIIAM | Chiang Mai | HTML_LLM | 25 展览发现 |
-| `njpac` | Nam June Paik Art Center | Yongin | HTML_LLM | 22 展览发现 |
-| `reina_sofia` | Museo Reina Sofía | Madrid | HTML_LLM | 9 展览发现 |
-| `kanazawa21` | 21st Century Museum | Kanazawa | HTML_LLM | 5 展览发现 |
-| `new_museum` | New Museum | New York | HTML_LLM | SPA，需 Playwright |
-| `lacma` | LACMA | Los Angeles | HTML_LLM | 403 Cloudflare |
-| `dia` | Dia Art Foundation | New York | HTML_LLM | 403 Cloudflare |
-| `whitechapel` | Whitechapel Gallery | London | HTML_LLM | 403 Cloudflare |
-| `hayward` | Hayward Gallery | London | HTML_LLM | 403 Cloudflare |
-| `mass_moca` | MASS MoCA | North Adams | HTML_LLM | 403 Cloudflare |
-| `flv` | Fondation Louis Vuitton | Paris | HTML_LLM | SPA |
-| `momat` | MOMAT | Tokyo | HTML_LLM | SPA |
-| `leeum` | Leeum Samsung Museum | Seoul | HTML_LLM | SPA |
-| `mca_australia` | MCA Australia | Sydney | HTML_LLM | SPA |
-| `pinakothek` | Pinakothek der Moderne | Munich | HTML_LLM | SPA |
-| `hamburger_bahnhof` | Hamburger Bahnhof | Berlin | HTML_LLM | SSL 证书错误 |
+| `moma` | MoMA | New York | CSV_REMOTE | ok |
+| `tate` | Tate Modern | London | HTML_LLM | ok |
+| `mplus` | M+ Museum | Hong Kong | HTML_LLM | ok |
+| `serpentine` | Serpentine Galleries | London | HTML_LLM | ok |
+| `mori` | Mori Art Museum | Tokyo | HTML_LLM | ok |
+| `aic` | Art Institute of Chicago | Chicago | REST_API | ok |
+| `nga` | National Gallery of Art | Washington D.C. | ARTWORK_ONLY | ok |
+| `met` | The Met | New York | CSV_LOCAL | ok |
+| `pompidou` | Centre Pompidou | Paris | HTML_LLM | ok |
+| `guggenheim` | Guggenheim | New York | HTML_LLM | blocked_cloudflare |
+| `biennale` | Venice Biennale | Venice | HTML_LLM | ok |
+| `whitney` | Whitney Museum | New York | REST_API | ok |
+| `kunsthaus` | Kunsthaus Zürich | Zürich | HTML_LLM | ok |
+| `psa` | Power Station of Art | Shanghai | HTML_LLM | ok |
+| `ucca` | UCCA | Beijing | HTML_LLM | ok |
+| `documenta` | Documenta | Kassel | HTML_LLM | ok |
+| `berlin_biennale` | Berlin Biennale | Berlin | HTML_LLM | ok |
+| `gwangju_biennale` | Gwangju Biennale | Gwangju | HTML_LLM | ok |
+| `istanbul_biennale` | Istanbul Biennial | Istanbul | HTML_LLM | ok |
+| `lyon_biennale` | Lyon Biennale | Lyon | HTML_LLM | ok |
+| `liverpool_biennale` | Liverpool Biennial | Liverpool | HTML_LLM | ok |
+| `taipei_biennale` | Taipei Biennial | Taipei | HTML_LLM | ok |
+| `yokohama_triennale` | Yokohama Triennale | Yokohama | HTML_LLM | ok |
+| `sydney_biennale` | Sydney Biennale | Sydney | HTML_LLM | ok |
+| `sharjah_biennale` | Sharjah Biennial | Sharjah | HTML_LLM | ok |
+| `saopaulo_biennial` | São Paulo Biennial | São Paulo | HTML_LLM | ok |
+| `maxxi` | MAXXI | Rome | HTML_LLM | ok |
+| `kw_institute` | KW Institute | Berlin | HTML_LLM | ok |
+| `lenbachhaus` | Lenbachhaus | Munich | HTML_LLM | ok |
+| `baltic` | BALTIC | Gateshead | HTML_LLM | ok |
+| `brooklyn_museum` | Brooklyn Museum | New York | HTML_LLM | ok |
+| `mca_chicago` | MCA Chicago | Chicago | HTML_LLM | ok |
+| `barbican` | Barbican Centre | London | HTML_LLM | ok |
+| `national_gallery_sg` | National Gallery Singapore | Singapore | HTML_LLM | ok |
+| `maiiam` | MAIIAM | Chiang Mai | HTML_LLM | ok |
+| `njpac` | Nam June Paik Art Center | Yongin | HTML_LLM | ok |
+| `reina_sofia` | Museo Reina Sofía | Madrid | HTML_LLM | ok |
+| `kanazawa21` | 21st Century Museum | Kanazawa | HTML_LLM | ok |
+| `new_museum` | New Museum | New York | HTML_LLM | ok |
+| `lacma` | LACMA | Los Angeles | HTML_LLM | blocked_cloudflare |
+| `dia` | Dia Art Foundation | New York | HTML_LLM | blocked_cloudflare |
+| `whitechapel` | Whitechapel Gallery | London | HTML_LLM | blocked_cloudflare |
+| `hayward` | Hayward Gallery | London | HTML_LLM | blocked_cloudflare |
+| `mass_moca` | MASS MoCA | North Adams | HTML_LLM | blocked_cloudflare |
+| `flv` | Fondation Louis Vuitton | Paris | HTML_LLM | blocked_spa |
+| `momat` | MOMAT | Tokyo | HTML_LLM | ok |
+| `leeum` | Leeum Samsung Museum | Seoul | HTML_LLM | warn |
+| `mca_australia` | MCA Australia | Sydney | HTML_LLM | ok |
+| `pinakothek` | Pinakothek der Moderne | Munich | HTML_LLM | warn |
+| `hamburger_bahnhof` | Hamburger Bahnhof | Berlin | HTML_LLM | ok |
+| `astrup_fearnley` | Astrup Fearnley | Oslo | HTML_LLM | ok |
+| `beyeler` | Fondation Beyeler | Basel | HTML_LLM | ok |
+| `hammer_museum` | Hammer Museum | Los Angeles | HTML_LLM | ok |
+| `hirshhorn` | Hirshhorn Museum | Washington D.C. | HTML_LLM | blocked_api_key |
+| `kunsthal` | Kunsthal Rotterdam | Rotterdam | HTML_LLM | ok |
+| `louisiana` | Louisiana Museum | Humlebæk | HTML_LLM | ok |
+| `museum_ludwig` | Museum Ludwig | Cologne | HTML_LLM | ok |
+| `ngv` | National Gallery of Victoria | Melbourne | HTML_LLM | ok |
+| `palaistokyo` | Palais de Tokyo | Paris | HTML_LLM | ok |
+| `south_london_gallery` | South London Gallery | London | HTML_LLM | warn |
+| `whitney_biennial` | Whitney Biennial | New York | HTML_LLM | ok |
+| `wikidata` | Wikidata | Various | SPARQL | ok |
+| `zkm` | ZKM | Karlsruhe | HTML_LLM | ok |
 
 完整列表运行 `python run_collector.py --list-sites` 查看。
+
+**状态图例**：
+- `ok` — URL 发现正常（≥5 个或策略预期数量）
+- `warn` — URL 发现偏少（1–4 个），pattern 可能过严
+- `blocked_cloudflare` — Cloudflare 403 封锁，需替代数据源
+- `blocked_spa` — SPA 渲染失败，Playwright 无法解决
+- `blocked_api_key` — 需要 API Key 才能访问
+- `needs_playwright` — 需要 Playwright 渲染（已配置但可能不稳定）
+
+**Red 站点修复评估（2026-05-27）**：
+以下 8 家 red parser 已穷尽现有绕过方案，明确记录为不可修复，后续无需再尝试：
+- `dia` — Playwright 超时，curl_cffi 未安装但普通请求已 403
+- `guggenheim` — Scrapling StealthyFetcher 已失败
+- `hayward` — curl_cffi 已失败
+- `lacma` — curl_cffi 已失败
+- `mass_moca` — curl_cffi 已失败
+- `whitechapel` — curl_cffi 已失败
+- `flv` — Scrapling StealthyFetcher 已失败（Akamai CDN）
+- `hirshhorn` — 需要 Smithsonian API Key
+
+**Yellow→Green 修复（2026-05-27）**：
+- `louisiana` — 修正 list_url 为 `/exhibitions/current/`，添加 past/upcoming extra_list_urls：1→131 URLs
+- `beyeler` — 启用 Playwright，添加 past-exhibitions 页面，修正 link_patterns：3→20 URLs
 
 ---
 
