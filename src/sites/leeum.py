@@ -12,6 +12,8 @@ class LeeumParser(BaseSiteParser):
     institution_type = "museum"
     list_url = "https://www.leeumhoam.org/leeum/exhibition"
     use_playwright = True
+    # NOTE: The SPA only renders ~4 current exhibitions on the list page.
+    # No past/archive exhibition list is accessible without interaction.
     link_patterns = [
         r"leeumhoam\.org/leeum/exhibition/\d+",
     ]
