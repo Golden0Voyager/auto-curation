@@ -45,6 +45,10 @@ class ExhibitionScraper:
         }, follow_redirects=True, max_redirects=5, timeout=60.0)
         self.max_concurrency = max_concurrency
         self._stats_lock = asyncio.Lock()
+        self.async_client = httpx.AsyncClient(headers={
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+        }, follow_redirects=True, max_redirects=5, timeout=60.0)
 
     def scrape_site(
         self,
@@ -337,13 +341,9 @@ class ExhibitionScraper:
                             logger.info(f"[{parser.source}] Native extraction succeeded for {url}")
 
                     if not parsed_data:
-                        async with httpx.AsyncClient(headers={
-                            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                            "Accept-Language": "en-US,en;q=0.9",
-                        }, follow_redirects=True, timeout=30.0) as async_client:
-                            response = await async_client.get(url)
-                            response.raise_for_status()
-                            html_text = response.text
+                        response = await self.async_client.get(url)
+                        response.raise_for_status()
+                        html_text = response.text
 
                         if len(html_text) > MAX_HTML_SIZE:
                             logger.warning(f"HTML response for {url} exceeds {MAX_HTML_SIZE} bytes ({len(html_text)}). Skipping.")
@@ -628,3 +628,8 @@ class ExhibitionScraper:
     def close(self):
         """Closes any network resources."""
         self.client.close()
+
+    async def aclose(self):
+        """Async close: shuts down both sync and async HTTP clients."""
+        self.client.close()
+        await self.async_client.aclose()
