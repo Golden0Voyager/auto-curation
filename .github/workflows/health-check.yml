@@ -1,0 +1,36 @@
+name: Daily Health Check
+
+on:
+  schedule:
+    - cron: '3 8 * * *'  # 每天 UTC 08:03
+  workflow_dispatch:      # 手动触发
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install uv && uv pip install -r requirements.txt
+
+      - name: Run health check
+        env:
+          SENSENOVA_API_KEY: ${{ secrets.SENSENOVA_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+        run: python scripts/health_check.py --timeout 120
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: health-check-report
+          path: docs/plans/health-check-report-*.md
+          retention-days: 30
