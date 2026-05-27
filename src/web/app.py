@@ -15,16 +15,22 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for local testing and developer integration
+# CORS: default to localhost only for security; override via CORS_ORIGINS env for production
+_cors_origins_env = os.getenv("CORS_ORIGINS")
+if _cors_origins_env:
+    _cors_origins = [o.strip() for o in _cors_origins_env.split(",") if o.strip()]
+else:
+    _cors_origins = ["http://localhost:8000", "http://127.0.0.1:8000"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=_cors_origins,
+    allow_credentials=False,
+    allow_methods=["GET"],
     allow_headers=["*"],
 )
 
-DB_PATH = "exhibitions.db"
+DB_PATH = os.path.abspath(os.getenv("DB_PATH", "exhibitions.db"))
 
 def get_db_conn():
     conn = sqlite3.connect(DB_PATH)
