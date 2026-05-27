@@ -111,7 +111,8 @@ class BaseSiteParser:
                     response.raise_for_status()
                     page_html = response.text
                 elif not self.verify_ssl:
-                    with httpx.Client(verify=False, follow_redirects=True) as temp_client:
+                    logger.warning(f"[{self.source}] SSL verification disabled for {list_url}")
+                    with httpx.Client(verify=False, follow_redirects=True, max_redirects=5) as temp_client:
                         response = temp_client.get(list_url, headers=HEADERS)
                         response.raise_for_status()
                         page_html = response.text
