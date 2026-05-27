@@ -11,6 +11,8 @@ class DiaParser(BaseSiteParser):
     parser_key = "dia"
     institution_type = "museum"
     status = "BLOCKED_CLOUDFLARE"
+    # NOTE: curl_cffi and Playwright both tested and failed (2026-05-27).
+    # Cloudflare blocks all bypass attempts. Do not retry.
     list_url = "https://www.diaart.org/exhibition"
     link_patterns = [
         r"diaart\.org/exhibition/[^/]+",
