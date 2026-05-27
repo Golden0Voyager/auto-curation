@@ -44,6 +44,7 @@ class ExhibitionScraper:
             "Accept-Language": "en-US,en;q=0.9",
         }, follow_redirects=True, max_redirects=5, timeout=60.0)
         self.max_concurrency = max_concurrency
+        self._stats_lock = asyncio.Lock()
 
     def scrape_site(
         self,
@@ -321,7 +322,8 @@ class ExhibitionScraper:
                         existing = await asyncio.to_thread(self.db.get_exhibition_by_url, url)
                         if existing:
                             logger.info(f"-> Skip: already in DB (ID: {existing['id']})")
-                            stats["skipped"] += 1
+                            async with self._stats_lock:
+                                stats["skipped"] += 1
                             return
                     elif force and not dry_run:
                         logger.info(f"-> Force active: Deleting existing DB entry for URL to ensure clean overwrite: {url}")
@@ -345,13 +347,15 @@ class ExhibitionScraper:
 
                         if len(html_text) > MAX_HTML_SIZE:
                             logger.warning(f"HTML response for {url} exceeds {MAX_HTML_SIZE} bytes ({len(html_text)}). Skipping.")
-                            stats["failed"] += 1
+                            async with self._stats_lock:
+                                stats["failed"] += 1
                             return
 
                         clean_text = parser.clean_html(html_text)
                         if not clean_text or len(clean_text.strip()) < 100:
                             logger.warning(f"Content too short/empty for {url}. Skipping.")
-                            stats["failed"] += 1
+                            async with self._stats_lock:
+                                stats["failed"] += 1
                             return
 
                         logger.info(f"Sending {len(clean_text)} chars to LLM (async)...")
@@ -360,7 +364,8 @@ class ExhibitionScraper:
                         )
                         if not parsed_data:
                             logger.error(f"-> LLM parsing failed for: {url}")
-                            stats["failed"] += 1
+                            async with self._stats_lock:
+                                stats["failed"] += 1
                             return
 
                     parsed_data["source"] = parser.source
@@ -370,21 +375,26 @@ class ExhibitionScraper:
                     if not parsed_data.get("city"):
                         parsed_data["city"] = parser.city
 
-                    stats["parsed"] += 1
+                    async with self._stats_lock:
+                        stats["parsed"] += 1
 
                     if dry_run:
                         logger.info(f"[DRY-RUN] '{parsed_data['title']}': {len(parsed_data.get('artworks', []))} artworks extracted.")
-                        stats["saved"] += 1
+                        async with self._stats_lock:
+                            stats["saved"] += 1
                     else:
                         ex_id = await asyncio.to_thread(self.db.insert_exhibition, parsed_data)
                         if ex_id:
-                            stats["saved"] += 1
+                            async with self._stats_lock:
+                                stats["saved"] += 1
                         else:
-                            stats["failed"] += 1
+                            async with self._stats_lock:
+                                stats["failed"] += 1
 
                 except Exception as e:
                     logger.error(f"Error processing {url}: {e}", exc_info=True)
-                    stats["failed"] += 1
+                    async with self._stats_lock:
+                        stats["failed"] += 1
 
         await asyncio.gather(*[asyncio.create_task(_process_one(url)) for url in target_urls])
         logger.info(f"[ASYNC] Done: '{parser.source}' | {stats}")
