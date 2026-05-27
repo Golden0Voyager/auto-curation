@@ -1,24 +1,24 @@
 [
   {
     "site": "aic",
-    "status": "WARN",
+    "status": "PASS",
     "urls_found": 1,
     "error": null,
-    "elapsed": 1.12
+    "elapsed": 2.3
   },
   {
     "site": "astrup_fearnley",
     "status": "PASS",
     "urls_found": 6,
     "error": null,
-    "elapsed": 1.92
+    "elapsed": 2.03
   },
   {
     "site": "baltic",
     "status": "PASS",
     "urls_found": 6,
     "error": null,
-    "elapsed": 1.79
+    "elapsed": 1.95
   },
   {
     "site": "barbican",
@@ -32,21 +32,21 @@
     "status": "PASS",
     "urls_found": 30,
     "error": null,
-    "elapsed": 1.91
+    "elapsed": 2.04
   },
   {
     "site": "beyeler",
-    "status": "WARN",
-    "urls_found": 4,
+    "status": "PASS",
+    "urls_found": 20,
     "error": null,
-    "elapsed": 19.38
+    "elapsed": 27.15
   },
   {
     "site": "brooklyn_museum",
     "status": "PASS",
     "urls_found": 23,
     "error": null,
-    "elapsed": 15.6
+    "elapsed": 8.84
   },
   {
     "site": "dia",
@@ -60,7 +60,7 @@
     "status": "PASS",
     "urls_found": 15,
     "error": null,
-    "elapsed": 3.94
+    "elapsed": 4.38
   },
   {
     "site": "flv",
@@ -81,14 +81,14 @@
     "status": "PASS",
     "urls_found": 14,
     "error": null,
-    "elapsed": 1.39
+    "elapsed": 6.01
   },
   {
     "site": "hammer_museum",
     "status": "PASS",
     "urls_found": 7,
     "error": null,
-    "elapsed": 7.82
+    "elapsed": 1.55
   },
   {
     "site": "hayward",
@@ -109,28 +109,28 @@
     "status": "PASS",
     "urls_found": 5,
     "error": null,
-    "elapsed": 5.6
+    "elapsed": 4.09
   },
   {
     "site": "kunsthal",
     "status": "PASS",
     "urls_found": 9,
     "error": null,
-    "elapsed": 1.33
+    "elapsed": 2.77
   },
   {
     "site": "kunsthaus",
     "status": "PASS",
     "urls_found": 31,
     "error": null,
-    "elapsed": 0.21
+    "elapsed": 1.69
   },
   {
     "site": "kw_institute",
     "status": "PASS",
     "urls_found": 31,
     "error": null,
-    "elapsed": 1.96
+    "elapsed": 3.22
   },
   {
     "site": "lacma",
@@ -144,35 +144,35 @@
     "status": "WARN",
     "urls_found": 4,
     "error": null,
-    "elapsed": 11.92
+    "elapsed": 12.26
   },
   {
     "site": "lenbachhaus",
     "status": "PASS",
     "urls_found": 120,
     "error": null,
-    "elapsed": 4.29
+    "elapsed": 4.36
   },
   {
     "site": "liverpool_biennial",
     "status": "PASS",
     "urls_found": 21,
     "error": null,
-    "elapsed": 16.99
+    "elapsed": 1.46
   },
   {
     "site": "louisiana",
-    "status": "WARN",
-    "urls_found": 1,
+    "status": "PASS",
+    "urls_found": 131,
     "error": null,
-    "elapsed": 3.21
+    "elapsed": 5.72
   },
   {
     "site": "maiiam",
     "status": "PASS",
     "urls_found": 25,
     "error": null,
-    "elapsed": 4.12
+    "elapsed": 6.58
   },
   {
     "site": "mass_moca",
@@ -184,198 +184,198 @@
   {
     "site": "maxxi",
     "status": "PASS",
-    "urls_found": 54,
+    "urls_found": 53,
     "error": null,
-    "elapsed": 1.11
+    "elapsed": 2.72
   },
   {
     "site": "mca_australia",
     "status": "PASS",
     "urls_found": 361,
     "error": null,
-    "elapsed": 46.12
+    "elapsed": 43.66
   },
   {
     "site": "mca_chicago",
     "status": "PASS",
     "urls_found": 11,
     "error": null,
-    "elapsed": 1.85
+    "elapsed": 2.88
   },
   {
     "site": "met",
     "status": "PASS",
     "urls_found": 43,
     "error": null,
-    "elapsed": 43.98
+    "elapsed": 2.45
   },
   {
     "site": "moma",
     "status": "PASS",
     "urls_found": 1727,
     "error": null,
-    "elapsed": 0.16
+    "elapsed": 0.21
   },
   {
     "site": "momat",
     "status": "PASS",
     "urls_found": 15,
     "error": null,
-    "elapsed": 0.54
+    "elapsed": 1.0
   },
   {
     "site": "mori",
     "status": "PASS",
     "urls_found": 72,
     "error": null,
-    "elapsed": 3.66
+    "elapsed": 3.78
   },
   {
     "site": "mplus",
     "status": "PASS",
     "urls_found": 38,
     "error": null,
-    "elapsed": 4.71
+    "elapsed": 3.28
   },
   {
     "site": "museum_ludwig",
     "status": "PASS",
     "urls_found": 6,
     "error": null,
-    "elapsed": 1.14
+    "elapsed": 1.41
   },
   {
     "site": "national_gallery_sg",
     "status": "PASS",
     "urls_found": 10,
     "error": null,
-    "elapsed": 0.34
+    "elapsed": 0.41
   },
   {
     "site": "new_museum",
     "status": "PASS",
     "urls_found": 10,
     "error": null,
-    "elapsed": 17.25
+    "elapsed": 22.62
   },
   {
     "site": "nga",
-    "status": "WARN",
+    "status": "PASS",
     "urls_found": 1,
     "error": null,
-    "elapsed": 1.5
+    "elapsed": 1.64
   },
   {
     "site": "ngv",
     "status": "PASS",
     "urls_found": 22,
     "error": null,
-    "elapsed": 3.59
+    "elapsed": 4.91
   },
   {
     "site": "njpac",
     "status": "PASS",
     "urls_found": 22,
     "error": null,
-    "elapsed": 1.78
+    "elapsed": 2.41
   },
   {
     "site": "palaistokyo",
     "status": "PASS",
     "urls_found": 8,
     "error": null,
-    "elapsed": 1.72
+    "elapsed": 5.18
   },
   {
     "site": "pinakothek",
     "status": "WARN",
     "urls_found": 3,
     "error": null,
-    "elapsed": 26.52
+    "elapsed": 38.56
   },
   {
     "site": "pompidou",
     "status": "PASS",
     "urls_found": 52,
     "error": null,
-    "elapsed": 0.98
+    "elapsed": 9.12
   },
   {
     "site": "psa",
     "status": "PASS",
     "urls_found": 24,
     "error": null,
-    "elapsed": 21.43
+    "elapsed": 22.38
   },
   {
     "site": "reina_sofia",
     "status": "PASS",
     "urls_found": 9,
     "error": null,
-    "elapsed": 1.46
+    "elapsed": 2.39
   },
   {
     "site": "saopaulo_biennial",
     "status": "PASS",
     "urls_found": 50,
     "error": null,
-    "elapsed": 3.61
+    "elapsed": 4.71
   },
   {
     "site": "serpentine",
     "status": "PASS",
     "urls_found": 60,
     "error": null,
-    "elapsed": 12.38
+    "elapsed": 52.32
   },
   {
     "site": "sharjah_biennale",
     "status": "PASS",
     "urls_found": 17,
     "error": null,
-    "elapsed": 4.53
+    "elapsed": 4.57
   },
   {
     "site": "south_london_gallery",
     "status": "WARN",
     "urls_found": 4,
     "error": null,
-    "elapsed": 1.36
+    "elapsed": 1.25
   },
   {
     "site": "sydney_biennale",
     "status": "PASS",
     "urls_found": 34,
     "error": null,
-    "elapsed": 2.09
+    "elapsed": 2.14
   },
   {
     "site": "taipei_biennale",
     "status": "PASS",
     "urls_found": 6,
     "error": null,
-    "elapsed": 3.99
+    "elapsed": 1.13
   },
   {
     "site": "tate",
     "status": "PASS",
     "urls_found": 16,
     "error": null,
-    "elapsed": 0.66
+    "elapsed": 0.46
   },
   {
     "site": "ucca",
     "status": "PASS",
     "urls_found": 28,
     "error": null,
-    "elapsed": 3.2
+    "elapsed": 3.72
   },
   {
     "site": "venice_biennale",
     "status": "PASS",
     "urls_found": 16,
     "error": null,
-    "elapsed": 1.2
+    "elapsed": 5.57
   },
   {
     "site": "whitechapel",
@@ -386,37 +386,37 @@
   },
   {
     "site": "whitney",
-    "status": "WARN",
+    "status": "PASS",
     "urls_found": 1,
     "error": null,
-    "elapsed": 2.14
+    "elapsed": 2.22
   },
   {
     "site": "whitney_biennial",
     "status": "PASS",
     "urls_found": 19,
     "error": null,
-    "elapsed": 1.66
+    "elapsed": 1.63
   },
   {
     "site": "wikidata",
-    "status": "WARN",
+    "status": "PASS",
     "urls_found": 1,
     "error": null,
-    "elapsed": 9.67
+    "elapsed": 2.22
   },
   {
     "site": "yokohama_triennale",
     "status": "PASS",
     "urls_found": 34,
     "error": null,
-    "elapsed": 2.51
+    "elapsed": 2.63
   },
   {
     "site": "zkm",
     "status": "PASS",
     "urls_found": 7,
     "error": null,
-    "elapsed": 4.13
+    "elapsed": 4.01
   }
 ]
