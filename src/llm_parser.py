@@ -4,7 +4,7 @@ import logging
 import asyncio
 import httpx
 from typing import Dict, List, Any, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 from src.cache import LLMResponseCache, make_cache_key
 
 logger = logging.getLogger("auto_curation.llm_parser")
@@ -52,7 +52,7 @@ class LLMExhibitionParser:
         if sensenova_key:
             self.providers.append({
                 "name": "sensenova",
-                "api_key": sensenova_key,
+                "api_key": SecretStr(sensenova_key),
                 "base_url": os.getenv("SENSENOVA_BASE_URL", "https://api.sensenova.cn/compatible-mode/v2"),
                 "model": "DeepSeek-V3-1"
             })
@@ -62,7 +62,7 @@ class LLMExhibitionParser:
         if gemini_key:
             self.providers.append({
                 "name": "gemini",
-                "api_key": gemini_key,
+                "api_key": SecretStr(gemini_key),
                 "base_url": os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/"),
                 "model": "gemini-2.5-flash"
             })
@@ -72,7 +72,7 @@ class LLMExhibitionParser:
         if siliconflow_key:
             self.providers.append({
                 "name": "siliconflow",
-                "api_key": siliconflow_key,
+                "api_key": SecretStr(siliconflow_key),
                 "base_url": os.getenv("SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1"),
                 "model": "deepseek-ai/DeepSeek-V3"
             })
@@ -182,7 +182,7 @@ Strict Guidelines:
         provider_name = provider["name"]
 
         headers = {
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": f"Bearer {api_key.get_secret_value()}",
             "Content-Type": "application/json"
         }
 
@@ -236,7 +236,7 @@ Strict Guidelines:
         provider_name = provider["name"]
 
         headers = {
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": f"Bearer {api_key.get_secret_value()}",
             "Content-Type": "application/json"
         }
 
