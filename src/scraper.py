@@ -1,8 +1,10 @@
 import logging
 import asyncio
 import httpx
+import json
 from typing import Dict, List, Any, Optional
 from datetime import date
+from urllib.parse import urljoin
 from tenacity import stop_after_attempt, wait_exponential, retry_if_exception, Retrying, AsyncRetrying
 from src.database import ExhibitionDatabase
 from src.llm_parser import LLMExhibitionParser
@@ -14,6 +16,38 @@ logger = logging.getLogger("auto_curation.scraper")
 
 # Security: max HTML response size to prevent OOM from malicious/large pages (5 MB)
 MAX_HTML_SIZE = 5 * 1024 * 1024
+
+
+def extract_images_from_html(html: str, base_url: str, max_images: int = 8) -> List[str]:
+    """Deterministically extract image URLs from HTML using BeautifulSoup.
+
+    Filters out logos, icons, tracking pixels, and non-image file types.
+    Deduplicates and limits to max_images.
+
+    Args:
+        html: Raw HTML string.
+        base_url: Base URL for resolving relative image paths.
+        max_images: Maximum number of images to return.
+
+    Returns:
+        List of absolute image URLs.
+    """
+    try:
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html, "html.parser")
+        image_urls = []
+        for img in soup.find_all("img", src=True):
+            src = img["src"].strip()
+            full_img_url = urljoin(base_url, src)
+            if any(kw in full_img_url.lower() for kw in ["logo", "icon", "avatar", "pixel", "tracking", "badge", "nav", "footer"]):
+                continue
+            if not any(ext in full_img_url.lower() for ext in [".jpg", ".jpeg", ".png", ".webp"]):
+                continue
+            image_urls.append(full_img_url)
+        return list(dict.fromkeys(image_urls))[:max_images]
+    except Exception as e:
+        logger.error(f"Error extracting image links: {e}")
+        return []
 
 
 def _is_retryable_http_error(exc: BaseException) -> bool:
@@ -89,7 +123,23 @@ class ExhibitionScraper:
             f"Starting scrape for '{parser.source}' (City: {parser.city}) "
             f"| strategy={strategy.value}{' | since=' + str(since_year) if since_year else ''}"
         )
-        return handler(parser, limit=limit, force=force, dry_run=dry_run, since_year=since_year)
+
+        run_type = "dry_run" if dry_run else ("limit" if limit else "full")
+        run_id = self.db.start_scraper_run(site_key, run_type)
+        try:
+            result = handler(parser, limit=limit, force=force, dry_run=dry_run, since_year=since_year)
+            self.db.finish_scraper_run(
+                run_id,
+                urls_discovered=result.get("discovered", 0),
+                urls_parsed=result.get("parsed", 0),
+                exhibitions_saved=result.get("saved", 0),
+                exhibitions_failed=result.get("failed", 0),
+                error_message=result.get("error"),
+            )
+            return result
+        except Exception as e:
+            self.db.finish_scraper_run(run_id, error_message=str(e)[:500])
+            raise
 
     async def ascrape_site(
         self,
@@ -120,7 +170,24 @@ class ExhibitionScraper:
             f"[ASYNC] Starting scrape for '{parser.source}' (City: {parser.city}) "
             f"| strategy={strategy.value}{' | since=' + str(since_year) if since_year else ''}"
         )
-        return await self._scrape_html_async(parser, limit=limit, force=force, dry_run=dry_run, since_year=since_year)
+
+        run_type = "dry_run" if dry_run else ("limit" if limit else "full")
+        run_id = self.db.start_scraper_run(site_key, run_type)
+        try:
+            result = await self._scrape_html_async(parser, limit=limit, force=force, dry_run=dry_run, since_year=since_year)
+            await asyncio.to_thread(
+                self.db.finish_scraper_run,
+                run_id,
+                urls_discovered=result.get("discovered", 0),
+                urls_parsed=result.get("parsed", 0),
+                exhibitions_saved=result.get("saved", 0),
+                exhibitions_failed=result.get("failed", 0),
+                error_message=result.get("error"),
+            )
+            return result
+        except Exception as e:
+            await asyncio.to_thread(self.db.finish_scraper_run, run_id, error_message=str(e)[:500])
+            raise
 
     # ------------------------------------------------------------------
     # Strategy handlers
@@ -247,23 +314,7 @@ class ExhibitionScraper:
                         continue
 
                     # Extract and attach image links deterministically (saves disk & tokens)
-                    from bs4 import BeautifulSoup
-                    from urllib.parse import urljoin
-                    import json
-                    image_urls = []
-                    try:
-                        soup = BeautifulSoup(response.text, "html.parser")
-                        for img in soup.find_all("img", src=True):
-                            src = img["src"].strip()
-                            full_img_url = urljoin(url, src)
-                            if any(kw in full_img_url.lower() for kw in ["logo", "icon", "avatar", "pixel", "tracking", "badge", "nav", "footer"]):
-                                continue
-                            if not any(ext in full_img_url.lower() for ext in [".jpg", ".jpeg", ".png", ".webp"]):
-                                continue
-                            image_urls.append(full_img_url)
-                        image_urls = list(dict.fromkeys(image_urls))[:8]
-                    except Exception as e:
-                        logger.error(f"Error extracting image links: {e}")
+                    image_urls = extract_images_from_html(response.text, url, max_images=8)
                     parsed_data["images"] = json.dumps(image_urls)
 
                 if parsed_data and "images" not in parsed_data:
