@@ -199,24 +199,58 @@ class BaseSiteParser:
         return urls
             
     def clean_html(self, html: str) -> str:
-        """Strips noise from the detailed exhibition HTML, returning clean high-density text."""
+        """Strips noise from the detailed exhibition HTML, returning clean high-density text.
+
+        Uses a two-pass strategy: first try semantic content extraction (main/article),
+        then fall back to full-body extraction with aggressive noise removal if the
+        result is too short.
+        """
         soup = BeautifulSoup(html, "html.parser")
-        
+
+        # Try to extract meta description as additional context
+        meta_desc = ""
+        meta_tag = soup.find("meta", attrs={"name": "description"})
+        if meta_tag:
+            meta_desc = meta_tag.get("content", "").strip()
+
+        # --- Pass 1: Semantic extraction ---
+        semantic_selectors = ["main", "article", '[role="main"]', ".content", ".exhibition-content"]
+        for selector in semantic_selectors:
+            container = soup.select_one(selector)
+            if container:
+                text = container.get_text(separator="\n")
+                cleaned = self._normalize_text(text)
+                if len(cleaned) >= 300:
+                    return meta_desc + "\n" + cleaned if meta_desc else cleaned
+
+        # --- Pass 2: Full-page with noise removal ---
         # Remove common noise tags
-        for element in soup(["script", "style", "nav", "footer", "header", "iframe", "noscript", "svg", "form"]):
+        for element in soup(["script", "style", "nav", "footer", "header", "iframe", "noscript", "svg", "form", "aside"]):
             element.decompose()
-            
+
         # Remove common noise classes/IDs
-        for selector in [".nav", ".footer", ".header", ".menu", ".sidebar", "#menu", "#footer", "#header", ".cookie", ".breadcrumb"]:
+        noise_selectors = [
+            ".nav", ".footer", ".header", ".menu", ".sidebar", "#menu", "#footer", "#header",
+            ".cookie", ".breadcrumb", ".share", ".social", ".ad", ".newsletter", ".popup",
+            ".modal", ".overlay", ".announcement", ".promo", ".banner", ".widget",
+            ".related", ".recommended", ".tags", ".comments", ".pagination",
+        ]
+        for selector in noise_selectors:
             for element in soup.select(selector):
                 element.decompose()
-                
-        # Get readable text
+
         text = soup.get_text(separator="\n")
-        
-        # Clean up whitespace
+        cleaned = self._normalize_text(text)
+
+        # If still too short, include meta description as fallback
+        if len(cleaned) < 200 and meta_desc:
+            cleaned = meta_desc + "\n" + cleaned
+
+        return cleaned
+
+    @staticmethod
+    def _normalize_text(text: str) -> str:
+        """Normalize whitespace in extracted text."""
         lines = (line.strip() for line in text.splitlines())
         chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-        text = "\n".join(chunk for chunk in chunks if chunk)
-        
-        return text
+        return "\n".join(chunk for chunk in chunks if chunk)
