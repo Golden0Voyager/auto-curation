@@ -37,6 +37,7 @@ class ExhibitionModel(BaseModel):
     biographies_cn: Optional[str] = Field(None, description="A brief summary/translation of the primary artist biography in Chinese")
     credits: Optional[str] = Field(None, description="Detailed exhibition credits, curators, production, and special thanks in original English")
     curators: List[str] = Field(default_factory=list, description="List of curators")
+    images: List[str] = Field(default_factory=list, description="List of exhibition image URLs (posters, installation shots, artwork photos)")
     start_date: Optional[str] = Field(None, description="Exhibition start date")
     end_date: Optional[str] = Field(None, description="Exhibition end date")
     location: Optional[str] = Field(None, description="Gallery location within the institution")
@@ -103,6 +104,11 @@ class LLMExhibitionParser:
         ]))
         if not has_dates and len(text_content.strip()) < 30:
             return False
+        # Concept should not be trivially short — flag for retry if it looks like a placeholder
+        concept = data.get("concept", "") or ""
+        if concept and len(concept.strip()) < 20:
+            # Very short concept is suspicious — likely a low-quality extraction
+            return False
         return True
 
     def _build_prompts(self, text: str, source: str, default_city: str) -> tuple[str, str]:
@@ -127,13 +133,14 @@ Extract this JSON Schema exactly:
 {{
   "title": "Exhibition title or theme (required, string)",
   "preface": "Detailed exhibition preface/introduction/description in Chinese (string or null)",
-  "concept": "Specific curatorial concept or theoretical background in Chinese if mentioned (string or null)",
+  "concept": "Specific curatorial concept, theoretical framework, or thematic focus in Chinese. This is the intellectual core of the exhibition — NOT a general description. (string, required — synthesize from available text)",
   "preface_en": "Detailed exhibition preface/introduction/description in original English (string or null)",
   "concept_en": "Specific curatorial concept or theoretical background in original English if mentioned (string or null)",
   "biographies": "Detailed biographies of artists and collaborators in original English, formatted in clean Markdown (string or null)",
   "biographies_cn": "A brief summary/translation of the primary artist biography in Chinese, formatted in clean Markdown (string or null)",
   "credits": "Detailed exhibition credits, curators, collaborator technical credits, production, playtesters, and special thanks in original English, formatted in clean Markdown (string or null)",
   "curators": ["List of curators (array of strings)"],
+  "images": ["List of exhibition image URLs — posters, installation shots, artwork photos (array of strings, max 8, or empty array)"],
   "start_date": "Exhibition start date, e.g. 2026-05-23 (string or null)",
   "end_date": "Exhibition end date, e.g. 2026-11-22 (string or null)",
   "location": "Gallery name or gallery number inside the museum, e.g. Floor 3, Gallery 302 (string or null)",
@@ -152,10 +159,15 @@ Extract this JSON Schema exactly:
 
 Strict Guidelines:
 1. Ensure the 'title' field is always populated. If not clear, synthesize a suitable title from the page main headers.
-2. For 'preface' and 'concept', translate or summarize into fluent and professional Chinese art curatorial style. For 'preface_en' and 'concept_en', extract and summarize the high-density exhibition description in English, filtering out generic navigation/ticketing information.
+2. 'preface' vs 'concept' distinction:
+   - 'preface': General exhibition description, what visitors see, overview of works and artists.
+   - 'concept': The CURATORIAL IDEA — why these works are brought together, the intellectual thread, the critical lens, the historical/thematic argument. If the text contains phrases like 'this exhibition explores', 'through the lens of', 'examining the intersection', 'challenging notions of', 'rethinking', those belong in CONCEPT.
+   - CONCEPT must NEVER be null or empty if the page has any substantive exhibition text. Synthesize at least 1-2 sentences capturing the curatorial thesis. Minimum 50 characters.
+   - For 'preface_en' and 'concept_en', extract and summarize the high-density exhibition description in English, filtering out generic navigation/ticketing information.
 3. For 'artworks', extract concrete works of art explicitly listed or described in the text with their captions. If no specific artworks are listed or described, but the page is a dedicated solo or group exhibition of specific artists, you MUST synthesize at least one artwork entry for each primary artist, setting 'artist_name' to the artist's full name, and 'work_title' to 'Selected Works' (or '代表作品' / '参展作品'), so that the artists are correctly linked to the exhibition in the database. Keep artist names in their original language/spelling.
 4. Ensure 'city' is populated, using the Default City if not explicitly found in the text.
-5. Extract 'biographies' (biographies of artists and collaborators in original English, keeping each biography relatively concise, around 2-3 sentences per collaborator to highlight their key roles and achievements) and 'credits' (all curators, video game development, playtesters, and special thanks in original English, formatted in clean Markdown lists or sections) exactly as listed on the page. Keep lists of playtesters and special thanks concise if they are extremely long. For 'biographies_cn', translate the primary artist biography into a short, elegant Chinese biography/intro.
+5. For 'images', extract up to 8 exhibition image URLs (posters, installation shots, artwork photos). Use absolute URLs. Filter out logos, icons, tracking pixels, and navigation images. Only include .jpg, .jpeg, .png, .webp files. If no suitable images are found, return an empty array [].
+6. Extract 'biographies' (biographies of artists and collaborators in original English, keeping each biography relatively concise, around 2-3 sentences per collaborator to highlight their key roles and achievements) and 'credits' (all curators, video game development, playtesters, and special thanks in original English, formatted in clean Markdown lists or sections) exactly as listed on the page. Keep lists of playtesters and special thanks concise if they are extremely long. For 'biographies_cn', translate the primary artist biography into a short, elegant Chinese biography/intro.
 """
         return system_prompt, user_prompt
 
@@ -247,7 +259,8 @@ Strict Guidelines:
             logger.warning(f"[{provider_name}] JSON decode error. Content: {content[:200]}...")
             return None
         except Exception as e:
-            logger.warning(f"[{provider_name}] Error: {e}", exc_info=False)
+            safe_msg = str(e).replace(api_key.get_secret_value(), "***REDACTED***")
+            logger.warning(f"[{provider_name}] Error: {safe_msg}", exc_info=True)
             return None
 
     async def _call_provider_async(
@@ -314,7 +327,8 @@ Strict Guidelines:
             logger.warning(f"[{provider_name}] JSON decode error. Content: {content[:200]}...")
             return None
         except Exception as e:
-            logger.warning(f"[{provider_name}] Error: {e}", exc_info=False)
+            safe_msg = str(e).replace(api_key.get_secret_value(), "***REDACTED***")
+            logger.warning(f"[{provider_name}] Error: {safe_msg}", exc_info=True)
             return None
 
     def parse_exhibition_text(self, text: str, source: str, default_city: str = "") -> Optional[Dict[str, Any]]:
