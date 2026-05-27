@@ -57,7 +57,14 @@ def run_single_smoke(site_key: str) -> dict[str, Any]:
         url_count = stats.get("discovered", 0)
         result["urls_found"] = url_count
 
+        # For non-HTML_LLM strategies, limit=1 naturally caps results to 1.
+        # Any positive count means the pipeline works.
+        strategy = getattr(parser, "strategy", None)
+        is_html = strategy is None or strategy.name == "HTML_LLM"
+
         if url_count >= 5:
+            result["status"] = "PASS"
+        elif url_count > 0 and not is_html:
             result["status"] = "PASS"
         elif url_count > 0:
             result["status"] = "WARN"
