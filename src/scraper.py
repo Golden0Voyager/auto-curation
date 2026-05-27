@@ -209,7 +209,7 @@ class ExhibitionScraper:
                                 reraise=True,
                             ):
                                 with attempt:
-                                    response = self.client.get(url)
+                                    response = self.client.get(url, timeout=getattr(parser, "request_timeout", 60.0))
                                     response.raise_for_status()
                             page_html = response.text
                         except httpx.HTTPStatusError as e:
@@ -365,7 +365,7 @@ class ExhibitionScraper:
                             reraise=True,
                         ):
                             with attempt:
-                                response = await self.async_client.get(url)
+                                response = await self.async_client.get(url, timeout=getattr(parser, "request_timeout", 60.0))
                                 response.raise_for_status()
                         html_text = response.text
 
