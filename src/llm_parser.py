@@ -209,7 +209,13 @@ Strict Guidelines:
                 response.raise_for_status()
 
                 result = response.json()
-                content = result["choices"][0]["message"]["content"].strip()
+                choices = result.get("choices", [])
+                if not choices or not isinstance(choices[0], dict):
+                    logger.warning(f"[{provider_name}] Unexpected response structure: {list(result.keys())}")
+                    return None
+                content = choices[0].get("message", {}).get("content", "").strip()
+                if not content:
+                    return None
                 return self._parse_response(content, provider_name)
 
         except httpx.HTTPStatusError as e:
@@ -263,7 +269,13 @@ Strict Guidelines:
                 response.raise_for_status()
 
                 result = response.json()
-                content = result["choices"][0]["message"]["content"].strip()
+                choices = result.get("choices", [])
+                if not choices or not isinstance(choices[0], dict):
+                    logger.warning(f"[{provider_name}] Unexpected response structure: {list(result.keys())}")
+                    return None
+                content = choices[0].get("message", {}).get("content", "").strip()
+                if not content:
+                    return None
                 return self._parse_response(content, provider_name)
 
         except httpx.HTTPStatusError as e:
