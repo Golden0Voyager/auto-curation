@@ -69,6 +69,10 @@ class BaseSiteParser:
     # Use curl_cffi to impersonate browser TLS/JA3 fingerprint; set to True for Cloudflare-protected sites
     use_curl_cffi: bool = False
 
+    # Configurable timeouts (seconds for HTTP, milliseconds for Playwright)
+    request_timeout: float = 60.0
+    playwright_timeout: float = 60000.0
+
     def get_list_urls(self, since_year: Optional[int] = None) -> List[str]:
         """Returns all listing URLs to crawl (current + historical).
         
@@ -106,18 +110,18 @@ class BaseSiteParser:
                     from curl_cffi import requests as curl_requests
 
                     response = curl_requests.get(
-                        list_url, headers=HEADERS, impersonate="chrome124", timeout=30
+                        list_url, headers=HEADERS, impersonate="chrome124", timeout=int(self.request_timeout)
                     )
                     response.raise_for_status()
                     page_html = response.text
                 elif not self.verify_ssl:
                     logger.warning(f"[{self.source}] SSL verification disabled for {list_url}")
                     with httpx.Client(verify=False, follow_redirects=True, max_redirects=5) as temp_client:
-                        response = temp_client.get(list_url, headers=HEADERS)
+                        response = temp_client.get(list_url, headers=HEADERS, timeout=self.request_timeout)
                         response.raise_for_status()
                         page_html = response.text
                 else:
-                    response = client.get(list_url, headers=HEADERS, follow_redirects=True)
+                    response = client.get(list_url, headers=HEADERS, follow_redirects=True, timeout=self.request_timeout)
                     response.raise_for_status()
                     page_html = response.text
 
@@ -166,11 +170,13 @@ class BaseSiteParser:
                 logger.info(f"[{self.source}] Rendering listing page with Playwright: {list_url}")
                 with sync_playwright() as p:
                     browser = p.chromium.launch(headless=True)
-                    page = browser.new_page()
-                    page.goto(list_url, wait_until="domcontentloaded", timeout=60000)
-                    page.wait_for_timeout(10000)
-                    html = page.content()
-                    browser.close()
+                    try:
+                        page = browser.new_page()
+                        page.goto(list_url, wait_until="domcontentloaded", timeout=int(self.playwright_timeout))
+                        page.wait_for_timeout(10000)
+                        html = page.content()
+                    finally:
+                        browser.close()
             except Exception as e:
                 logger.error(f"[{self.source}] Playwright failed to load listing page {list_url}: {e}")
                 continue
