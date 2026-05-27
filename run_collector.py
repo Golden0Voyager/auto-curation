@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import asyncio
+import os
 import sys
 import logging
 from datetime import date
@@ -74,6 +75,14 @@ def main():
     arg_parser.add_argument("--db", type=str, default="exhibitions.db", help="SQLite 数据库文件路径（默认: exhibitions.db）")
 
     args = arg_parser.parse_args()
+
+    # Validate --db path to prevent path traversal
+    args.db = os.path.abspath(args.db)
+    project_root = os.path.abspath(os.path.dirname(__file__))
+    if ".." in os.path.relpath(args.db, project_root):
+        print(f"❌ 非法的数据库路径: {args.db}. 数据库文件必须位于项目目录内。")
+        sys.exit(1)
+
     setup_logging(args.verbose)
 
     if args.list_sites:
