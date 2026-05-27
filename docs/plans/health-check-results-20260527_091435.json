@@ -1,0 +1,482 @@
+[
+  {
+    "site": "aic",
+    "status": "PASS",
+    "urls_found": 1,
+    "http_status": 200,
+    "elapsed": 1.51,
+    "error": null
+  },
+  {
+    "site": "astrup_fearnley",
+    "status": "PASS",
+    "urls_found": 6,
+    "http_status": 200,
+    "elapsed": 2.53,
+    "error": null
+  },
+  {
+    "site": "baltic",
+    "status": "PASS",
+    "urls_found": 6,
+    "http_status": 200,
+    "elapsed": 3.82,
+    "error": null
+  },
+  {
+    "site": "barbican",
+    "status": "PASS",
+    "urls_found": 34,
+    "http_status": 200,
+    "elapsed": 1.97,
+    "error": null
+  },
+  {
+    "site": "berlin_biennale",
+    "status": "PASS",
+    "urls_found": 30,
+    "http_status": 200,
+    "elapsed": 2.11,
+    "error": null
+  },
+  {
+    "site": "beyeler",
+    "status": "PASS",
+    "urls_found": 4,
+    "http_status": 200,
+    "elapsed": 73.59,
+    "error": null
+  },
+  {
+    "site": "brooklyn_museum",
+    "status": "PASS",
+    "urls_found": 23,
+    "http_status": 200,
+    "elapsed": 7.94,
+    "error": null
+  },
+  {
+    "site": "dia",
+    "status": "SKIPPED",
+    "urls_found": 0,
+    "http_status": 403,
+    "elapsed": 0.33,
+    "error": "BLOCKED_CLOUDFLARE"
+  },
+  {
+    "site": "documenta",
+    "status": "PASS",
+    "urls_found": 15,
+    "http_status": 200,
+    "elapsed": 4.28,
+    "error": null
+  },
+  {
+    "site": "flv",
+    "status": "ZERO_URLS",
+    "urls_found": 0,
+    "http_status": null,
+    "elapsed": 0.19,
+    "error": "2026-05-27 09:09:32,614 [INFO] auto_curation.database: Database initialized at exhibitions.db\n2026-05-27 09:09:32,614 [INFO] auto_curation.llm_parser: LLM response caching enabled.\n🚀 采集 Fondation Louis Vuitton... 数据库: exhibitions.db\n⚠️  [DRY-RUN] 模拟运行，不写入数据库。\n2026-05-27 09:09:32,643 [INFO] auto_cura"
+  },
+  {
+    "site": "guggenheim",
+    "status": "ZERO_URLS",
+    "urls_found": 0,
+    "http_status": null,
+    "elapsed": 0.17,
+    "error": "2026-05-27 09:09:32,795 [INFO] auto_curation.database: Database initialized at exhibitions.db\n2026-05-27 09:09:32,796 [INFO] auto_curation.llm_parser: LLM response caching enabled.\n🚀 采集 Guggenheim Museum... 数据库: exhibitions.db\n⚠️  [DRY-RUN] 模拟运行，不写入数据库。\n2026-05-27 09:09:32,822 [INFO] auto_curation.s"
+  },
+  {
+    "site": "hamburger_bahnhof",
+    "status": "PASS",
+    "urls_found": 14,
+    "http_status": 200,
+    "elapsed": 1.59,
+    "error": null
+  },
+  {
+    "site": "hammer_museum",
+    "status": "PASS",
+    "urls_found": 7,
+    "http_status": 200,
+    "elapsed": 1.92,
+    "error": null
+  },
+  {
+    "site": "hayward",
+    "status": "ZERO_URLS",
+    "urls_found": 0,
+    "http_status": null,
+    "elapsed": 0.19,
+    "error": "2026-05-27 09:09:36,478 [INFO] auto_curation.database: Database initialized at exhibitions.db\n2026-05-27 09:09:36,479 [INFO] auto_curation.llm_parser: LLM response caching enabled.\n🚀 采集 Hayward Gallery... 数据库: exhibitions.db\n⚠️  [DRY-RUN] 模拟运行，不写入数据库。\n2026-05-27 09:09:36,507 [INFO] auto_curation.scr"
+  },
+  {
+    "site": "hirshhorn",
+    "status": "SKIPPED",
+    "urls_found": 0,
+    "http_status": null,
+    "elapsed": 0.18,
+    "error": "BLOCKED_API_KEY"
+  },
+  {
+    "site": "kanazawa21",
+    "status": "PASS",
+    "urls_found": 5,
+    "http_status": 200,
+    "elapsed": 2.51,
+    "error": null
+  },
+  {
+    "site": "kunsthal",
+    "status": "PASS",
+    "urls_found": 9,
+    "http_status": 200,
+    "elapsed": 1.77,
+    "error": null
+  },
+  {
+    "site": "kunsthaus",
+    "status": "PASS",
+    "urls_found": 31,
+    "http_status": 200,
+    "elapsed": 0.38,
+    "error": null
+  },
+  {
+    "site": "kw_institute",
+    "status": "PASS",
+    "urls_found": 31,
+    "http_status": 200,
+    "elapsed": 60.11,
+    "error": null
+  },
+  {
+    "site": "lacma",
+    "status": "ZERO_URLS",
+    "urls_found": 0,
+    "http_status": null,
+    "elapsed": 0.24,
+    "error": "2026-05-27 09:10:31,169 [INFO] auto_curation.database: Database initialized at exhibitions.db\n2026-05-27 09:10:31,169 [INFO] auto_curation.llm_parser: LLM response caching enabled.\n🚀 采集 LACMA... 数据库: exhibitions.db\n⚠️  [DRY-RUN] 模拟运行，不写入数据库。\n2026-05-27 09:10:31,203 [INFO] auto_curation.scraper: Star"
+  },
+  {
+    "site": "leeum",
+    "status": "PASS",
+    "urls_found": 4,
+    "http_status": 200,
+    "elapsed": 17.38,
+    "error": null
+  },
+  {
+    "site": "lenbachhaus",
+    "status": "PASS",
+    "urls_found": 120,
+    "http_status": 200,
+    "elapsed": 3.33,
+    "error": null
+  },
+  {
+    "site": "liverpool_biennial",
+    "status": "PASS",
+    "urls_found": 21,
+    "http_status": 200,
+    "elapsed": 21.17,
+    "error": null
+  },
+  {
+    "site": "louisiana",
+    "status": "PASS",
+    "urls_found": 1,
+    "http_status": 200,
+    "elapsed": 3.71,
+    "error": null
+  },
+  {
+    "site": "maiiam",
+    "status": "PASS",
+    "urls_found": 25,
+    "http_status": 200,
+    "elapsed": 4.86,
+    "error": null
+  },
+  {
+    "site": "mass_moca",
+    "status": "ZERO_URLS",
+    "urls_found": 0,
+    "http_status": null,
+    "elapsed": 0.19,
+    "error": "2026-05-27 09:10:57,311 [INFO] auto_curation.database: Database initialized at exhibitions.db\n2026-05-27 09:10:57,312 [INFO] auto_curation.llm_parser: LLM response caching enabled.\n🚀 采集 MASS MoCA... 数据库: exhibitions.db\n⚠️  [DRY-RUN] 模拟运行，不写入数据库。\n2026-05-27 09:10:57,341 [INFO] auto_curation.scraper: "
+  },
+  {
+    "site": "maxxi",
+    "status": "PASS",
+    "urls_found": 54,
+    "http_status": 200,
+    "elapsed": 1.84,
+    "error": null
+  },
+  {
+    "site": "mca_australia",
+    "status": "PASS",
+    "urls_found": 361,
+    "http_status": 200,
+    "elapsed": 63.45,
+    "error": null
+  },
+  {
+    "site": "mca_chicago",
+    "status": "PASS",
+    "urls_found": 11,
+    "http_status": 200,
+    "elapsed": 1.58,
+    "error": null
+  },
+  {
+    "site": "met",
+    "status": "PASS",
+    "urls_found": 43,
+    "http_status": 200,
+    "elapsed": 21.73,
+    "error": null
+  },
+  {
+    "site": "moma",
+    "status": "PASS",
+    "urls_found": 1727,
+    "http_status": null,
+    "elapsed": 0.42,
+    "error": null
+  },
+  {
+    "site": "momat",
+    "status": "PASS",
+    "urls_found": 15,
+    "http_status": 200,
+    "elapsed": 2.11,
+    "error": null
+  },
+  {
+    "site": "mori",
+    "status": "PASS",
+    "urls_found": 72,
+    "http_status": 200,
+    "elapsed": 3.52,
+    "error": null
+  },
+  {
+    "site": "mplus",
+    "status": "PASS",
+    "urls_found": 38,
+    "http_status": 200,
+    "elapsed": 3.12,
+    "error": null
+  },
+  {
+    "site": "museum_ludwig",
+    "status": "PASS",
+    "urls_found": 6,
+    "http_status": 200,
+    "elapsed": 1.57,
+    "error": null
+  },
+  {
+    "site": "national_gallery_sg",
+    "status": "PASS",
+    "urls_found": 10,
+    "http_status": 200,
+    "elapsed": 0.58,
+    "error": null
+  },
+  {
+    "site": "new_museum",
+    "status": "PASS",
+    "urls_found": 10,
+    "http_status": null,
+    "elapsed": 20.76,
+    "error": null
+  },
+  {
+    "site": "nga",
+    "status": "PASS",
+    "urls_found": 1,
+    "http_status": null,
+    "elapsed": 1.5,
+    "error": null
+  },
+  {
+    "site": "ngv",
+    "status": "PASS",
+    "urls_found": 22,
+    "http_status": 200,
+    "elapsed": 2.88,
+    "error": null
+  },
+  {
+    "site": "njpac",
+    "status": "PASS",
+    "urls_found": 22,
+    "http_status": 200,
+    "elapsed": 2.76,
+    "error": null
+  },
+  {
+    "site": "palaistokyo",
+    "status": "PASS",
+    "urls_found": 8,
+    "http_status": 200,
+    "elapsed": 1.9,
+    "error": null
+  },
+  {
+    "site": "pinakothek",
+    "status": "PASS",
+    "urls_found": 3,
+    "http_status": 200,
+    "elapsed": 27.92,
+    "error": null
+  },
+  {
+    "site": "pompidou",
+    "status": "PASS",
+    "urls_found": 52,
+    "http_status": 200,
+    "elapsed": 4.68,
+    "error": null
+  },
+  {
+    "site": "psa",
+    "status": "PASS",
+    "urls_found": 24,
+    "http_status": null,
+    "elapsed": 19.41,
+    "error": null
+  },
+  {
+    "site": "reina_sofia",
+    "status": "PASS",
+    "urls_found": 9,
+    "http_status": 200,
+    "elapsed": 1.9,
+    "error": null
+  },
+  {
+    "site": "saopaulo_biennial",
+    "status": "PASS",
+    "urls_found": 50,
+    "http_status": 200,
+    "elapsed": 12.28,
+    "error": null
+  },
+  {
+    "site": "serpentine",
+    "status": "PASS",
+    "urls_found": 60,
+    "http_status": 200,
+    "elapsed": 39.85,
+    "error": null
+  },
+  {
+    "site": "sharjah_biennale",
+    "status": "PASS",
+    "urls_found": 17,
+    "http_status": 200,
+    "elapsed": 4.97,
+    "error": null
+  },
+  {
+    "site": "south_london_gallery",
+    "status": "PASS",
+    "urls_found": 4,
+    "http_status": 200,
+    "elapsed": 1.59,
+    "error": null
+  },
+  {
+    "site": "sydney_biennale",
+    "status": "PASS",
+    "urls_found": 34,
+    "http_status": 200,
+    "elapsed": 2.36,
+    "error": null
+  },
+  {
+    "site": "taipei_biennale",
+    "status": "PASS",
+    "urls_found": 6,
+    "http_status": 200,
+    "elapsed": 3.86,
+    "error": null
+  },
+  {
+    "site": "tate",
+    "status": "PASS",
+    "urls_found": 16,
+    "http_status": 200,
+    "elapsed": 4.81,
+    "error": null
+  },
+  {
+    "site": "ucca",
+    "status": "PASS",
+    "urls_found": 28,
+    "http_status": 200,
+    "elapsed": 4.8,
+    "error": null
+  },
+  {
+    "site": "venice_biennale",
+    "status": "PASS",
+    "urls_found": 16,
+    "http_status": 200,
+    "elapsed": 1.26,
+    "error": null
+  },
+  {
+    "site": "whitechapel",
+    "status": "ZERO_URLS",
+    "urls_found": 0,
+    "http_status": null,
+    "elapsed": 0.17,
+    "error": "2026-05-27 09:13:15,813 [INFO] auto_curation.database: Database initialized at exhibitions.db\n2026-05-27 09:13:15,813 [INFO] auto_curation.llm_parser: LLM response caching enabled.\n🚀 采集 Whitechapel Gallery... 数据库: exhibitions.db\n⚠️  [DRY-RUN] 模拟运行，不写入数据库。\n2026-05-27 09:13:15,839 [INFO] auto_curation"
+  },
+  {
+    "site": "whitney",
+    "status": "PASS",
+    "urls_found": 1,
+    "http_status": 200,
+    "elapsed": 2.17,
+    "error": null
+  },
+  {
+    "site": "whitney_biennial",
+    "status": "PASS",
+    "urls_found": 19,
+    "http_status": 200,
+    "elapsed": 1.81,
+    "error": null
+  },
+  {
+    "site": "wikidata",
+    "status": "PASS",
+    "urls_found": 1,
+    "http_status": null,
+    "elapsed": 4.42,
+    "error": null
+  },
+  {
+    "site": "yokohama_triennale",
+    "status": "PASS",
+    "urls_found": 34,
+    "http_status": 200,
+    "elapsed": 2.66,
+    "error": null
+  },
+  {
+    "site": "zkm",
+    "status": "PASS",
+    "urls_found": 7,
+    "http_status": 200,
+    "elapsed": 4.28,
+    "error": null
+  }
+]
