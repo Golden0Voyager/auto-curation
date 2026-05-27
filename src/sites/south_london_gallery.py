@@ -9,7 +9,9 @@ class SouthLondonGalleryParser(BaseSiteParser):
     city = "London"
     parser_key = "south_london_gallery"
     institution_type = "museum"
-    list_url = "https://www.southlondongallery.org/exhibitions/"
+    list_url = "https://www.southlondongallery.org/whats-on/exhibitions/"
+    # NOTE: The site lists only current exhibitions (~4 at any time).
+    # No dedicated past-exhibitions archive page exists.
     link_patterns = [
-        r"southlondongallery\.org/exhibitions/[^/]+/$",
+        r"southlondongallery\.org/(?:exhibitions|whats-on/exhibitions)/[^/#]+/?$",
     ]
