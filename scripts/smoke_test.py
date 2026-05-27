@@ -1,183 +1,156 @@
 #!/usr/bin/env python3
-"""Phase 4 Task 1: 全量 Smoke Test — 验证所有 parser 的 URL 发现能力"""
+"""Phase 4 Task 1: 全量 Smoke Test — 验证所有 parser 的 URL 发现能力
 
-import subprocess
+直接导入模式（替代旧版 subprocess 模式），避免环境隔离导致的误判。
+"""
+
 import concurrent.futures
 import json
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
-# 64 registered sites (from --list-sites output)
-SITES = [
-    "aic", "astrup_fearnley", "baltic", "barbican", "berlin_biennale",
-    "beyeler", "brooklyn_museum", "dia", "documenta", "flv",
-    "guggenheim", "gwangju_biennale", "hamburger_bahnhof", "hammer_museum",
-    "hayward", "hirshhorn", "istanbul_biennale", "kanazawa21", "kunsthal",
-    "kunsthaus", "kw_institute", "lacma", "leeum", "lenbachhaus",
-    "liverpool_biennial", "louisiana", "lyon_biennale", "maiiam", "mass_moca",
-    "maxxi", "mca_australia", "mca_chicago", "met", "mmcaseoul", "moma",
-    "momat", "mori", "mplus", "museum_ludwig", "national_gallery_sg",
-    "new_museum", "nga", "ngv", "njpac", "palaistokyo", "pinakothek",
-    "pompidou", "psa", "reina_sofia", "saopaulo_biennial", "serpentine",
-    "sharjah_biennale", "south_london_gallery", "sydney_biennale",
-    "taipei_biennale", "tate", "ucca", "venice_biennale", "whitechapel",
-    "whitney", "whitney_biennial", "wikidata", "yokohama_triennale", "zkm"
-]
+# Allow imports from project root
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
-MAX_WORKERS = 8
+from src.scraper import ExhibitionScraper  # noqa: E402
+from src.sites import SITES  # noqa: E402
+
+MAX_WORKERS = 4
 TIMEOUT_SECONDS = 90
 
 
-def run_single_smoke(site: str) -> dict:
-    """Run smoke test for a single site."""
+def run_single_smoke(site_key: str) -> dict[str, Any]:
+    """Run smoke test for a single site using direct imports."""
     start = time.time()
-    result = {
-        "site": site,
+    result: dict[str, Any] = {
+        "site": site_key,
         "status": "unknown",
         "urls_found": 0,
         "error": None,
         "elapsed": 0.0,
     }
 
-    cmd = [
-        sys.executable, "run_collector.py",
-        "--site", site,
-        "--limit", "1",
-        "--dry-run"
-    ]
+    # Skip known blocked sites immediately
+    parser = SITES.get(site_key)
+    blocked_status = getattr(parser, "status", None)
+    if blocked_status:
+        result["status"] = blocked_status
+        result["error"] = f"Parser declared as {blocked_status}"
+        return result
 
+    scraper = None
     try:
-        proc = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=TIMEOUT_SECONDS,
-        )
+        scraper = ExhibitionScraper()
+        stats = scraper.scrape_site(site_key, limit=1, dry_run=True)
         elapsed = time.time() - start
         result["elapsed"] = round(elapsed, 2)
 
-        stdout = proc.stdout
-        stderr = proc.stderr
-        combined = stdout + "\n" + stderr
-
-        # Extract URL count from output (supports Chinese & English formats)
-        url_count = 0
-        for line in combined.splitlines():
-            # Chinese format: "发现 URL数  : 15"
-            if "发现 URL" in line or "发现URL" in line:
-                try:
-                    url_count = int(line.split(":")[-1].strip())
-                except (ValueError, IndexError):
-                    pass
-            # English format: "Discovered 15 URLs"
-            elif "Discovered" in line and "URLs" in line:
-                try:
-                    url_count = int(line.split("Discovered")[1].split("URLs")[0].strip())
-                except (ValueError, IndexError):
-                    pass
-            # Log dict format: "'discovered': 15"
-            elif "'discovered':" in line:
-                try:
-                    url_count = int(line.split("'discovered':")[1].split(",")[0].strip())
-                except (ValueError, IndexError):
-                    pass
-            elif '"discovered":' in line:
-                try:
-                    url_count = int(line.split('"discovered":')[1].split(",")[0].strip())
-                except (ValueError, IndexError):
-                    pass
-
-        # Determine status
-        if proc.returncode != 0:
+        if "error" in stats:
             result["status"] = "FAIL"
-            result["error"] = (stderr or stdout)[:500]
-        elif url_count == 0:
-            # Check for known blockers
-            if "403" in combined:
-                result["status"] = "BLOCKED_403"
-            elif "SSL" in combined or "CERTIFICATE" in combined.upper():
-                result["status"] = "BLOCKED_SSL"
-            elif "timeout" in combined.lower():
-                result["status"] = "TIMEOUT"
-            else:
-                result["status"] = "ZERO_URLS"
-            result["error"] = (stderr or stdout)[:500]
-        elif url_count >= 5:
-            result["status"] = "PASS"
-        else:
-            result["status"] = "WARN"  # 1-4 URLs
+            result["error"] = stats["error"]
+            return result
 
+        url_count = stats.get("discovered", 0)
         result["urls_found"] = url_count
 
-    except subprocess.TimeoutExpired:
-        result["status"] = "TIMEOUT"
-        result["elapsed"] = round(time.time() - start, 2)
-        result["error"] = f"Timed out after {TIMEOUT_SECONDS}s"
-    except Exception as e:
-        result["status"] = "ERROR"
-        result["elapsed"] = round(time.time() - start, 2)
-        result["error"] = str(e)[:500]
+        if url_count >= 5:
+            result["status"] = "PASS"
+        elif url_count > 0:
+            result["status"] = "WARN"
+        else:
+            # Check for known blockers in error context
+            err_str = str(stats)
+            if "403" in err_str:
+                result["status"] = "BLOCKED_403"
+            elif "SSL" in err_str or "CERTIFICATE" in err_str.upper():
+                result["status"] = "BLOCKED_SSL"
+            else:
+                result["status"] = "ZERO_URLS"
+
+    except Exception as exc:
+        elapsed = time.time() - start
+        result["elapsed"] = round(elapsed, 2)
+        err_msg = str(exc)
+        if "403" in err_msg:
+            result["status"] = "BLOCKED_403"
+        elif "SSL" in err_msg or "CERTIFICATE" in err_msg.upper():
+            result["status"] = "BLOCKED_SSL"
+        elif "timeout" in err_msg.lower():
+            result["status"] = "TIMEOUT"
+        else:
+            result["status"] = "FAIL"
+        result["error"] = err_msg[:500]
+    finally:
+        if scraper:
+            try:
+                scraper.close()
+            except Exception:
+                pass
 
     return result
 
 
 def categorize(result: dict) -> str:
     status = result["status"]
-    urls = result["urls_found"]
-
     if status == "PASS":
         return "green"
     if status == "WARN":
         return "yellow"
-    if status in ("FAIL", "ZERO_URLS", "BLOCKED_403", "BLOCKED_SSL", "TIMEOUT", "ERROR"):
-        return "red"
     return "red"
 
 
 def main():
-    print(f"Phase 4 Smoke Test started at {datetime.now().isoformat()}")
-    print(f"Sites: {len(SITES)} | Workers: {MAX_WORKERS} | Timeout: {TIMEOUT_SECONDS}s")
+    sites = sorted(SITES.keys())
+    print(f"Smoke Test started at {datetime.now().isoformat()}")
+    print(f"Sites: {len(sites)} | Workers: {MAX_WORKERS} | Mode: direct import")
     print("=" * 60)
 
-    results = []
+    results: list[dict[str, Any]] = []
     completed = 0
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         future_to_site = {
             executor.submit(run_single_smoke, site): site
-            for site in SITES
+            for site in sites
         }
         for future in concurrent.futures.as_completed(future_to_site):
             site = future_to_site[future]
             try:
-                res = future.result()
-                results.append(res)
+                res = future.result(timeout=TIMEOUT_SECONDS)
+            except concurrent.futures.TimeoutError:
                 completed += 1
-                cat = categorize(res)
                 print(
-                    f"[{completed:2d}/{len(SITES)}] "
-                    f"{res['site']:20s} | "
-                    f"{res['status']:12s} | "
-                    f"URLs: {res['urls_found']:3d} | "
-                    f"{res['elapsed']:5.1f}s | "
-                    f"{cat}"
+                    f"[{completed:2d}/{len(sites)}] "
+                    f"{site:20s} | TIMEOUT       | URLs:   0 | {TIMEOUT_SECONDS:5.1f}s | red"
                 )
-            except Exception as e:
-                print(f"[{completed:2d}/{len(SITES)}] {site:20s} | EXCEPTION: {e}")
                 results.append({
                     "site": site,
-                    "status": "EXCEPTION",
+                    "status": "TIMEOUT",
                     "urls_found": 0,
-                    "error": str(e),
-                    "elapsed": 0,
+                    "error": f"Timed out after {TIMEOUT_SECONDS}s",
+                    "elapsed": TIMEOUT_SECONDS,
                 })
+                continue
+
+            results.append(res)
+            completed += 1
+            cat = categorize(res)
+            print(
+                f"[{completed:2d}/{len(sites)}] "
+                f"{res['site']:20s} | "
+                f"{res['status']:12s} | "
+                f"URLs: {res['urls_found']:3d} | "
+                f"{res['elapsed']:5.1f}s | "
+                f"{cat}"
+            )
 
     # Sort by site name
     results.sort(key=lambda r: r["site"])
 
-    # Summary
     categories = {"green": [], "yellow": [], "red": []}
     for r in results:
         cat = categorize(r)
@@ -197,8 +170,9 @@ def main():
     print(f"Red:     {red:2d} ({red / total * 100:.0f}%) — 0 URLs or error")
 
     # Markdown report
-    report_path = Path("docs/plans/smoke-test-report.md")
-    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_dir = Path("docs/plans")
+    report_dir.mkdir(parents=True, exist_ok=True)
+    report_path = report_dir / "smoke-test-report.md"
 
     lines = [
         "# Smoke Test Report",
@@ -222,7 +196,7 @@ def main():
 
     lines.append("\n## Red (0 URLs or Error)\n")
     for r in categories["red"]:
-        err = r.get("error", "").replace("\n", " ").strip()[:100]
+        err = (r.get("error") or "").replace("\n", " ").strip()[:100]
         lines.append(f"- `{r['site']}` — {r['status']} — {err}")
 
     lines.append("\n## Raw Data\n")
@@ -233,8 +207,7 @@ def main():
     report_path.write_text("\n".join(lines), encoding="utf-8")
     print(f"\nReport saved to: {report_path}")
 
-    # Save raw JSON for downstream tasks
-    json_path = Path("docs/plans/smoke-test-results.json")
+    json_path = report_dir / "smoke-test-results.json"
     json_path.write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"Raw data saved to: {json_path}")
 
