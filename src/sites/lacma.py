@@ -10,6 +10,7 @@ class LACMAParser(BaseSiteParser):
     city = "Los Angeles"
     parser_key = "lacma"
     institution_type = "museum"
+    status = "BLOCKED_CLOUDFLARE"
     list_url = "https://www.lacma.org/exhibitions"
     link_patterns = [
         r"lacma\.org/art/exhibition/[^/]+",
