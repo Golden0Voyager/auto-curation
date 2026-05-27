@@ -114,6 +114,48 @@ class ExhibitionDatabase:
         except sqlite3.OperationalError:
             pass
 
+        # Create biennial_series table for series aggregation
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS biennial_series (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                series_name TEXT NOT NULL,
+                series_key TEXT UNIQUE NOT NULL,
+                city TEXT,
+                country TEXT,
+                founded_year INTEGER,
+                description TEXT
+            );
+        """)
+
+        # Add series_id to exhibitions if missing
+        try:
+            cursor.execute("ALTER TABLE exhibitions ADD COLUMN series_id INTEGER REFERENCES biennial_series(id);")
+        except sqlite3.OperationalError:
+            pass
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_series_id ON exhibitions(series_id);")
+
+        # Seed known biennial series
+        biennials = [
+            ("Venice Biennale", "venice_biennale", "Venice", "Italy", 1895, "International Art Exhibition of la Biennale di Venezia"),
+            ("Documenta", "documenta", "Kassel", "Germany", 1955, "Quinquennial contemporary art exhibition"),
+            ("Berlin Biennale", "berlin_biennale", "Berlin", "Germany", 1998, "Berlin Biennale for Contemporary Art"),
+            ("São Paulo Biennial", "saopaulo_biennial", "São Paulo", "Brazil", 1951, "Bienal de São Paulo"),
+            ("Istanbul Biennial", "istanbul_biennale", "Istanbul", "Turkey", 1987, "Istanbul Biennial"),
+            ("Lyon Biennale", "lyon_biennale", "Lyon", "France", 1991, "Biennale de Lyon"),
+            ("Liverpool Biennial", "liverpool_biennale", "Liverpool", "UK", 1999, "Liverpool Biennial of Contemporary Art"),
+            ("Taipei Biennial", "taipei_biennale", "Taipei", "Taiwan", 1998, "Taipei Biennial"),
+            ("Yokohama Triennale", "yokohama_triennale", "Yokohama", "Japan", 2001, "Yokohama Triennale"),
+            ("Sydney Biennale", "sydney_biennale", "Sydney", "Australia", 1973, "Biennale of Sydney"),
+            ("Sharjah Biennial", "sharjah_biennale", "Sharjah", "UAE", 1993, "Sharjah Biennial"),
+            ("Gwangju Biennale", "gwangju_biennale", "Gwangju", "South Korea", 1995, "Gwangju Biennale"),
+            ("Whitney Biennial", "whitney_biennial", "New York", "USA", 1932, "Whitney Biennial"),
+        ]
+        for name, key, city, country, year, desc in biennials:
+            cursor.execute("""
+                INSERT OR IGNORE INTO biennial_series (series_name, series_key, city, country, founded_year, description)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (name, key, city, country, year, desc))
+
         # Create scraper_runs table for operational tracking
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS scraper_runs (
@@ -378,5 +420,39 @@ class ExhibitionDatabase:
             """, (parser_key,))
             row = cursor.fetchone()
             return dict(row) if row else None
+        finally:
+            conn.close()
+
+    # --- biennial series management ---
+
+    def get_biennial_series(self) -> List[Dict[str, Any]]:
+        """Return all biennial series."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT * FROM biennial_series ORDER BY series_name")
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    def backfill_series_id(self) -> int:
+        """Match exhibitions to biennial series by parser_key. Returns count updated."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT id, series_key FROM biennial_series")
+            series_map = {row["series_key"]: row["id"] for row in cursor.fetchall()}
+
+            updated = 0
+            for series_key, series_id in series_map.items():
+                cursor.execute(
+                    "UPDATE exhibitions SET series_id = ? WHERE parser_key = ? AND (series_id IS NULL OR series_id = 0)",
+                    (series_id, series_key),
+                )
+                updated += cursor.rowcount
+
+            conn.commit()
+            logger.info(f"Backfilled series_id for {updated} exhibitions")
+            return updated
         finally:
             conn.close()
