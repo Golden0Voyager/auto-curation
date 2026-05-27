@@ -4,7 +4,7 @@ class HaywardParser(BaseSiteParser):
     """Hayward Gallery - London.
 
     海沃德美术馆，位于南岸艺术中心，以雄心勃勃的当代艺术展览著称。
-    注意：受 Cloudflare 403 保护，需要 Playwright 或 stealth headers。
+    注意：受 Cloudflare 403 保护。curl_cffi 已测试失败（2026-05-27）。勿再尝试。
     """
     source = "Hayward Gallery"
     city = "London"
