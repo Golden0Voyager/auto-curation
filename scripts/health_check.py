@@ -199,6 +199,17 @@ def check_database(db_path: str) -> dict[str, Any] | None:
             "SELECT parser_key, COUNT(*) FROM exhibitions GROUP BY parser_key ORDER BY 2 DESC"
         )
         source_dist = cursor.fetchall()
+
+        # Last scraper runs
+        cursor.execute("""
+            SELECT parser_key, started_at, finished_at, urls_discovered, urls_parsed,
+                   exhibitions_saved, exhibitions_failed, error_message
+            FROM scraper_runs
+            WHERE id IN (
+                SELECT MAX(id) FROM scraper_runs GROUP BY parser_key
+            )
+        """)
+        last_runs = {row["parser_key"]: dict(row) for row in cursor.fetchall()}
         conn.close()
 
         return {
@@ -208,6 +219,7 @@ def check_database(db_path: str) -> dict[str, Any] | None:
             "missing_date": missing_date,
             "missing_concept": missing_concept,
             "source_distribution": source_dist,
+            "last_runs": last_runs,
         }
     except Exception as exc:
         return {"error": str(exc)}
@@ -275,17 +287,27 @@ def generate_report(
         else:
             lines.append(f"- **Error**: {db_health['error']}")
 
+    # Last run info from db_health
+    last_runs = db_health.get("last_runs", {}) if db_health else {}
+
     # Detailed results table
     lines.extend([
         "\n## Detailed Results\n",
-        "| Site | Status | URLs | HTTP | Time | Notes |",
-        "|------|--------|-----:|------|-----:|-------|",
+        "| Site | Status | URLs | HTTP | Time | Last Run | Notes |",
+        "|------|--------|-----:|------|-----:|----------|-------|",
     ])
     for r in sorted(results, key=lambda x: x["site"]):
         http = str(r["http_status"]) if r["http_status"] else "—"
         note = (r.get("error") or "").replace("\n", " ").strip()[:60]
+        run_info = last_runs.get(r["site"])
+        if run_info:
+            started = run_info.get("started_at", "")[:16]  # YYYY-MM-DD HH:MM
+            saved = run_info.get("exhibitions_saved", 0)
+            last_run_str = f"{started} ({saved} saved)"
+        else:
+            last_run_str = "—"
         lines.append(
-            f"| `{r['site']}` | {r['status']} | {r['urls_found']} | {http} | {r['elapsed']:.1f}s | {note} |"
+            f"| `{r['site']}` | {r['status']} | {r['urls_found']} | {http} | {r['elapsed']:.1f}s | {last_run_str} | {note} |"
         )
 
     # Raw JSON
