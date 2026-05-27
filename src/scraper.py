@@ -650,8 +650,15 @@ class ExhibitionScraper:
         return results
 
     def close(self):
-        """Closes any network resources."""
+        """Closes any network resources (sync and async clients)."""
         self.client.close()
+        try:
+            # Close async client synchronously using a temporary event loop
+            loop = asyncio.new_event_loop()
+            loop.run_until_complete(self.async_client.aclose())
+            loop.close()
+        except Exception:
+            pass
 
     async def aclose(self):
         """Async close: shuts down both sync and async HTTP clients."""
