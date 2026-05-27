@@ -10,6 +10,7 @@ class WhitechapelParser(BaseSiteParser):
     city = "London"
     parser_key = "whitechapel"
     institution_type = "museum"
+    status = "BLOCKED_CLOUDFLARE"
     list_url = "https://www.whitechapelgallery.org/exhibitions/"
     link_patterns = [
         r"whitechapelgallery\.org/exhibitions/[^/]+",
