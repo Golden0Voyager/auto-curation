@@ -10,6 +10,7 @@ class MASSMocaParser(BaseSiteParser):
     city = "North Adams"
     parser_key = "mass_moca"
     institution_type = "museum"
+    status = "BLOCKED_CLOUDFLARE"
     list_url = "https://massmoca.org/exhibitions/"
     link_patterns = [
         r"massmoca\.org/event/[^/]+",
