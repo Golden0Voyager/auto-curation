@@ -11,6 +11,9 @@ from src.sites.base import ParserStrategy
 
 logger = logging.getLogger("auto_curation.scraper")
 
+# Security: max HTML response size to prevent OOM from malicious/large pages (5 MB)
+MAX_HTML_SIZE = 5 * 1024 * 1024
+
 
 class ExhibitionScraper:
     """Orchestrates the entire scraping pipeline: URL discovery, HTML cleaning,
@@ -39,7 +42,7 @@ class ExhibitionScraper:
         self.client = httpx.Client(headers={
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             "Accept-Language": "en-US,en;q=0.9",
-        }, follow_redirects=True, timeout=60.0)
+        }, follow_redirects=True, max_redirects=5, timeout=60.0)
         self.max_concurrency = max_concurrency
 
     def scrape_site(
@@ -201,6 +204,11 @@ class ExhibitionScraper:
                             else:
                                 raise
 
+                    if len(page_html) > MAX_HTML_SIZE:
+                        logger.warning(f"HTML response for {url} exceeds {MAX_HTML_SIZE} bytes ({len(page_html)}). Skipping.")
+                        stats["failed"] += 1
+                        continue
+
                     clean_text = parser.clean_html(page_html)
 
                     if not clean_text or len(clean_text.strip()) < 100:
@@ -334,6 +342,11 @@ class ExhibitionScraper:
                             response = await async_client.get(url)
                             response.raise_for_status()
                             html_text = response.text
+
+                        if len(html_text) > MAX_HTML_SIZE:
+                            logger.warning(f"HTML response for {url} exceeds {MAX_HTML_SIZE} bytes ({len(html_text)}). Skipping.")
+                            stats["failed"] += 1
+                            return
 
                         clean_text = parser.clean_html(html_text)
                         if not clean_text or len(clean_text.strip()) < 100:
