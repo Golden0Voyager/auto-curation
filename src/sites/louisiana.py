@@ -9,7 +9,11 @@ class LouisianaParser(BaseSiteParser):
     city = "Humlebæk"
     parser_key = "louisiana"
     institution_type = "museum"
-    list_url = "https://louisiana.dk/en/exhibition/"
+    list_url = "https://louisiana.dk/en/exhibitions/current/"
+    extra_list_urls = [
+        "https://louisiana.dk/en/exhibitions/past/",
+        "https://louisiana.dk/en/exhibitions/upcoming/",
+    ]
     link_patterns = [
         r"louisiana\.dk/en/exhibition/[^/]+",
     ]
