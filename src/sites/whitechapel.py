@@ -4,7 +4,7 @@ class WhitechapelParser(BaseSiteParser):
     """Whitechapel Gallery - London.
 
     白教堂美术馆，伦敦东区的标志性当代艺术机构。
-    注意：受 Cloudflare 403 保护，需要 Playwright 或 stealth headers。
+    注意：受 Cloudflare 403 保护。curl_cffi 已测试失败（2026-05-27）。勿再尝试。
     """
     source = "Whitechapel Gallery"
     city = "London"
