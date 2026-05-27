@@ -3,6 +3,7 @@ import asyncio
 import httpx
 from typing import Dict, List, Any, Optional
 from datetime import date
+from tenacity import stop_after_attempt, wait_exponential, retry_if_exception, Retrying, AsyncRetrying
 from src.database import ExhibitionDatabase
 from src.llm_parser import LLMExhibitionParser
 from src.cache import LLMResponseCache
@@ -13,6 +14,15 @@ logger = logging.getLogger("auto_curation.scraper")
 
 # Security: max HTML response size to prevent OOM from malicious/large pages (5 MB)
 MAX_HTML_SIZE = 5 * 1024 * 1024
+
+
+def _is_retryable_http_error(exc: BaseException) -> bool:
+    """Determine if an HTTP exception warrants a retry."""
+    if isinstance(exc, (httpx.ConnectError, httpx.TimeoutException)):
+        return True
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code in (429, 502, 503, 504)
+    return False
 
 
 class ExhibitionScraper:
@@ -192,8 +202,15 @@ class ExhibitionScraper:
                         page_html = response.text
                     else:
                         try:
-                            response = self.client.get(url)
-                            response.raise_for_status()
+                            for attempt in Retrying(
+                                stop=stop_after_attempt(3),
+                                wait=wait_exponential(multiplier=1, min=1, max=10),
+                                retry=retry_if_exception(_is_retryable_http_error),
+                                reraise=True,
+                            ):
+                                with attempt:
+                                    response = self.client.get(url)
+                                    response.raise_for_status()
                             page_html = response.text
                         except httpx.HTTPStatusError as e:
                             if e.response.status_code == 403:
@@ -341,8 +358,15 @@ class ExhibitionScraper:
                             logger.info(f"[{parser.source}] Native extraction succeeded for {url}")
 
                     if not parsed_data:
-                        response = await self.async_client.get(url)
-                        response.raise_for_status()
+                        async for attempt in AsyncRetrying(
+                            stop=stop_after_attempt(3),
+                            wait=wait_exponential(multiplier=1, min=1, max=10),
+                            retry=retry_if_exception(_is_retryable_http_error),
+                            reraise=True,
+                        ):
+                            with attempt:
+                                response = await self.async_client.get(url)
+                                response.raise_for_status()
                         html_text = response.text
 
                         if len(html_text) > MAX_HTML_SIZE:
