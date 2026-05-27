@@ -10,6 +10,7 @@ class HaywardParser(BaseSiteParser):
     city = "London"
     parser_key = "hayward"
     institution_type = "museum"
+    status = "BLOCKED_CLOUDFLARE"
     list_url = "https://www.southbankcentre.co.uk/venues/hayward-gallery"
     link_patterns = [
         r"southbankcentre\.co\.uk/whats-on/[a-z0-9-]+",
