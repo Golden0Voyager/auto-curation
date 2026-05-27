@@ -71,6 +71,15 @@ class ExhibitionDatabase:
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_start_date ON exhibitions(start_date);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_parser_key ON exhibitions(parser_key);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_artworks_exhibition ON artworks(exhibition_id);")
+        # Deduplicate existing artworks before creating UNIQUE index
+        cursor.execute("""
+            DELETE FROM artworks
+            WHERE rowid NOT IN (
+                SELECT MIN(rowid)
+                FROM artworks
+                GROUP BY exhibition_id, artist_name, work_title
+            )
+        """)
         cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_artworks_unique ON artworks(exhibition_id, artist_name, work_title);")
         # Check and migrate exhibitions schema for preface_en and concept_en (Bilingual Curation)
         try:
