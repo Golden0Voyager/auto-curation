@@ -13,6 +13,8 @@ class PinakothekParser(BaseSiteParser):
     list_url = "https://www.pinakothek.de/en/exhibitions"
     extra_list_urls = ["https://www.pinakothek.de/en/exhibitions/archive"]
     use_playwright = True
+    # NOTE: The archive page is a heavy SPA; only ~3 current exhibitions are
+    # discoverable without interaction. Do not retry archive scraping.
     link_patterns = [
         r"pinakothek\.de/en/(?:exhibition|ausstellung)/[^/]+",
     ]
