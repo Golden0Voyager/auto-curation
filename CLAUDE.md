@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-Auto Curation 是一个**模块化全球当代艺术展览数据采集与结构化存储系统**。它从全球 65 家顶级艺术机构（美术馆、双年展、三年展）抓取展览数据，通过六种策略转化为结构化数据，存入 SQLite 数据库。
+Auto Curation 是一个**模块化全球当代艺术展览数据采集与结构化存储系统**。它从全球 61 家顶级艺术机构（美术馆、双年展、三年展）抓取展览数据，通过六种策略转化为结构化数据，存入 SQLite 数据库。
 
 ---
 
@@ -105,7 +105,7 @@ python -c "import sqlite3; conn=sqlite3.connect('exhibitions.db'); print('展览
 
 ### 机构与策略对照（精选）
 
-原有 12 家 + Phase 1-3 新增 53 家，总计 65 家注册机构。
+原有 12 家 + Phase 1-3 新增 49 家，总计 61 家注册机构。
 
 | Key | 机构 | 城市 | 策略 | 状态 |
 |:--|:--|:--|:--|:--|
@@ -119,7 +119,8 @@ python -c "import sqlite3; conn=sqlite3.connect('exhibitions.db'); print('展览
 | `met` | The Met | New York | CSV_LOCAL | ok |
 | `pompidou` | Centre Pompidou | Paris | HTML_LLM | ok |
 | `guggenheim` | Guggenheim | New York | HTML_LLM | blocked_cloudflare |
-| `biennale` | Venice Biennale | Venice | HTML_LLM | ok |
+| `venice_biennale` | Venice Biennale | Venice | HTML_LLM | ok |
+| `vam` | V&A Museum | London | HTML_LLM | ok |
 | `whitney` | Whitney Museum | New York | REST_API | ok |
 | `kunsthaus` | Kunsthaus Zürich | Zürich | HTML_LLM | ok |
 | `psa` | Power Station of Art | Shanghai | HTML_LLM | ok |
