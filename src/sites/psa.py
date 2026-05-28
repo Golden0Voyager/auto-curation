@@ -2,7 +2,7 @@ import logging
 import re
 from typing import List, Optional, Dict, Any
 
-from src.sites.base import ParserStrategy
+from src.sites.base import BaseSiteParser, ParserStrategy
 
 logger = logging.getLogger("auto_curation.sites.psa")
 
@@ -24,6 +24,7 @@ class PSAParser:
     city = "Shanghai"
     strategy = ParserStrategy.HTML_LLM
     parser_key = "psa"
+    use_playwright = True
     list_url = "https://www.powerstationofart.com/whats-on/exhibitions"
     link_patterns = [
         r"/whats-on/exhibitions/[^/]+$",
