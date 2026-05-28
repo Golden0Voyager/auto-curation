@@ -111,6 +111,8 @@ class ExhibitionScraper:
             return {"error": f"Site '{site_key}' not found"}
 
         parser = SITES[site_key]
+        if not parser.parser_key:
+            parser.parser_key = site_key
         strategy = getattr(parser, "strategy", ParserStrategy.HTML_LLM)
         handler_name = self.STRATEGY_HANDLERS.get(strategy)
 
@@ -155,6 +157,8 @@ class ExhibitionScraper:
             return {"error": f"Site '{site_key}' not found"}
 
         parser = SITES[site_key]
+        if not parser.parser_key:
+            parser.parser_key = site_key
         strategy = getattr(parser, "strategy", ParserStrategy.HTML_LLM)
         handler_name = self.STRATEGY_HANDLERS.get(strategy)
 
@@ -364,7 +368,11 @@ class ExhibitionScraper:
     ) -> Dict[str, Any]:
         """Async concurrent HTML scraping pipeline. URL discovery is synchronous;
         detail page fetching and LLM parsing run under asyncio.Semaphore."""
-        urls = parser.get_exhibition_urls(self.client, since_year=since_year)
+        # Playwright Sync API cannot run inside asyncio loop — use thread pool
+        if getattr(parser, "use_playwright", False):
+            urls = await asyncio.to_thread(parser.get_exhibition_urls, self.client, since_year=since_year)
+        else:
+            urls = parser.get_exhibition_urls(self.client, since_year=since_year)
         if not urls:
             logger.warning(f"No exhibition URLs discovered for {parser.source}.")
             return {"site": parser.source, "discovered": 0, "parsed": 0, "saved": 0, "skipped": 0, "failed": 0}
@@ -404,7 +412,10 @@ class ExhibitionScraper:
                     parsed_data = None
 
                     if has_native_parser:
-                        parsed_data = parser.parse_exhibition_page(self.client, url)
+                        if getattr(parser, "use_playwright", False):
+                            parsed_data = await asyncio.to_thread(parser.parse_exhibition_page, self.client, url)
+                        else:
+                            parsed_data = parser.parse_exhibition_page(self.client, url)
                         if parsed_data:
                             logger.info(f"[{parser.source}] Native extraction succeeded for {url}")
 
