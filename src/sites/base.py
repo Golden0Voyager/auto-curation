@@ -228,7 +228,7 @@ class BaseSiteParser:
         for element in soup(["script", "style", "nav", "footer", "header", "iframe", "noscript", "svg", "form", "aside"]):
             element.decompose()
 
-        # Remove common noise classes/IDs
+        # Remove common noise classes/IDs, but never remove <body> itself
         noise_selectors = [
             ".nav", ".footer", ".header", ".menu", ".sidebar", "#menu", "#footer", "#header",
             ".cookie", ".breadcrumb", ".share", ".social", ".ad", ".newsletter", ".popup",
@@ -237,6 +237,8 @@ class BaseSiteParser:
         ]
         for selector in noise_selectors:
             for element in soup.select(selector):
+                if element.name == "body":
+                    continue
                 element.decompose()
 
         text = soup.get_text(separator="\n")
