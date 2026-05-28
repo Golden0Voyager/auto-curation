@@ -51,6 +51,46 @@ python run_collector.py --site mplus --verbose
 python -c "import sqlite3; conn=sqlite3.connect('exhibitions.db'); print('展览:', conn.execute('SELECT count(*) FROM exhibitions').fetchone()[0]); print('作品:', conn.execute('SELECT count(*) FROM artworks').fetchone()[0]); [print(f'  {r[0]}: {r[1]}') for r in conn.execute('SELECT source, count(*) FROM exhibitions GROUP BY source ORDER BY 2 DESC')]"
 ```
 
+### 批量采集
+
+```bash
+# 运行所有 tier
+python scripts/batch_scrape.py
+
+# 只运行 Tier E（无 LLM 成本）
+python scripts/batch_scrape.py --tier E
+
+# 运行 Tier A + B
+python scripts/batch_scrape.py --tier A B
+
+# 指定 parser
+python scripts/batch_scrape.py --site tate mori
+
+# 失败重试
+python scripts/batch_scrape.py --tier A --retry-failed
+```
+
+### 数据验证与监测
+
+```bash
+# 采集后质量验证
+python scripts/validate_post_scrape.py --all
+python scripts/validate_post_scrape.py --site tate_modern
+
+# 运行异常监测
+python scripts/monitor_runs.py              # 完整报告
+python scripts/monitor_runs.py --alert      # CI 模式
+
+# 作品质量检查
+python scripts/validate_artworks.py
+
+# LLM 输出验证（实时解析）
+python scripts/validate_llm_parsing.py --site tate --limit 3
+
+# 运行历史查询
+python scripts/scraper_history.py --site moma --since 7d
+```
+
 ---
 
 ## 高层架构
