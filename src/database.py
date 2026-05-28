@@ -199,6 +199,14 @@ class ExhibitionDatabase:
             if isinstance(curators, list):
                 curators = json.dumps(curators, ensure_ascii=False)
 
+            tags = ex_data.get("tags", "[]")
+            if isinstance(tags, list):
+                tags = json.dumps(tags, ensure_ascii=False)
+
+            images = ex_data.get("images", "[]")
+            if isinstance(images, list):
+                images = json.dumps(images, ensure_ascii=False)
+
             # 1. Insert into exhibitions table using INSERT OR IGNORE
             cursor.execute("""
                 INSERT OR IGNORE INTO exhibitions (
@@ -222,8 +230,8 @@ class ExhibitionDatabase:
                 ex_data.get("biographies"),
                 ex_data.get("biographies_cn"),
                 ex_data.get("credits"),
-                ex_data.get("images", "[]"),
-                ex_data.get("tags", "[]")
+                images,
+                tags
             ))
 
             
