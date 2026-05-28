@@ -1,0 +1,250 @@
+{
+  "timestamp": "2026-05-28T16:34:36.754877",
+  "dry_run": false,
+  "total_parsers": 16,
+  "ok": 16,
+  "failed": 0,
+  "exhibitions_saved": 91,
+  "results": [
+    {
+      "site": "mca_chicago",
+      "started_at": "2026-05-28T16:16:18.447599",
+      "success": true,
+      "stats": {
+        "discovered": 11,
+        "parsed": 11,
+        "saved": 11,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 39.2,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "national_gallery_sg",
+      "started_at": "2026-05-28T16:17:00.630750",
+      "success": true,
+      "stats": {
+        "discovered": 10,
+        "parsed": 9,
+        "saved": 9,
+        "skipped": 0,
+        "failed": 1
+      },
+      "duration_s": 32.1,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "new_museum",
+      "started_at": "2026-05-28T16:17:35.744637",
+      "success": true,
+      "stats": {
+        "discovered": 0,
+        "parsed": 0,
+        "saved": 0,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 0.4,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "kunsthal",
+      "started_at": "2026-05-28T16:17:39.174419",
+      "success": true,
+      "stats": {
+        "discovered": 9,
+        "parsed": 9,
+        "saved": 9,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 89.0,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "reina_sofia",
+      "started_at": "2026-05-28T16:19:11.187407",
+      "success": true,
+      "stats": {
+        "discovered": 10,
+        "parsed": 9,
+        "saved": 9,
+        "skipped": 0,
+        "failed": 1
+      },
+      "duration_s": 377.8,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "palaistokyo",
+      "started_at": "2026-05-28T16:25:32.006827",
+      "success": true,
+      "stats": {
+        "discovered": 8,
+        "parsed": 8,
+        "saved": 8,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 33.5,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "hammer_museum",
+      "started_at": "2026-05-28T16:26:08.539915",
+      "success": true,
+      "stats": {
+        "discovered": 7,
+        "parsed": 7,
+        "saved": 7,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 43.6,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "zkm",
+      "started_at": "2026-05-28T16:26:55.149433",
+      "success": true,
+      "stats": {
+        "discovered": 7,
+        "parsed": 7,
+        "saved": 7,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 42.1,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "astrup_fearnley",
+      "started_at": "2026-05-28T16:27:40.293091",
+      "success": true,
+      "stats": {
+        "discovered": 6,
+        "parsed": 6,
+        "saved": 6,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 62.7,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "baltic",
+      "started_at": "2026-05-28T16:28:45.949598",
+      "success": true,
+      "stats": {
+        "discovered": 6,
+        "parsed": 5,
+        "saved": 5,
+        "skipped": 0,
+        "failed": 1
+      },
+      "duration_s": 224.0,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "museum_ludwig",
+      "started_at": "2026-05-28T16:32:32.917730",
+      "success": true,
+      "stats": {
+        "discovered": 6,
+        "parsed": 6,
+        "saved": 6,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 44.5,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "taipei_biennale",
+      "started_at": "2026-05-28T16:33:20.412464",
+      "success": true,
+      "stats": {
+        "discovered": 6,
+        "parsed": 5,
+        "saved": 5,
+        "skipped": 0,
+        "failed": 1
+      },
+      "duration_s": 11.2,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "kanazawa21",
+      "started_at": "2026-05-28T16:33:34.630157",
+      "success": true,
+      "stats": {
+        "discovered": 5,
+        "parsed": 5,
+        "saved": 5,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 19.6,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "south_london_gallery",
+      "started_at": "2026-05-28T16:33:57.221167",
+      "success": true,
+      "stats": {
+        "discovered": 4,
+        "parsed": 4,
+        "saved": 4,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 32.8,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "leeum",
+      "started_at": "2026-05-28T16:34:33.031978",
+      "success": true,
+      "stats": {
+        "discovered": 0,
+        "parsed": 0,
+        "saved": 0,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 0.4,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "pinakothek",
+      "started_at": "2026-05-28T16:34:36.415706",
+      "success": true,
+      "stats": {
+        "discovered": 0,
+        "parsed": 0,
+        "saved": 0,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 0.3,
+      "error": null,
+      "exit_code": 0
+    }
+  ]
+}

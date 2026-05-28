@@ -1,0 +1,55 @@
+{
+  "timestamp": "2026-05-28T15:34:40.286002",
+  "dry_run": true,
+  "total_parsers": 3,
+  "ok": 3,
+  "failed": 0,
+  "exhibitions_saved": 1670,
+  "results": [
+    {
+      "site": "met",
+      "started_at": "2026-05-28T15:32:25.002725",
+      "success": true,
+      "stats": {
+        "discovered": 43,
+        "parsed": 43,
+        "saved": 43,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 75.8,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "whitney",
+      "started_at": "2026-05-28T15:33:45.845222",
+      "success": true,
+      "stats": {
+        "discovered": 1614,
+        "parsed": 1614,
+        "saved": 1614,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 47.4,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "wikidata",
+      "started_at": "2026-05-28T15:34:38.212880",
+      "success": true,
+      "stats": {
+        "discovered": 13,
+        "parsed": 13,
+        "saved": 13,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 2.1,
+      "error": null,
+      "exit_code": 0
+    }
+  ]
+}

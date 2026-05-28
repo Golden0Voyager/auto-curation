@@ -1,0 +1,250 @@
+{
+  "timestamp": "2026-05-28T16:44:59.099658",
+  "dry_run": false,
+  "total_parsers": 16,
+  "ok": 16,
+  "failed": 0,
+  "exhibitions_saved": 246,
+  "results": [
+    {
+      "site": "berlin_biennale",
+      "started_at": "2026-05-28T16:14:31.048342",
+      "success": true,
+      "stats": {
+        "discovered": 30,
+        "parsed": 30,
+        "saved": 30,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 194.5,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "ucca",
+      "started_at": "2026-05-28T16:17:50.578032",
+      "success": true,
+      "stats": {
+        "discovered": 28,
+        "parsed": 28,
+        "saved": 28,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 174.6,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "maiiam",
+      "started_at": "2026-05-28T16:20:50.200233",
+      "success": true,
+      "stats": {
+        "discovered": 25,
+        "parsed": 25,
+        "saved": 25,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 77.4,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "psa",
+      "started_at": "2026-05-28T16:22:12.557976",
+      "success": true,
+      "stats": {
+        "discovered": 0,
+        "parsed": 0,
+        "saved": 0,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 0.4,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "brooklyn_museum",
+      "started_at": "2026-05-28T16:22:17.964050",
+      "success": true,
+      "stats": {
+        "discovered": 23,
+        "parsed": 23,
+        "saved": 23,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 101.6,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "ngv",
+      "started_at": "2026-05-28T16:24:04.561307",
+      "success": true,
+      "stats": {
+        "discovered": 22,
+        "parsed": 20,
+        "saved": 20,
+        "skipped": 0,
+        "failed": 2
+      },
+      "duration_s": 407.0,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "njpac",
+      "started_at": "2026-05-28T16:30:56.573878",
+      "success": true,
+      "stats": {
+        "discovered": 22,
+        "parsed": 22,
+        "saved": 22,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 18.1,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "liverpool_biennial",
+      "started_at": "2026-05-28T16:31:19.638188",
+      "success": true,
+      "stats": {
+        "discovered": 21,
+        "parsed": 21,
+        "saved": 21,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 33.6,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "beyeler",
+      "started_at": "2026-05-28T16:31:58.279496",
+      "success": true,
+      "stats": {
+        "discovered": 0,
+        "parsed": 0,
+        "saved": 0,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 0.4,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "whitney_biennial",
+      "started_at": "2026-05-28T16:32:03.662172",
+      "success": true,
+      "stats": {
+        "discovered": 19,
+        "parsed": 3,
+        "saved": 3,
+        "skipped": 16,
+        "failed": 0
+      },
+      "duration_s": 18.9,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "venice_biennale",
+      "started_at": "2026-05-28T16:32:27.539117",
+      "success": true,
+      "stats": {
+        "discovered": 17,
+        "parsed": 17,
+        "saved": 17,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 159.1,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "sharjah_biennale",
+      "started_at": "2026-05-28T16:35:11.679575",
+      "success": true,
+      "stats": {
+        "discovered": 17,
+        "parsed": 13,
+        "saved": 13,
+        "skipped": 0,
+        "failed": 4
+      },
+      "duration_s": 224.8,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "documenta",
+      "started_at": "2026-05-28T16:39:01.441251",
+      "success": true,
+      "stats": {
+        "discovered": 15,
+        "parsed": 15,
+        "saved": 15,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 220.4,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "momat",
+      "started_at": "2026-05-28T16:42:46.848619",
+      "success": true,
+      "stats": {
+        "discovered": 15,
+        "parsed": 15,
+        "saved": 15,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 64.0,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "hamburger_bahnhof",
+      "started_at": "2026-05-28T16:43:55.842607",
+      "success": true,
+      "stats": {
+        "discovered": 14,
+        "parsed": 14,
+        "saved": 14,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 55.6,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "vam",
+      "started_at": "2026-05-28T16:44:56.453198",
+      "success": true,
+      "stats": {
+        "discovered": 0,
+        "parsed": 0,
+        "saved": 0,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 2.6,
+      "error": null,
+      "exit_code": 0
+    }
+  ]
+}

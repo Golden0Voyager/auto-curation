@@ -1,0 +1,175 @@
+{
+  "timestamp": "2026-05-28T16:09:16.913986",
+  "dry_run": false,
+  "total_parsers": 11,
+  "ok": 11,
+  "failed": 0,
+  "exhibitions_saved": 559,
+  "results": [
+    {
+      "site": "mca_australia",
+      "started_at": "2026-05-28T15:38:02.246648",
+      "success": true,
+      "stats": {
+        "discovered": 0,
+        "parsed": 0,
+        "saved": 0,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 0.4,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "louisiana",
+      "started_at": "2026-05-28T15:38:07.698790",
+      "success": true,
+      "stats": {
+        "discovered": 131,
+        "parsed": 131,
+        "saved": 131,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 298.8,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "lenbachhaus",
+      "started_at": "2026-05-28T15:43:11.504638",
+      "success": true,
+      "stats": {
+        "discovered": 120,
+        "parsed": 115,
+        "saved": 115,
+        "skipped": 0,
+        "failed": 5
+      },
+      "duration_s": 657.8,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "maxxi",
+      "started_at": "2026-05-28T15:54:14.308348",
+      "success": true,
+      "stats": {
+        "discovered": 52,
+        "parsed": 52,
+        "saved": 52,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 122.7,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "pompidou",
+      "started_at": "2026-05-28T15:56:21.993869",
+      "success": true,
+      "stats": {
+        "discovered": 52,
+        "parsed": 52,
+        "saved": 52,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 106.6,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "saopaulo_biennial",
+      "started_at": "2026-05-28T15:58:13.612340",
+      "success": true,
+      "stats": {
+        "discovered": 50,
+        "parsed": 43,
+        "saved": 43,
+        "skipped": 0,
+        "failed": 7
+      },
+      "duration_s": 94.7,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "barbican",
+      "started_at": "2026-05-28T15:59:53.305095",
+      "success": true,
+      "stats": {
+        "discovered": 37,
+        "parsed": 37,
+        "saved": 37,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 78.3,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "sydney_biennale",
+      "started_at": "2026-05-28T16:01:16.577438",
+      "success": true,
+      "stats": {
+        "discovered": 34,
+        "parsed": 34,
+        "saved": 34,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 77.3,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "yokohama_triennale",
+      "started_at": "2026-05-28T16:02:38.929388",
+      "success": true,
+      "stats": {
+        "discovered": 34,
+        "parsed": 34,
+        "saved": 34,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 72.7,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "kunsthaus",
+      "started_at": "2026-05-28T16:03:56.649507",
+      "success": true,
+      "stats": {
+        "discovered": 31,
+        "parsed": 31,
+        "saved": 31,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 19.9,
+      "error": null,
+      "exit_code": 0
+    },
+    {
+      "site": "kw_institute",
+      "started_at": "2026-05-28T16:04:21.514170",
+      "success": true,
+      "stats": {
+        "discovered": 30,
+        "parsed": 30,
+        "saved": 30,
+        "skipped": 0,
+        "failed": 0
+      },
+      "duration_s": 295.4,
+      "error": null,
+      "exit_code": 0
+    }
+  ]
+}
