@@ -19,6 +19,8 @@ secrets.json
 
 # 本地数据库（可通过重新采集生成）
 exhibitions.db
+exhibitions.db-wal
+exhibitions.db-shm
 
 # 大型开放数据集（>50MB，可从官方源下载）
 data/met_collection/MetObjects.csv
