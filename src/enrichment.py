@@ -80,6 +80,29 @@ def synthesize_concept_aic(
     return f"芝加哥艺术博物馆展览《{title}》展出艺术家包括 {artist_str} 的作品。"
 
 
+def synthesize_concept_whitney(
+    title: str,
+    preface: Optional[str],
+) -> str:
+    """Synthesize concept for Whitney exhibitions from preface text.
+
+    Args:
+        title: Exhibition title.
+        preface: Primary text from Whitney API (may be None).
+
+    Returns:
+        A synthesized concept string.
+    """
+    if not title:
+        return ""
+
+    if preface and len(preface.strip()) >= 50:
+        cleaned = preface.strip().replace("\n", " ")
+        return cleaned[:300]
+
+    return f"Whitney Museum of American Art exhibition: {title}"
+
+
 def synthesize_concept_generic(
     title: str,
     source: str,

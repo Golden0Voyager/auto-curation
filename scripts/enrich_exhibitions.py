@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional
 sys.path.insert(0, ".")
 
 from src.database import ExhibitionDatabase
-from src.enrichment import synthesize_concept_moma, synthesize_concept_aic
+from src.enrichment import synthesize_concept_moma, synthesize_concept_aic, synthesize_concept_whitney
 from src.llm_parser import LLMExhibitionParser
 from src.scraper import ExhibitionScraper, extract_images_from_html
 from src.sites import SITES
@@ -119,17 +119,52 @@ def enrich_tier2(db: ExhibitionDatabase, limit: Optional[int] = None, dry_run: b
             conn.commit()
             stats["aic"]["updated"] += 1
 
+    # --- Whitney ---
+    cursor.execute(
+        """
+        SELECT id, title, preface FROM exhibitions
+        WHERE source = 'Whitney Museum of American Art' AND (concept IS NULL OR concept = '')
+        ORDER BY id DESC
+        LIMIT ?
+        """,
+        (limit or 999999,),
+    )
+    whitney_rows = cursor.fetchall()
+    stats["whitney"] = {"processed": 0, "updated": 0}
+    logger.info(f"[Tier 2] Whitney: {len(whitney_rows)} records missing concept")
+
+    for row in whitney_rows:
+        ex_id = row["id"]
+        title = row["title"]
+        preface = row["preface"]
+        concept = synthesize_concept_whitney(title, preface)
+
+        if not concept:
+            continue
+        stats["whitney"]["processed"] += 1
+
+        if dry_run:
+            logger.info(f"[Tier 2] [DRY-RUN] Whitney '{title}' -> concept: {concept[:60]}...")
+            stats["whitney"]["updated"] += 1
+        else:
+            cursor.execute(
+                "UPDATE exhibitions SET concept = ? WHERE id = ?",
+                (concept, ex_id),
+            )
+            conn.commit()
+            stats["whitney"]["updated"] += 1
+
     conn.close()
-    total_processed = stats["moma"]["processed"] + stats["aic"]["processed"]
-    total_updated = stats["moma"]["updated"] + stats["aic"]["updated"]
+    total_processed = stats["moma"]["processed"] + stats["aic"]["processed"] + stats["whitney"]["processed"]
+    total_updated = stats["moma"]["updated"] + stats["aic"]["updated"] + stats["whitney"]["updated"]
     logger.info(
         f"[Tier 2] DONE | processed={total_processed}, updated={total_updated} "
-        f"(MoMA: {stats['moma']['updated']}, AIC: {stats['aic']['updated']})"
+        f"(MoMA: {stats['moma']['updated']}, AIC: {stats['aic']['updated']}, Whitney: {stats['whitney']['updated']})"
     )
     return stats
 
 
-def enrich_tier1(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: Optional[int] = None, dry_run: bool = False) -> Dict[str, Any]:
+def enrich_tier1(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: Optional[int] = None, dry_run: bool = False, site: Optional[str] = None) -> Dict[str, Any]:
     """Tier 1: 重新抓取 HTML_LLM 源缺失字段。"""
     conn = db._get_connection()
     cursor = conn.cursor()
@@ -140,20 +175,55 @@ def enrich_tier1(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: Opti
         key for key, parser in SITES.items()
         if getattr(parser, "strategy", ParserStrategy.HTML_LLM) == ParserStrategy.HTML_LLM
     }
+    if site:
+        html_llm_keys = {k for k in html_llm_keys if k == site}
     if not html_llm_keys:
         logger.warning("[Tier 1] No HTML_LLM parsers found.")
         return {"processed": 0, "updated": 0, "failed": 0}
 
-    placeholders = ",".join("?" for _ in html_llm_keys)
+    # Build mapping: SITES key -> DB parser_key(s)
+    # Some parsers store different parser_key in DB than the SITES registration key
+    db_parser_keys: set[str] = set()
+    key_to_sites_key: Dict[str, str] = {}
+    for sites_key in html_llm_keys:
+        parser = SITES[sites_key]
+        pk = getattr(parser, "parser_key", "")
+        if pk:
+            db_parser_keys.add(pk)
+            key_to_sites_key[pk] = sites_key
+        # Also add the SITES key itself (scraper auto-fills parser_key = site_key)
+        db_parser_keys.add(sites_key)
+        key_to_sites_key[sites_key] = sites_key
+
+    # Also check DB for parser_keys that map to these SITES keys
+    # (e.g., serpentine_galleries -> serpentine)
+    cursor.execute("SELECT DISTINCT parser_key FROM exhibitions WHERE parser_key IS NOT NULL AND parser_key != ''")
+    all_db_keys = {row["parser_key"] for row in cursor.fetchall()}
+    # Known legacy mappings
+    legacy_map = {
+        "serpentine_galleries": "serpentine",
+        "tate_modern": "tate",
+        "mori_art_museum": "mori",
+        "m+_museum": "mplus",
+        "art_institute_of_chicago": "aic",
+    }
+    for db_key, sites_key in legacy_map.items():
+        if sites_key in html_llm_keys and db_key in all_db_keys:
+            db_parser_keys.add(db_key)
+            key_to_sites_key[db_key] = sites_key
+
+    placeholders = ",".join("?" for _ in db_parser_keys)
     cursor.execute(
         f"""
-        SELECT id, url, title, parser_key FROM exhibitions
+        SELECT id, url, title, parser_key, start_date, end_date FROM exhibitions
         WHERE parser_key IN ({placeholders})
-          AND (concept IS NULL OR concept = '' OR preface IS NULL OR preface = '' OR curators = '[]')
+          AND (concept IS NULL OR concept = '' OR length(concept) < 50
+               OR preface IS NULL OR preface = '' OR curators = '[]'
+               OR start_date IS NULL OR start_date = '')
         ORDER BY id DESC
         LIMIT ?
         """,
-        (*html_llm_keys, limit or 999999),
+        (*db_parser_keys, limit or 999999),
     )
     rows = cursor.fetchall()
     logger.info(f"[Tier 1] Found {len(rows)} HTML_LLM records with missing fields")
@@ -166,7 +236,8 @@ def enrich_tier1(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: Opti
         url = row["url"]
         title = row["title"]
         parser_key = row["parser_key"]
-        parser = SITES.get(parser_key)
+        sites_key = key_to_sites_key.get(parser_key, parser_key)
+        parser = SITES.get(sites_key)
 
         if not parser:
             continue
@@ -197,12 +268,16 @@ def enrich_tier1(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: Opti
             if parsed.get("curators"):
                 updates["curators"] = json.dumps(parsed["curators"], ensure_ascii=False)
             if parsed.get("images"):
-                # LLM 可能返回 List[str]，统一处理
                 imgs = parsed["images"]
                 if isinstance(imgs, list):
                     updates["images"] = json.dumps(imgs, ensure_ascii=False)
                 elif isinstance(imgs, str):
                     updates["images"] = imgs
+            # Update missing dates
+            if parsed.get("start_date") and not row["start_date"]:
+                updates["start_date"] = parsed["start_date"]
+            if parsed.get("end_date") and not row["end_date"]:
+                updates["end_date"] = parsed["end_date"]
 
             if not updates:
                 logger.info(f"[Tier 1] No new fields extracted: {url}")
@@ -332,7 +407,7 @@ def main():
         logger.info(f"Running Tier {tier}")
         logger.info(f"{'='*50}")
         if tier == "1" and scraper:
-            stats = enrich_tier1(db, scraper, limit=args.limit, dry_run=args.dry_run)
+            stats = enrich_tier1(db, scraper, limit=args.limit, dry_run=args.dry_run, site=args.site)
         elif tier == "2":
             stats = enrich_tier2(db, limit=args.limit, dry_run=args.dry_run)
         elif tier == "3" and scraper:
