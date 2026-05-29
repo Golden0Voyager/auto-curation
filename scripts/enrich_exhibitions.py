@@ -164,25 +164,8 @@ def enrich_tier2(db: ExhibitionDatabase, limit: Optional[int] = None, dry_run: b
     return stats
 
 
-def enrich_tier1(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: Optional[int] = None, dry_run: bool = False, site: Optional[str] = None) -> Dict[str, Any]:
-    """Tier 1: 重新抓取 HTML_LLM 源缺失字段。"""
-    conn = db._get_connection()
-    cursor = conn.cursor()
-
-    # 查询所有 HTML_LLM 策略且缺失 concept/preface/curators 的记录
-    # 由于 DB 无 strategy 字段，通过 parser_key 反查 SITES
-    html_llm_keys = {
-        key for key, parser in SITES.items()
-        if getattr(parser, "strategy", ParserStrategy.HTML_LLM) == ParserStrategy.HTML_LLM
-    }
-    if site:
-        html_llm_keys = {k for k in html_llm_keys if k == site}
-    if not html_llm_keys:
-        logger.warning("[Tier 1] No HTML_LLM parsers found.")
-        return {"processed": 0, "updated": 0, "failed": 0}
-
-    # Build mapping: SITES key -> DB parser_key(s)
-    # Some parsers store different parser_key in DB than the SITES registration key
+def _build_parser_key_mapping(html_llm_keys: set[str]) -> tuple[set[str], Dict[str, str]]:
+    """Build mapping between SITES keys and DB parser_keys, including legacy names."""
     db_parser_keys: set[str] = set()
     key_to_sites_key: Dict[str, str] = {}
     for sites_key in html_llm_keys:
@@ -191,15 +174,13 @@ def enrich_tier1(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: Opti
         if pk:
             db_parser_keys.add(pk)
             key_to_sites_key[pk] = sites_key
-        # Also add the SITES key itself (scraper auto-fills parser_key = site_key)
         db_parser_keys.add(sites_key)
         key_to_sites_key[sites_key] = sites_key
+    return db_parser_keys, key_to_sites_key
 
-    # Also check DB for parser_keys that map to these SITES keys
-    # (e.g., serpentine_galleries -> serpentine)
-    cursor.execute("SELECT DISTINCT parser_key FROM exhibitions WHERE parser_key IS NOT NULL AND parser_key != ''")
-    all_db_keys = {row["parser_key"] for row in cursor.fetchall()}
-    # Known legacy mappings
+
+def _add_legacy_mappings(db_parser_keys: set[str], key_to_sites_key: Dict[str, str], html_llm_keys: set[str], all_db_keys: set[str]) -> None:
+    """Add known legacy parser_key mappings from older DB records."""
     legacy_map = {
         "serpentine_galleries": "serpentine",
         "tate_modern": "tate",
@@ -212,21 +193,110 @@ def enrich_tier1(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: Opti
             db_parser_keys.add(db_key)
             key_to_sites_key[db_key] = sites_key
 
+
+def _build_missing_field_filter(fields: Optional[List[str]] = None) -> str:
+    """Build SQL WHERE clause for missing field detection.
+
+    Args:
+        fields: List of field names to check. None = all fields (default behavior).
+                Supported: concept, preface, curators, dates, images
+    """
+    if not fields:
+        # Default: check all fields
+        return (
+            "(concept IS NULL OR concept = '' OR length(concept) < 50 "
+            "OR preface IS NULL OR preface = '' OR curators = '[]' "
+            "OR start_date IS NULL OR start_date = '')"
+        )
+
+    conditions = []
+    for field in fields:
+        if field == "concept":
+            conditions.append("(concept IS NULL OR concept = '' OR length(concept) < 50)")
+        elif field == "preface":
+            conditions.append("(preface IS NULL OR preface = '')")
+        elif field == "curators":
+            conditions.append("(curators IS NULL OR curators = '[]' OR curators = '')")
+        elif field in ("dates", "date"):
+            conditions.append("(start_date IS NULL OR start_date = '')")
+        elif field == "images":
+            conditions.append("(images IS NULL OR images = '[]' OR images = '')")
+    return " OR ".join(conditions) if conditions else "1=1"
+
+
+def _should_update_field(field: str, parsed: Dict[str, Any], row, force: bool = False) -> bool:
+    """Check if a field should be updated from parsed result.
+
+    Args:
+        field: Field name to check.
+        parsed: LLM parsed result dict.
+        row: sqlite3.Row from exhibitions table.
+        force: If True, update even if existing value is present.
+    """
+    val = parsed.get(field)
+    if not val:
+        return False
+    if field == "curators":
+        if isinstance(val, list) and len(val) == 0:
+            return False
+    if force:
+        return True
+    # Only update if current value is empty/null
+    existing = row[field] if field in row.keys() else None
+    if existing is None or existing == "" or existing == "[]":
+        return True
+    return False
+
+
+def enrich_tier1(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: Optional[int] = None, dry_run: bool = False, site: Optional[str] = None, fields: Optional[List[str]] = None, force_reparse: bool = False) -> Dict[str, Any]:
+    """Tier 1: 重新抓取 HTML_LLM 源缺失字段。
+
+    Args:
+        fields: Target specific fields to enrich. None = all fields.
+                Supported: concept, preface, curators, dates, images
+        force_reparse: Bypass LLM cache and force fresh parsing.
+    """
+    # Temporarily disable LLM cache if force_reparse
+    original_cache = scraper.parser.cache
+    if force_reparse:
+        scraper.parser.cache = None
+        logger.info("[Tier 1] LLM cache disabled (force-reparse mode)")
+    conn = db._get_connection()
+    cursor = conn.cursor()
+
+    # 查询所有 HTML_LLM 策略且缺失指定字段的记录
+    html_llm_keys = {
+        key for key, parser in SITES.items()
+        if getattr(parser, "strategy", ParserStrategy.HTML_LLM) == ParserStrategy.HTML_LLM
+    }
+    if site:
+        html_llm_keys = {k for k in html_llm_keys if k == site}
+    if not html_llm_keys:
+        logger.warning("[Tier 1] No HTML_LLM parsers found.")
+        return {"processed": 0, "updated": 0, "failed": 0}
+
+    db_parser_keys, key_to_sites_key = _build_parser_key_mapping(html_llm_keys)
+
+    cursor.execute("SELECT DISTINCT parser_key FROM exhibitions WHERE parser_key IS NOT NULL AND parser_key != ''")
+    all_db_keys = {row["parser_key"] for row in cursor.fetchall()}
+    _add_legacy_mappings(db_parser_keys, key_to_sites_key, html_llm_keys, all_db_keys)
+
     placeholders = ",".join("?" for _ in db_parser_keys)
+    field_filter = _build_missing_field_filter(fields)
     cursor.execute(
         f"""
-        SELECT id, url, title, parser_key, start_date, end_date FROM exhibitions
+        SELECT id, url, title, parser_key, start_date, end_date,
+               concept, preface, curators, images FROM exhibitions
         WHERE parser_key IN ({placeholders})
-          AND (concept IS NULL OR concept = '' OR length(concept) < 50
-               OR preface IS NULL OR preface = '' OR curators = '[]'
-               OR start_date IS NULL OR start_date = '')
+          AND {field_filter}
         ORDER BY id DESC
         LIMIT ?
         """,
         (*db_parser_keys, limit or 999999),
     )
     rows = cursor.fetchall()
-    logger.info(f"[Tier 1] Found {len(rows)} HTML_LLM records with missing fields")
+    field_desc = f" fields={fields}" if fields else ""
+    logger.info(f"[Tier 1] Found {len(rows)} HTML_LLM records with missing{field_desc}")
 
     updated = 0
     failed = 0
@@ -259,25 +329,44 @@ def enrich_tier1(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: Opti
                 failed += 1
                 continue
 
-            # 组装更新字段
+            # 组装更新字段 — 只更新目标字段
             updates = {}
-            if parsed.get("concept"):
-                updates["concept"] = parsed["concept"]
-            if parsed.get("preface"):
-                updates["preface"] = parsed["preface"]
-            if parsed.get("curators"):
-                updates["curators"] = json.dumps(parsed["curators"], ensure_ascii=False)
-            if parsed.get("images"):
-                imgs = parsed["images"]
-                if isinstance(imgs, list):
-                    updates["images"] = json.dumps(imgs, ensure_ascii=False)
-                elif isinstance(imgs, str):
-                    updates["images"] = imgs
-            # Update missing dates
-            if parsed.get("start_date") and not row["start_date"]:
-                updates["start_date"] = parsed["start_date"]
-            if parsed.get("end_date") and not row["end_date"]:
-                updates["end_date"] = parsed["end_date"]
+            target_fields = fields or ["concept", "preface", "curators", "images", "start_date", "end_date"]
+            for field in target_fields:
+                if field in ("start_date", "end_date"):
+                    if parsed.get(field) and not row[field]:
+                        updates[field] = parsed[field]
+                elif field == "dates":
+                    for df in ("start_date", "end_date"):
+                        if parsed.get(df) and not row[df]:
+                            updates[df] = parsed[df]
+                elif field == "curators":
+                    val = parsed.get("curators")
+                    if val and isinstance(val, list) and len(val) > 0:
+                        existing = row["curators"]
+                        if not existing or existing == "[]" or existing == "":
+                            updates["curators"] = json.dumps(val, ensure_ascii=False)
+                elif field == "images":
+                    imgs = parsed.get("images")
+                    if imgs:
+                        existing = row["images"]
+                        if not existing or existing == "[]" or existing == "":
+                            if isinstance(imgs, list):
+                                updates["images"] = json.dumps(imgs, ensure_ascii=False)
+                            elif isinstance(imgs, str):
+                                updates["images"] = imgs
+                elif field == "concept":
+                    val = parsed.get("concept")
+                    if val and len(val.strip()) >= 20:
+                        existing = row["concept"]
+                        if not existing or existing == "" or len(existing) < 50:
+                            updates["concept"] = val
+                elif field == "preface":
+                    val = parsed.get("preface")
+                    if val and len(val.strip()) >= 10:
+                        existing = row["preface"]
+                        if not existing or existing == "":
+                            updates["preface"] = val
 
             if not updates:
                 logger.info(f"[Tier 1] No new fields extracted: {url}")
@@ -300,6 +389,10 @@ def enrich_tier1(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: Opti
         except Exception as e:
             logger.error(f"[Tier 1] Error processing {title}: {e}")
             failed += 1
+
+    # Restore LLM cache
+    if force_reparse:
+        scraper.parser.cache = original_cache
 
     conn.close()
     logger.info(f"[Tier 1] DONE | processed={len(rows)}, updated={updated}, failed={failed}")
@@ -351,7 +444,7 @@ def enrich_tier3(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: Opti
         if source == "Art Institute of Chicago" and not image_urls:
             try:
                 if "/exhibitions/" in url:
-                    aic_id = url.split("/exhibitions/")[-1].split("?")[0].split("#")[0]
+                    aic_id = url.split("/exhibitions/")[-1].split("/")[0].split("?")[0].split("#")[0]
                     if aic_id.isdigit():
                         import httpx
                         api_url = f"https://api.artic.edu/api/v1/exhibitions/{aic_id}"
@@ -389,6 +482,8 @@ def main():
     parser = argparse.ArgumentParser(description="Enrich exhibition records with missing fields")
     parser.add_argument("--tier", choices=["1", "2", "3", "all"], default="all", help="Which tier to run")
     parser.add_argument("--site", help="Limit to a specific parser_key (Tier 1/3 only)")
+    parser.add_argument("--fields", help="Comma-separated fields to enrich (Tier 1 only): concept,preface,curators,dates,images")
+    parser.add_argument("--force-reparse", action="store_true", help="Bypass LLM cache and force fresh parsing (Tier 1 only)")
     parser.add_argument("--limit", type=int, help="Max records per tier")
     parser.add_argument("--dry-run", action="store_true", help="Simulate without writing")
     parser.add_argument("--db", default="exhibitions.db", help="Database path")
@@ -399,6 +494,7 @@ def main():
     if args.tier in ("1", "3", "all"):
         scraper = ExhibitionScraper()
 
+    fields = args.fields.split(",") if args.fields else None
     tiers_to_run = ["1", "2", "3"] if args.tier == "all" else [args.tier]
     all_stats = {}
 
@@ -407,7 +503,7 @@ def main():
         logger.info(f"Running Tier {tier}")
         logger.info(f"{'='*50}")
         if tier == "1" and scraper:
-            stats = enrich_tier1(db, scraper, limit=args.limit, dry_run=args.dry_run, site=args.site)
+            stats = enrich_tier1(db, scraper, limit=args.limit, dry_run=args.dry_run, site=args.site, fields=fields, force_reparse=args.force_reparse)
         elif tier == "2":
             stats = enrich_tier2(db, limit=args.limit, dry_run=args.dry_run)
         elif tier == "3" and scraper:
