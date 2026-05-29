@@ -26,6 +26,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from src.database import ExhibitionDatabase  # noqa: E402
 
 DATE_PATTERN = re.compile(r"^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$")
+SLASH_DATE_PATTERN = re.compile(r"^(\d{1,2})/(\d{1,2})/(\d{4})$")
 
 
 def normalize_date(val: str | None) -> tuple[str | None, bool]:
@@ -33,20 +34,26 @@ def normalize_date(val: str | None) -> tuple[str | None, bool]:
     if not val:
         return val, False
 
-    match = DATE_PATTERN.match(val.strip())
-    if not match:
-        return val, False
+    val = val.strip()
 
-    year, month, day = match.groups()
-    if month and day:
-        return val, False  # Already YYYY-MM-DD
+    # Already YYYY-MM-DD
+    match = DATE_PATTERN.match(val)
+    if match:
+        year, month, day = match.groups()
+        if month and day:
+            return val, False
+        if month:
+            return f"{year}-{month}-01", True
+        return f"{year}-01-01", True
 
-    if month:
-        new_val = f"{year}-{month}-01"
-    else:
-        new_val = f"{year}-01-01"
+    # M/D/YYYY format (MoMA)
+    match = SLASH_DATE_PATTERN.match(val)
+    if match:
+        month, day, year = match.groups()
+        new_val = f"{year}-{int(month):02d}-{int(day):02d}"
+        return new_val, True
 
-    return new_val, True
+    return val, False
 
 
 def analyze_and_fix(db_path: str, dry_run: bool = False) -> dict[str, Any]:
