@@ -252,6 +252,29 @@ SQLite，两张核心表：
 
 ---
 
+## 数据质量规范
+
+### 禁止合成数据
+
+数据库中所有字段必须来源于真实数据，**禁止使用模板或算法合成填充**：
+
+- **Concept**：必须来自 LLM 从 HTML 提取、API 原始字段、或 preface 文本截取。禁止用 `展览《标题》展出艺术家包括 A, B, C 的作品。` 等模板生成。
+- **Preface**：必须来自 API 原始字段或 HTML 页面抓取。禁止拼接生成。
+- **Curators**：必须来自 CSV 原始数据或 LLM 从 HTML 提取。禁止从 concept/title 中猜测。
+- **Dates**：必须来自 API 原始字段或 HTML 提取。禁止推测填充。
+- **Images**：必须来自 HTML 页面或 API 字段。禁止使用外部图片搜索引擎填充。
+
+宁可留空（NULL），也不要填入低质量合成数据。留空的字段可在后续通过 Tier 1 enrichment（重新抓取 HTML + LLM 提取）补全。
+
+### 日期格式
+
+所有日期统一为 `YYYY-MM-DD` 格式。`normalize_dates.py` 脚本支持以下格式转换：
+- `YYYY` → `YYYY-01-01`
+- `YYYY-MM` → `YYYY-MM-01`
+- `M/D/YYYY` → `YYYY-MM-DD`（MoMA 历史数据）
+
+---
+
 ## 环境变量
 
 | 变量 | 说明 |
