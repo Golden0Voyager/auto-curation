@@ -46,7 +46,7 @@ class ExhibitionModel(BaseModel):
 
 
 class LLMExhibitionParser:
-    """Uses multiple LLM providers (SenseNova -> Gemini -> SiliconFlow) to parse cleaned HTML text into structured JSON.
+    """Uses multiple LLM providers (MiMo -> Gemini -> SiliconFlow) to parse cleaned HTML text into structured JSON.
 
     When the primary provider returns low-quality results (e.g., content-filtered N/A responses),
     automatically falls back to the next available provider.
@@ -58,14 +58,14 @@ class LLMExhibitionParser:
         if self.cache:
             logger.info("LLM response caching enabled.")
 
-        # Primary: SenseNova (free DeepSeek models)
-        sensenova_key = os.getenv("SENSENOVA_API_KEY")
-        if sensenova_key:
+        # Primary: Xiaomi MiMo
+        mimo_key = os.getenv("XIAOMI_MIMO_API_KEY")
+        if mimo_key:
             self.providers.append({
-                "name": "sensenova",
-                "api_key": SecretStr(sensenova_key),
-                "base_url": os.getenv("SENSENOVA_BASE_URL", "https://api.sensenova.cn/compatible-mode/v2"),
-                "model": "DeepSeek-V3-1"
+                "name": "mimo",
+                "api_key": SecretStr(mimo_key),
+                "base_url": os.getenv("MIMO_BASE_URL", "https://token-plan-cn.xiaomimimo.com/v1"),
+                "model": "mimo-v2.5-pro"
             })
 
         # Fallback 1: Gemini
