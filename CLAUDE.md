@@ -279,8 +279,8 @@ SQLite，两张核心表：
 
 | 变量 | 说明 |
 |:--|:--|
-| `SENSENOVA_API_KEY` | 首选 LLM 密钥（DeepSeek-V3-1） |
-| `SENSENOVA_BASE_URL` | 可选，默认 `https://api.sensenova.cn/compatible-mode/v1` |
+| `XIAOMI_MIMO_API_KEY` | 首选 LLM 密钥（mimo-v2.5-pro） |
+| `MIMO_BASE_URL` | 可选，默认 `https://token-plan-cn.xiaomimimo.com/v1` |
 | `GEMINI_API_KEY` | 次选 LLM 密钥（gemini-2.5-flash） |
 | `GEMINI_BASE_URL` | 可选，默认 `https://generativelanguage.googleapis.com/v1beta/openai/` |
 | `SILICONFLOW_API_KEY` | 第三备选密钥（DeepSeek-V3） |
