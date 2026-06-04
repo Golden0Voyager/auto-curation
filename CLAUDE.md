@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠️ 环境约束（强制）
+
+- **包管理器**：`uv pip install <pkg>`（禁止 `pip` / `python -m pip`）
+- **运行脚本**：`uv run python <script>.py`（禁止直接 `python`）
+
+---
+
 ## 项目概述
 
 Auto Curation 是一个**模块化全球当代艺术展览数据采集与结构化存储系统**。它从全球 61 家顶级艺术机构（美术馆、双年展、三年展）抓取展览数据，通过六种策略转化为结构化数据，存入 SQLite 数据库。
