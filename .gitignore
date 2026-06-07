@@ -2,6 +2,7 @@
 .venv/
 __pycache__/
 *.pyc
+*.egg-info/
 
 # 敏感信息 (最重要！)
 .env
