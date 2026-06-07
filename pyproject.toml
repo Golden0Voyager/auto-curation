@@ -1,9 +1,27 @@
 [project]
 name = "auto_curation"
 version = "0.1.0"
-description = "Auto Curation - Intelligent content curation and art exhibition collector system"
+description = "Auto Curation - 全球当代艺术展览数据采集与结构化平台"
 readme = "README.md"
 requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+    { name = "Auto Curation Contributors" },
+]
+keywords = ["art", "curation", "exhibitions", "scraping", "llm", "pydantic"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Sociology :: History",
+    "Natural Language :: Chinese (Simplified)",
+    "Natural Language :: English",
+]
 dependencies = [
     "httpx>=0.27.0",
     "beautifulsoup4>=4.12.0",
@@ -14,15 +32,44 @@ dependencies = [
     "auto-hub",
 ]
 
+[project.urls]
+Homepage = "https://github.com/your-username/auto_curation"
+Repository = "https://github.com/your-username/auto_curation"
+Issues = "https://github.com/your-username/auto_curation/issues"
+Changelog = "https://github.com/your-username/auto_curation/blob/main/CHANGELOG.md"
+
 [tool.uv.sources]
 auto-hub = { path = "../auto_hub", editable = true }
 
 [dependency-groups]
 dev = [
     "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.6",
+    "httpx[socks]>=0.27.0",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM"]
+ignore = [
+    "E501",   # line too long (parser files have long HTML patterns)
+    "C414",   # unnecessary double cast (intentional in Pydantic coercion)
+    "SIM105", # try-except-pass (intentional in database migrations)
+    "SIM102", # collapsible if (style preference)
+    "SIM103", # needless bool (style preference)
+    "SIM118", # key in dict.keys (style preference)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/sites/*.py" = ["E501"]
+"src/database.py" = ["SIM105"]
 
