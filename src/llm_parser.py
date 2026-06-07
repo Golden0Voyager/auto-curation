@@ -2,22 +2,13 @@ import os
 import json
 import logging
 import asyncio
-import httpx
 from typing import Dict, List, Any, Optional
 from pydantic import BaseModel, Field, SecretStr
-from tenacity import stop_after_attempt, wait_exponential, retry_if_exception, Retrying, AsyncRetrying
 from src.cache import LLMResponseCache, make_cache_key
 
 
-def _is_retryable_error(exc: BaseException) -> bool:
-    """Determine if an exception warrants a retry."""
-    if isinstance(exc, (httpx.ConnectError, httpx.TimeoutException)):
-        return True
-    if isinstance(exc, httpx.HTTPStatusError):
-        return exc.response.status_code in (429, 502, 503, 504)
-    return False
-
 logger = logging.getLogger("auto_curation.llm_parser")
+
 
 class ArtworkModel(BaseModel):
     artist_name: Optional[str] = Field(None, description="Name of the artist")
@@ -26,6 +17,7 @@ class ArtworkModel(BaseModel):
     medium: Optional[str] = Field(None, description="Materials/medium of the artwork")
     dimensions: Optional[str] = Field(None, description="Physical dimensions")
     caption: Optional[str] = Field(None, description="Full caption label information")
+
 
 class ExhibitionModel(BaseModel):
     title: str = Field(..., description="Exhibition title/theme")
@@ -46,17 +38,16 @@ class ExhibitionModel(BaseModel):
 
 
 class LLMExhibitionParser:
-    """Uses multiple LLM providers (MiMo -> Gemini -> SiliconFlow) to parse cleaned HTML text into structured JSON.
-
-    When the primary provider returns low-quality results (e.g., content-filtered N/A responses),
-    automatically falls back to the next available provider.
-    """
+    """Uses auto_hub.llm provider chain with fallback (MiMo -> Gemini -> SiliconFlow) to parse HTML into JSON."""
 
     def __init__(self, cache: Optional[LLMResponseCache] = None):
         self.providers: List[Dict[str, str]] = []
         self.cache = cache
         if self.cache:
             logger.info("LLM response caching enabled.")
+
+        self._hub_client = None
+        self._hub_async_client = None
 
         # Primary: Xiaomi MiMo
         mimo_key = os.getenv("XIAOMI_MIMO_API_KEY")
@@ -90,13 +81,35 @@ class LLMExhibitionParser:
 
         if not self.providers:
             logger.warning("No LLM API keys found in the environment! LLM parsing will fail.")
+            return
+
+        # Set up auto_hub provider chain from legacy env var names
+        self._setup_auto_hub_chain()
+
+    def _setup_auto_hub_chain(self):
+        """Map legacy env var names to auto_hub.llm's AI_PROVIDER_CHAIN format."""
+        from auto_hub.llm import LLMClient, AsyncLLMClient
+        from auto_hub.llm.provider_chain import reset_provider_chain
+
+        names = []
+        for p in self.providers:
+            name = p["name"].upper()
+            os.environ.setdefault(f"{name}_API_KEY", p["api_key"].get_secret_value())
+            os.environ.setdefault(f"{name}_BASE_URL", p["base_url"])
+            os.environ.setdefault(f"{name}_MODEL", p["model"])
+            names.append(name)
+
+        os.environ.setdefault("AI_PROVIDER_CHAIN", ",".join(names))
+        reset_provider_chain()
+
+        self._hub_client = LLMClient(max_retries=3)
+        self._hub_async_client = AsyncLLMClient(max_retries=3)
 
     def _is_valid_result(self, data: Dict[str, Any]) -> bool:
         """Heuristic to detect content-filtered or low-quality LLM responses."""
         title = data.get("title")
         if not title or title in ("N/A", "n/a", "NA", "null", ""):
             return False
-        # If both dates are missing AND text content is negligible, treat as filtered
         has_dates = bool(data.get("start_date") or data.get("end_date"))
         text_content = " ".join(filter(None, [
             data.get("preface", ""),
@@ -104,10 +117,8 @@ class LLMExhibitionParser:
         ]))
         if not has_dates and len(text_content.strip()) < 30:
             return False
-        # Concept should not be trivially short — flag for retry if it looks like a placeholder
         concept = data.get("concept", "") or ""
         if concept and len(concept.strip()) < 20:
-            # Very short concept is suspicious — likely a low-quality extraction
             return False
         return True
 
@@ -173,7 +184,6 @@ Strict Guidelines:
 
     def _parse_response(self, content: str, provider_name: str) -> Optional[Dict[str, Any]]:
         """Parse and validate raw LLM response content."""
-        # Strip markdown code blocks if the model ignored our request
         if content.startswith("```"):
             content = content.split("```")[1]
             if content.startswith("json"):
@@ -195,157 +205,59 @@ Strict Guidelines:
         validated_data = ExhibitionModel(**parsed_json)
         return validated_data.model_dump()
 
-    def _call_provider(
-        self,
-        text: str,
-        source: str,
-        default_city: str,
-        provider: Dict[str, str]
-    ) -> Optional[Dict[str, Any]]:
-        """Send a single request to one provider and return parsed data or None."""
-        api_key = provider["api_key"]
-        base_url = provider["base_url"]
-        model_name = provider["model"]
-        provider_name = provider["name"]
-
-        headers = {
-            "Authorization": f"Bearer {api_key.get_secret_value()}",
-            "Content-Type": "application/json"
-        }
+    def _call_provider(self, text: str, source: str, default_city: str) -> Optional[Dict[str, Any]]:
+        """Call the LLM via auto_hub.llm (sync) and return parsed data or None."""
+        if self._hub_client is None:
+            return None
 
         system_prompt, user_prompt = self._build_prompts(text, source, default_city)
 
-        payload = {
-            "model": model_name,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            "temperature": 0.1,
-            "max_tokens": 8192,
-            "response_format": {"type": "json_object"}
-        }
-
-        endpoint = f"{base_url.rstrip('/')}/chat/completions"
-        content = ""
-
         try:
-            logger.info(f"[{provider_name}] Sending LLM parsing request ({model_name})...")
-            with httpx.Client(timeout=60.0) as client:
-                for attempt in Retrying(
-                    stop=stop_after_attempt(3),
-                    wait=wait_exponential(multiplier=1, min=1, max=10),
-                    retry=retry_if_exception(_is_retryable_error),
-                    reraise=True,
-                ):
-                    with attempt:
-                        response = client.post(endpoint, headers=headers, json=payload)
-                        response.raise_for_status()
-
-                result = response.json()
-                choices = result.get("choices", [])
-                if not choices or not isinstance(choices[0], dict):
-                    logger.warning(f"[{provider_name}] Unexpected response structure: {list(result.keys())}")
-                    return None
-                content = choices[0].get("message", {}).get("content", "").strip()
-                if not content:
-                    return None
-                return self._parse_response(content, provider_name)
-
-        except httpx.HTTPStatusError as e:
-            logger.warning(f"[{provider_name}] HTTP error: {e.response.status_code} - {e.response.text[:200]}")
-            return None
-        except json.JSONDecodeError as e:
-            logger.warning(f"[{provider_name}] JSON decode error. Content: {content[:200]}...")
-            return None
+            content = self._hub_client.chat(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                model=None,
+                temperature=0.1,
+                max_tokens=8192,
+            )
+            if not content:
+                return None
+            return self._parse_response(content, "hub")
         except Exception as e:
-            safe_msg = str(e).replace(api_key.get_secret_value(), "***REDACTED***")
-            logger.warning(f"[{provider_name}] Error: {safe_msg}", exc_info=True)
+            logger.warning(f"[LLM] Error in sync call: {e}", exc_info=True)
             return None
 
-    async def _call_provider_async(
-        self,
-        text: str,
-        source: str,
-        default_city: str,
-        provider: Dict[str, str]
-    ) -> Optional[Dict[str, Any]]:
-        """Async version: send a single request to one provider."""
-        api_key = provider["api_key"]
-        base_url = provider["base_url"]
-        model_name = provider["model"]
-        provider_name = provider["name"]
-
-        headers = {
-            "Authorization": f"Bearer {api_key.get_secret_value()}",
-            "Content-Type": "application/json"
-        }
+    async def _call_provider_async(self, text: str, source: str, default_city: str) -> Optional[Dict[str, Any]]:
+        """Call the LLM via auto_hub.llm (async) and return parsed data or None."""
+        if self._hub_async_client is None:
+            return None
 
         system_prompt, user_prompt = self._build_prompts(text, source, default_city)
 
-        payload = {
-            "model": model_name,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            "temperature": 0.1,
-            "max_tokens": 8192,
-            "response_format": {"type": "json_object"}
-        }
-
-        endpoint = f"{base_url.rstrip('/')}/chat/completions"
-        content = ""
-
         try:
-            logger.info(f"[{provider_name}] Sending async LLM parsing request ({model_name})...")
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                async for attempt in AsyncRetrying(
-                    stop=stop_after_attempt(3),
-                    wait=wait_exponential(multiplier=1, min=1, max=10),
-                    retry=retry_if_exception(_is_retryable_error),
-                    reraise=True,
-                ):
-                    with attempt:
-                        response = await client.post(endpoint, headers=headers, json=payload)
-                        response.raise_for_status()
-
-                result = response.json()
-                choices = result.get("choices", [])
-                if not choices or not isinstance(choices[0], dict):
-                    logger.warning(f"[{provider_name}] Unexpected response structure: {list(result.keys())}")
-                    return None
-                content = choices[0].get("message", {}).get("content", "").strip()
-                if not content:
-                    return None
-                return self._parse_response(content, provider_name)
-
-        except httpx.HTTPStatusError as e:
-            logger.warning(f"[{provider_name}] HTTP error: {e.response.status_code} - {e.response.text[:200]}")
-            return None
-        except json.JSONDecodeError as e:
-            logger.warning(f"[{provider_name}] JSON decode error. Content: {content[:200]}...")
-            return None
+            content = await self._hub_async_client.chat(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                model=None,
+                temperature=0.1,
+                max_tokens=8192,
+            )
+            if not content:
+                return None
+            return self._parse_response(content, "hub")
         except Exception as e:
-            safe_msg = str(e).replace(api_key.get_secret_value(), "***REDACTED***")
-            logger.warning(f"[{provider_name}] Error: {safe_msg}", exc_info=True)
+            logger.warning(f"[LLM] Error in async call: {e}", exc_info=True)
             return None
 
     def parse_exhibition_text(self, text: str, source: str, default_city: str = "") -> Optional[Dict[str, Any]]:
         """Sends clean text to LLM and returns structured exhibition data.
 
-        Iterates over all configured providers; when a provider returns a low-quality
-        (likely content-filtered) response, automatically tries the next one.
-        Cache lookup happens before the first provider call; successful results are
-        written back to the cache.
-
-        Args:
-            text: The cleaned, high-density text content of the exhibition page.
-            source: The name of the institution (e.g. 'MoMA').
-            default_city: Default city if not found in the text.
-
-        Returns:
-            A dictionary matching the ExhibitionModel schema, or None if all providers failed.
+        Uses auto_hub.llm provider chain (single call, inner chain handles fallback).
+        Cache lookup happens before the call; successful results are written back.
         """
         if not self.providers:
             logger.error("Cannot parse text: no LLM providers configured.")
@@ -358,24 +270,22 @@ Strict Guidelines:
                 logger.info(f"Cache hit for {source} exhibition text (key: {cache_key[:8]}...)")
                 return cached
 
-        for provider in self.providers:
-            result = self._call_provider(text, source, default_city, provider)
-            if result and self._is_valid_result(result):
-                logger.info(f"[{provider['name']}] Successfully parsed exhibition '{result.get('title')}'")
-                if self.cache:
-                    self.cache.set(cache_key, f"{source}:{default_city}", source, result)
-                return result
-            if result:
-                logger.warning(
-                    f"[{provider['name']}] Result failed quality check (title={result.get('title')!r}). "
-                    "Trying next provider..."
-                )
+        result = self._call_provider(text, source, default_city)
+        if result and self._is_valid_result(result):
+            logger.info(f"[hub] Successfully parsed exhibition '{result.get('title')}'")
+            if self.cache:
+                self.cache.set(cache_key, f"{source}:{default_city}", source, result)
+            return result
+        if result:
+            logger.warning(
+                f"[hub] Result failed quality check (title={result.get('title')!r})."
+            )
 
-        logger.error("All LLM providers failed or returned low-quality results.")
+        logger.error("LLM provider failed or returned low-quality results.")
         return None
 
     async def parse_exhibition_text_async(self, text: str, source: str, default_city: str = "") -> Optional[Dict[str, Any]]:
-        """Asynchronous version: sends cleaned text to LLM with caching support."""
+        """Async version: sends cleaned text to LLM with caching support."""
         if not self.providers:
             logger.error("Cannot parse text: no LLM providers configured.")
             return None
@@ -387,18 +297,16 @@ Strict Guidelines:
                 logger.info(f"Cache hit for {source} exhibition text (key: {cache_key[:8]}...)")
                 return cached
 
-        for provider in self.providers:
-            result = await self._call_provider_async(text, source, default_city, provider)
-            if result and self._is_valid_result(result):
-                logger.info(f"[{provider['name']}] Successfully parsed exhibition '{result.get('title')}'")
-                if self.cache:
-                    await asyncio.to_thread(self.cache.set, cache_key, f"{source}:{default_city}", source, result)
-                return result
-            if result:
-                logger.warning(
-                    f"[{provider['name']}] Result failed quality check (title={result.get('title')!r}). "
-                    "Trying next provider..."
-                )
+        result = await self._call_provider_async(text, source, default_city)
+        if result and self._is_valid_result(result):
+            logger.info(f"[hub] Successfully parsed exhibition '{result.get('title')}'")
+            if self.cache:
+                await asyncio.to_thread(self.cache.set, cache_key, f"{source}:{default_city}", source, result)
+            return result
+        if result:
+            logger.warning(
+                f"[hub] Result failed quality check (title={result.get('title')!r})."
+            )
 
-        logger.error("All LLM providers failed or returned low-quality results.")
+        logger.error("LLM provider failed or returned low-quality results.")
         return None
