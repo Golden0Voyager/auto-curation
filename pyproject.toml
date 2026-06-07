@@ -9,6 +9,20 @@ dependencies = [
     "beautifulsoup4>=4.12.0",
     "pydantic>=2.7.0",
     "fastapi>=0.110.0",
-    "uvicorn>=0.28.0"
+    "uvicorn>=0.28.0",
+    "tenacity>=8.0",
+    "auto-hub",
 ]
+
+[tool.uv.sources]
+auto-hub = { path = "../auto_hub", editable = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
 
