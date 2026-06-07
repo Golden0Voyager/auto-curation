@@ -23,7 +23,7 @@
 需要 Python ≥ 3.12 与 [uv](https://docs.astral.sh/uv/)。
 
 ```bash
-git clone https://github.com/your-username/auto_curation.git
+git clone https://github.com/Golden0Voyager/auto_curation.git
 cd auto_curation
 uv pip install -r requirements.txt
 ```
