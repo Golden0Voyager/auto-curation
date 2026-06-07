@@ -11,9 +11,10 @@ API 文档: https://api.artic.edu/docs/
 
 import logging
 import time
-from typing import List, Optional, Dict, Any
-from datetime import date
+from typing import Any
+
 import httpx
+
 from src.sites.base import ParserStrategy
 
 logger = logging.getLogger("auto_curation.sites.aic")
@@ -37,25 +38,26 @@ class AICParser:
     抓取 AIC 的展览历史（6,253 个）及关联的当代艺术作品数据。
     无需 API Key，直接调用公开端点。
     """
+
     source = "Art Institute of Chicago"
     city = "Chicago"
     strategy = ParserStrategy.REST_API
     parser_key = "aic"
     list_url = AIC_EXHIBITIONS_URL
 
-    def get_list_urls(self, since_year: Optional[int] = None) -> List[str]:
+    def get_list_urls(self, since_year: int | None = None) -> list[str]:
         return [AIC_EXHIBITIONS_URL]
 
-    def get_exhibition_urls(self, client: httpx.Client, since_year: Optional[int] = None) -> List[str]:
+    def get_exhibition_urls(self, client: httpx.Client, since_year: int | None = None) -> list[str]:
         """Compatibility stub — AIC uses get_api_exhibitions() directly."""
         return []
 
     def get_api_exhibitions(
         self,
-        since_year: Optional[int] = None,
-        limit: Optional[int] = None,
-        department: str = "Contemporary Art"
-    ) -> List[Dict[str, Any]]:
+        since_year: int | None = None,
+        limit: int | None = None,
+        department: str = "Contemporary Art",
+    ) -> list[dict[str, Any]]:
         """Fetches exhibitions from AIC API with pagination.
 
         Args:
@@ -119,32 +121,38 @@ class AICParser:
                     artworks = []
                     for i, artist in enumerate(artist_titles):
                         work_title = artwork_titles[i] if i < len(artwork_titles) else title
-                        artworks.append({
-                            "artist_name": artist,
-                            "work_title": work_title,
-                            "work_year": start_date[:4] if start_date else None,
-                            "medium": None,
-                            "dimensions": None,
-                            "caption": artist,
-                        })
+                        artworks.append(
+                            {
+                                "artist_name": artist,
+                                "work_title": work_title,
+                                "work_year": start_date[:4] if start_date else None,
+                                "medium": None,
+                                "dimensions": None,
+                                "caption": artist,
+                            }
+                        )
 
                     ex_url = ex.get("web_url") or f"https://www.artic.edu/exhibitions/{ex['id']}"
 
-                    exhibitions.append({
-                        "source": self.source,
-                        "title": title,
-                        "preface": ex.get("description") or ex.get("short_description"),
-                        "concept": None,
-                        "curators": [],
-                        "start_date": start_date[:10] if start_date else None,
-                        "end_date": end_date[:10] if end_date else None,
-                        "location": ex.get("gallery_title") or "Art Institute of Chicago",
-                        "city": self.city,
-                        "url": ex_url,
-                        "artworks": artworks,
-                    })
+                    exhibitions.append(
+                        {
+                            "source": self.source,
+                            "title": title,
+                            "preface": ex.get("description") or ex.get("short_description"),
+                            "concept": None,
+                            "curators": [],
+                            "start_date": start_date[:10] if start_date else None,
+                            "end_date": end_date[:10] if end_date else None,
+                            "location": ex.get("gallery_title") or "Art Institute of Chicago",
+                            "city": self.city,
+                            "url": ex_url,
+                            "artworks": artworks,
+                        }
+                    )
 
-                logger.info(f"[AIC] Page {page}/{total_pages}: fetched {len(items)} exhibitions, total so far: {len(exhibitions)}")
+                logger.info(
+                    f"[AIC] Page {page}/{total_pages}: fetched {len(items)} exhibitions, total so far: {len(exhibitions)}"
+                )
 
                 if page >= total_pages:
                     break

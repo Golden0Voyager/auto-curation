@@ -1,10 +1,12 @@
 from src.sites.base import BaseSiteParser
 
+
 class BeyelerParser(BaseSiteParser):
     """Fondation Beyeler - Basel.
 
     贝耶勒基金会，瑞士最著名的私人美术馆之一。
     """
+
     source = "Fondation Beyeler"
     city = "Basel"
     parser_key = "beyeler"

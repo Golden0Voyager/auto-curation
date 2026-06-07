@@ -1,6 +1,5 @@
 import logging
 import re
-from typing import List, Optional
 
 from src.sites.base import BaseSiteParser
 
@@ -8,6 +7,7 @@ logger = logging.getLogger("auto_curation.sites.guggenheim")
 
 try:
     from scrapling import StealthyFetcher
+
     HAS_SCRAPLING = True
 except Exception:
     HAS_SCRAPLING = False
@@ -20,6 +20,7 @@ class GuggenheimParser(BaseSiteParser):
     注意：网站受 Cloudflare 保护，原生 Playwright 会 403，
     必须使用 Scrapling StealthyFetcher 绕过。
     """
+
     source = "Guggenheim Museum"
     city = "New York"
     parser_key = "guggenheim"
@@ -30,7 +31,7 @@ class GuggenheimParser(BaseSiteParser):
         r"/exhibition/[a-zA-Z0-9_-]+",
     ]
 
-    def get_exhibition_urls(self, client, since_year: Optional[int] = None) -> List[str]:
+    def get_exhibition_urls(self, client, since_year: int | None = None) -> list[str]:
         """Use Scrapling StealthyFetcher to bypass Cloudflare and discover URLs."""
         if not HAS_SCRAPLING:
             logger.error(
@@ -47,7 +48,13 @@ class GuggenheimParser(BaseSiteParser):
             html = page.html_content
 
             for href in re.findall(r'href="(/exhibition/[^"]+)"', html):
-                if href in ("/exhibitions", "/exhibitions#past", "/exhibitions#upcoming", "#past-exhibitions", "#exhibitions-on-view"):
+                if href in (
+                    "/exhibitions",
+                    "/exhibitions#past",
+                    "/exhibitions#upcoming",
+                    "#past-exhibitions",
+                    "#exhibitions-on-view",
+                ):
                     continue
                 urls.add(f"https://www.guggenheim.org{href}")
 

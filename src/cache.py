@@ -1,13 +1,13 @@
-import json
 import hashlib
+import json
 import logging
 import sqlite3
-from typing import Dict, Any, Optional
+from typing import Any
 
 logger = logging.getLogger("auto_curation.cache")
 
 
-def make_cache_key(url: str, text: Optional[str] = None) -> str:
+def make_cache_key(url: str, text: str | None = None) -> str:
     """Generate cache key based on URL and text fingerprint; auto-invalidates when content changes."""
     key_data = url
     if text is not None:
@@ -45,11 +45,13 @@ class LLMResponseCache:
         finally:
             conn.close()
 
-    def get(self, cache_key: str) -> Optional[Dict[str, Any]]:
+    def get(self, cache_key: str) -> dict[str, Any] | None:
         """Query cached result by cache_key."""
         conn = self._get_connection()
         try:
-            cursor = conn.execute("SELECT result_json FROM llm_cache WHERE cache_key = ?", (cache_key,))
+            cursor = conn.execute(
+                "SELECT result_json FROM llm_cache WHERE cache_key = ?", (cache_key,)
+            )
             row = cursor.fetchone()
             if row:
                 logger.debug(f"Cache hit for key {cache_key[:8]}...")
@@ -62,14 +64,14 @@ class LLMResponseCache:
         finally:
             conn.close()
 
-    def set(self, cache_key: str, url: str, source: str, result: Dict[str, Any]) -> None:
+    def set(self, cache_key: str, url: str, source: str, result: dict[str, Any]) -> None:
         """Write or update cached result."""
         conn = self._get_connection()
         try:
             result_json = json.dumps(result, ensure_ascii=False)
             conn.execute(
                 "INSERT OR REPLACE INTO llm_cache (cache_key, url, source, result_json) VALUES (?, ?, ?, ?)",
-                (cache_key, url, source, result_json)
+                (cache_key, url, source, result_json),
             )
             conn.commit()
             logger.debug(f"Cache set for key {cache_key[:8]}...")

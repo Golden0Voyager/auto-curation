@@ -1,5 +1,6 @@
 from src.sites.base import BaseSiteParser
 
+
 class HamburgerBahnhofParser(BaseSiteParser):
     """Hamburger Bahnhof - Berlin.
 
@@ -7,6 +8,7 @@ class HamburgerBahnhofParser(BaseSiteParser):
     注意：原域名 hamburgerbahnhof.de SSL 证书 hostname 不匹配，
     展览信息实际托管在 smb.museum 主站下。
     """
+
     source = "Hamburger Bahnhof"
     city = "Berlin"
     parser_key = "hamburger_bahnhof"

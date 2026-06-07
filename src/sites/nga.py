@@ -12,7 +12,8 @@ GitHub: https://github.com/NationalGalleryOfArt/opendata
 import csv
 import logging
 import os
-from typing import List, Optional, Dict, Any
+from typing import Any
+
 from src.sites.base import ParserStrategy
 
 logger = logging.getLogger("auto_curation.sites.nga")
@@ -33,16 +34,17 @@ class NGAParser:
     NGA 数据集是纯作品数据（无展览历史），因此我们将其以
     「按艺术家聚合的专题组」形式注入 artworks 表，配合 Met/MoMA 展览数据使用。
     """
+
     source = "National Gallery of Art"
     city = "Washington D.C."
     strategy = ParserStrategy.ARTWORK_ONLY
     parser_key = "nga"
     list_url = NGA_OBJECTS_PATH
 
-    def get_list_urls(self, since_year: Optional[int] = None) -> List[str]:
+    def get_list_urls(self, since_year: int | None = None) -> list[str]:
         return [NGA_OBJECTS_PATH]
 
-    def get_exhibition_urls(self, client, since_year: Optional[int] = None) -> List[str]:
+    def get_exhibition_urls(self, client, since_year: int | None = None) -> list[str]:
         """Compatibility stub — NGA uses get_csv_artworks() directly."""
         return []
 
@@ -56,10 +58,10 @@ class NGAParser:
 
     def get_csv_artworks(
         self,
-        since_year: Optional[int] = None,
-        classification: Optional[str] = None,
-        limit: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
+        since_year: int | None = None,
+        classification: str | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
         """Loads and parses NGA artwork records from local CSV.
 
         Joins objects → objects_constituents → constituents to attach
@@ -76,8 +78,8 @@ class NGAParser:
         if not self._ensure_local_files():
             return []
 
-        logger.info(f"[NGA] Loading constituents index...")
-        constituents: Dict[str, Dict] = {}
+        logger.info("[NGA] Loading constituents index...")
+        constituents: dict[str, dict] = {}
         if os.path.exists(NGA_CONSTITUENTS_PATH):
             with open(NGA_CONSTITUENTS_PATH, encoding="utf-8", errors="replace") as f:
                 for row in csv.DictReader(f):
@@ -85,8 +87,8 @@ class NGAParser:
                     if cid:
                         constituents[cid] = row
 
-        logger.info(f"[NGA] Loading object→constituent links...")
-        obj_to_artists: Dict[str, List[Dict]] = {}
+        logger.info("[NGA] Loading object→constituent links...")
+        obj_to_artists: dict[str, list[dict]] = {}
         if os.path.exists(NGA_OBJECTS_CONSTITUENTS_PATH):
             with open(NGA_OBJECTS_CONSTITUENTS_PATH, encoding="utf-8", errors="replace") as f:
                 for row in csv.DictReader(f):
@@ -96,15 +98,19 @@ class NGAParser:
                         c = constituents[cid]
                         if oid not in obj_to_artists:
                             obj_to_artists[oid] = []
-                        obj_to_artists[oid].append({
-                            "name": c.get("displayname", ""),
-                            "nationality": c.get("nationality", ""),
-                            "birth": c.get("beginyear", ""),
-                            "death": c.get("endyear", ""),
-                            "role": row.get("role", ""),
-                        })
+                        obj_to_artists[oid].append(
+                            {
+                                "name": c.get("displayname", ""),
+                                "nationality": c.get("nationality", ""),
+                                "birth": c.get("beginyear", ""),
+                                "death": c.get("endyear", ""),
+                                "role": row.get("role", ""),
+                            }
+                        )
 
-        logger.info(f"[NGA] Loading objects (since_year={since_year}, classification={classification})...")
+        logger.info(
+            f"[NGA] Loading objects (since_year={since_year}, classification={classification})..."
+        )
         artworks = []
         with open(NGA_OBJECTS_PATH, encoding="utf-8", errors="replace") as f:
             reader = csv.DictReader(f)
@@ -145,18 +151,20 @@ class NGAParser:
                 if birth or death:
                     caption_parts.append(f"{birth}–{death}".strip("–"))
 
-                artworks.append({
-                    "source": self.source,
-                    "artist_name": artist_name,
-                    "work_title": title,
-                    "work_year": row.get("displaydate", begin_year),
-                    "medium": row.get("medium", "").strip() or None,
-                    "dimensions": row.get("dimensions", "").strip() or None,
-                    "caption": ", ".join(caption_parts),
-                    "classification": cls,
-                    "url": f"https://www.nga.gov/collection/art-object-page.{obj_id}.html",
-                    "all_artists": artists,
-                })
+                artworks.append(
+                    {
+                        "source": self.source,
+                        "artist_name": artist_name,
+                        "work_title": title,
+                        "work_year": row.get("displaydate", begin_year),
+                        "medium": row.get("medium", "").strip() or None,
+                        "dimensions": row.get("dimensions", "").strip() or None,
+                        "caption": ", ".join(caption_parts),
+                        "classification": cls,
+                        "url": f"https://www.nga.gov/collection/art-object-page.{obj_id}.html",
+                        "all_artists": artists,
+                    }
+                )
 
         logger.info(f"[NGA] Loaded {len(artworks):,} artworks.")
         return artworks

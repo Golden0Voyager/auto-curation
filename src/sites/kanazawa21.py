@@ -1,10 +1,12 @@
 from src.sites.base import BaseSiteParser
 
+
 class Kanazawa21Parser(BaseSiteParser):
     """21st Century Museum of Contemporary Art, Kanazawa.
 
     金泽21世纪美术馆，日本最具创新性的当代艺术博物馆之一。
     """
+
     source = "21st Century Museum"
     city = "Kanazawa"
     parser_key = "kanazawa21"

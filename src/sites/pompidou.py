@@ -1,5 +1,6 @@
 from src.sites.base import BaseSiteParser
 
+
 class PompidouParser(BaseSiteParser):
     source = "Centre Pompidou"
     city = "Paris"

@@ -1,10 +1,12 @@
 from src.sites.base import BaseSiteParser
 
+
 class UCCAParser(BaseSiteParser):
     """UCCA Center for Contemporary Art - Beijing.
 
     尤伦斯当代艺术中心，中国当代艺术重要展览平台。
     """
+
     source = "UCCA Center for Contemporary Art"
     city = "Beijing"
     parser_key = "ucca"

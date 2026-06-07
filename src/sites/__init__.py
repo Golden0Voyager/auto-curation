@@ -2,7 +2,9 @@ import importlib
 import inspect
 import logging
 import pkgutil
-from src.sites.base import BaseSiteParser
+import sys
+
+from src.sites.base import BaseSiteParser as BaseSiteParser
 
 logger = logging.getLogger("auto_curation.sites")
 
@@ -48,9 +50,12 @@ def _discover_parsers():
                 key = name.replace("Parser", "").lower()
                 # Handle multi-word class names: e.g. PalaisTokyo -> palais_tokyo
                 import re
-                key = re.sub(r'(?<!^)(?=[A-Z])', '_', key).lower()
+
+                key = re.sub(r"(?<!^)(?=[A-Z])", "_", key).lower()
             if key in parsers:
-                logger.warning(f"Parser key collision: '{key}' already registered. Skipping {name}.")
+                logger.warning(
+                    f"Parser key collision: '{key}' already registered. Skipping {name}."
+                )
                 continue
             try:
                 parsers[key] = obj()
@@ -61,7 +66,5 @@ def _discover_parsers():
     return parsers
 
 
-# Trigger auto-discovery on import
-import sys
 SITES = _discover_parsers()
 logger.info(f"Auto-discovered {len(SITES)} site parsers: {list(SITES.keys())}")

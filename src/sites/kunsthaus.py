@@ -1,9 +1,11 @@
 import json
 import logging
 import re
-from typing import List, Optional, Dict, Any
+from typing import Any
+
 import httpx
 from bs4 import BeautifulSoup
+
 from src.sites.base import ParserStrategy
 
 logger = logging.getLogger("auto_curation.sites.kunsthaus")
@@ -15,6 +17,7 @@ class KunsthausParser:
     瑞士苏黎世顶级美术馆。展览页嵌入了 JSON-LD (schema.org/ExhibitionEvent)
     结构化数据，可直接解析，无需 LLM。
     """
+
     source = "Kunsthaus Zürich"
     city = "Zürich"
     strategy = ParserStrategy.HTML_LLM
@@ -24,10 +27,10 @@ class KunsthausParser:
         r"kunsthaus\.ch/en/besuch-planen/ausstellungen/[^/]+/$",
     ]
 
-    def get_list_urls(self, since_year: Optional[int] = None) -> List[str]:
+    def get_list_urls(self, since_year: int | None = None) -> list[str]:
         return [self.list_url]
 
-    def get_exhibition_urls(self, client: httpx.Client, since_year: Optional[int] = None) -> List[str]:
+    def get_exhibition_urls(self, client: httpx.Client, since_year: int | None = None) -> list[str]:
         urls = set()
         for url in self.get_list_urls(since_year):
             try:
@@ -50,7 +53,7 @@ class KunsthausParser:
         logger.info(f"[Kunsthaus Zürich] Total discovered: {len(urls)} exhibition URLs.")
         return sorted(urls)
 
-    def parse_exhibition_page(self, client: httpx.Client, url: str) -> Optional[Dict[str, Any]]:
+    def parse_exhibition_page(self, client: httpx.Client, url: str) -> dict[str, Any] | None:
         """Fetch a single exhibition page and extract JSON-LD ExhibitionEvent data."""
         try:
             response = client.get(url, follow_redirects=True)
@@ -77,7 +80,7 @@ class KunsthausParser:
         logger.warning(f"[Kunsthaus Zürich] No JSON-LD ExhibitionEvent found at {url}")
         return None
 
-    def _normalize_exhibition(self, data: Dict[str, Any], url: str) -> Dict[str, Any]:
+    def _normalize_exhibition(self, data: dict[str, Any], url: str) -> dict[str, Any]:
         """Convert JSON-LD ExhibitionEvent to our schema."""
         name = (data.get("name") or "").strip()
         description = (data.get("description") or "").strip()

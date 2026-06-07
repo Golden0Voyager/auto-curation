@@ -1,16 +1,17 @@
 import logging
 import re
 from enum import Enum
-from typing import List, Set, Optional
+from urllib.parse import urljoin
+
 import httpx
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
 
 logger = logging.getLogger("auto_curation.sites.base")
 
 # Playwright is an optional dependency for SPA scraping
 try:
     from playwright.sync_api import sync_playwright
+
     HAS_PLAYWRIGHT = True
 except Exception:
     HAS_PLAYWRIGHT = False
@@ -32,11 +33,12 @@ HEADERS = {
 
 class ParserStrategy(Enum):
     """Scraping strategy for a parser. Determines which pipeline the scraper uses."""
-    HTML_LLM = "html_llm"        # Default: scrape HTML, send to LLM
-    CSV_LOCAL = "csv_local"      # Parse local CSV file
-    CSV_REMOTE = "csv_remote"    # Download and parse remote CSV
-    REST_API = "rest_api"        # Call REST API endpoint
-    SPARQL = "sparql"            # Wikidata-style SPARQL
+
+    HTML_LLM = "html_llm"  # Default: scrape HTML, send to LLM
+    CSV_LOCAL = "csv_local"  # Parse local CSV file
+    CSV_REMOTE = "csv_remote"  # Download and parse remote CSV
+    REST_API = "rest_api"  # Call REST API endpoint
+    SPARQL = "sparql"  # Wikidata-style SPARQL
     ARTWORK_ONLY = "artwork_only"  # No exhibitions, only artworks (e.g. NGA)
 
 
@@ -55,10 +57,10 @@ class BaseSiteParser:
     institution_type: str = "museum"  # museum, biennial, triennial, gallery
 
     # Additional archive/historical listing URLs (e.g., past exhibitions pages)
-    extra_list_urls: List[str] = []
+    extra_list_urls: list[str] = []
 
     # URL patterns or prefixes to match for detailed exhibition pages
-    link_patterns: List[str] = []
+    link_patterns: list[str] = []
 
     # SSL verification flag; set to False for sites with certificate hostname mismatches
     verify_ssl: bool = True
@@ -73,9 +75,9 @@ class BaseSiteParser:
     request_timeout: float = 60.0
     playwright_timeout: float = 60000.0
 
-    def get_list_urls(self, since_year: Optional[int] = None) -> List[str]:
+    def get_list_urls(self, since_year: int | None = None) -> list[str]:
         """Returns all listing URLs to crawl (current + historical).
-        
+
         Subclasses can override this to generate year-based paginated URLs.
         The `since_year` filter applies when supported by the subclass.
         """
@@ -85,7 +87,7 @@ class BaseSiteParser:
         urls.extend(self.extra_list_urls)
         return urls
 
-    def get_exhibition_urls(self, client: httpx.Client, since_year: Optional[int] = None) -> List[str]:
+    def get_exhibition_urls(self, client: httpx.Client, since_year: int | None = None) -> list[str]:
         """Fetches all listing pages and extracts detail page URLs.
 
         Args:
@@ -100,7 +102,7 @@ class BaseSiteParser:
             logger.error(f"No list URLs configured for parser {self.source}")
             return []
 
-        all_found: Set[str] = set()
+        all_found: set[str] = set()
 
         for list_url in list_urls:
             try:
@@ -110,18 +112,30 @@ class BaseSiteParser:
                     from curl_cffi import requests as curl_requests
 
                     response = curl_requests.get(
-                        list_url, headers=HEADERS, impersonate="chrome124", timeout=int(self.request_timeout)
+                        list_url,
+                        headers=HEADERS,
+                        impersonate="chrome124",
+                        timeout=int(self.request_timeout),
                     )
                     response.raise_for_status()
                     page_html = response.text
                 elif not self.verify_ssl:
                     logger.warning(f"[{self.source}] SSL verification disabled for {list_url}")
-                    with httpx.Client(verify=False, follow_redirects=True, max_redirects=5) as temp_client:
-                        response = temp_client.get(list_url, headers=HEADERS, timeout=self.request_timeout)
+                    with httpx.Client(
+                        verify=False, follow_redirects=True, max_redirects=5
+                    ) as temp_client:
+                        response = temp_client.get(
+                            list_url, headers=HEADERS, timeout=self.request_timeout
+                        )
                         response.raise_for_status()
                         page_html = response.text
                 else:
-                    response = client.get(list_url, headers=HEADERS, follow_redirects=True, timeout=self.request_timeout)
+                    response = client.get(
+                        list_url,
+                        headers=HEADERS,
+                        follow_redirects=True,
+                        timeout=self.request_timeout,
+                    )
                     response.raise_for_status()
                     page_html = response.text
 
@@ -142,14 +156,18 @@ class BaseSiteParser:
                             break
 
             except Exception as e:
-                logger.error(f"[{self.source}] Error fetching listing page {list_url}: {e}", exc_info=True)
+                logger.error(
+                    f"[{self.source}] Error fetching listing page {list_url}: {e}", exc_info=True
+                )
                 continue
 
         urls = sorted(list(all_found))
-        logger.info(f"[{self.source}] Total discovered: {len(urls)} exhibition URLs across {len(list_urls)} listing page(s).")
+        logger.info(
+            f"[{self.source}] Total discovered: {len(urls)} exhibition URLs across {len(list_urls)} listing page(s)."
+        )
         return urls
 
-    def _get_exhibition_urls_playwright(self, since_year: Optional[int] = None) -> List[str]:
+    def _get_exhibition_urls_playwright(self, since_year: int | None = None) -> list[str]:
         """SPA fallback: use Playwright to render the listing page and extract links."""
         if not HAS_PLAYWRIGHT:
             logger.error(
@@ -163,7 +181,7 @@ class BaseSiteParser:
             logger.error(f"No list URLs configured for parser {self.source}")
             return []
 
-        all_found: Set[str] = set()
+        all_found: set[str] = set()
 
         for list_url in list_urls:
             try:
@@ -172,13 +190,19 @@ class BaseSiteParser:
                     browser = p.chromium.launch(headless=True)
                     try:
                         page = browser.new_page()
-                        page.goto(list_url, wait_until="domcontentloaded", timeout=int(self.playwright_timeout))
+                        page.goto(
+                            list_url,
+                            wait_until="domcontentloaded",
+                            timeout=int(self.playwright_timeout),
+                        )
                         page.wait_for_timeout(10000)
                         html = page.content()
                     finally:
                         browser.close()
             except Exception as e:
-                logger.error(f"[{self.source}] Playwright failed to load listing page {list_url}: {e}")
+                logger.error(
+                    f"[{self.source}] Playwright failed to load listing page {list_url}: {e}"
+                )
                 continue
 
             soup = BeautifulSoup(html, "html.parser")
@@ -197,7 +221,7 @@ class BaseSiteParser:
         urls = sorted(list(all_found))
         logger.info(f"[{self.source}] Total discovered (Playwright): {len(urls)} exhibition URLs.")
         return urls
-            
+
     def clean_html(self, html: str) -> str:
         """Strips noise from the detailed exhibition HTML, returning clean high-density text.
 
@@ -225,15 +249,50 @@ class BaseSiteParser:
 
         # --- Pass 2: Full-page with noise removal ---
         # Remove common noise tags
-        for element in soup(["script", "style", "nav", "footer", "header", "iframe", "noscript", "svg", "form", "aside"]):
+        for element in soup(
+            [
+                "script",
+                "style",
+                "nav",
+                "footer",
+                "header",
+                "iframe",
+                "noscript",
+                "svg",
+                "form",
+                "aside",
+            ]
+        ):
             element.decompose()
 
         # Remove common noise classes/IDs, but never remove <body> itself
         noise_selectors = [
-            ".nav", ".footer", ".header", ".menu", ".sidebar", "#menu", "#footer", "#header",
-            ".cookie", ".breadcrumb", ".share", ".social", ".ad", ".newsletter", ".popup",
-            ".modal", ".overlay", ".announcement", ".promo", ".banner", ".widget",
-            ".related", ".recommended", ".tags", ".comments", ".pagination",
+            ".nav",
+            ".footer",
+            ".header",
+            ".menu",
+            ".sidebar",
+            "#menu",
+            "#footer",
+            "#header",
+            ".cookie",
+            ".breadcrumb",
+            ".share",
+            ".social",
+            ".ad",
+            ".newsletter",
+            ".popup",
+            ".modal",
+            ".overlay",
+            ".announcement",
+            ".promo",
+            ".banner",
+            ".widget",
+            ".related",
+            ".recommended",
+            ".tags",
+            ".comments",
+            ".pagination",
         ]
         for selector in noise_selectors:
             for element in soup.select(selector):

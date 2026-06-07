@@ -12,7 +12,8 @@ import logging
 import time
 import urllib.parse
 import urllib.request
-from typing import List, Optional, Dict, Any
+from typing import Any
+
 from src.sites.base import ParserStrategy
 
 logger = logging.getLogger("auto_curation.sites.wikidata")
@@ -51,23 +52,24 @@ class WikidataParser:
     Fetches exhibition records from Wikidata's public SPARQL endpoint.
     Covers major European institutions and selected global museums.
     """
+
     source = "Wikidata"
     city = "Various"
     strategy = ParserStrategy.SPARQL
     parser_key = "wikidata"
     list_url = WIKIDATA_SPARQL_URL
 
-    def get_exhibition_urls(self, client, since_year: Optional[int] = None) -> List[str]:
+    def get_exhibition_urls(self, client, since_year: int | None = None) -> list[str]:
         """Compatibility stub — Wikidata uses get_api_exhibitions() directly."""
         return []
 
-    def _build_sparql_query(self, since_year: Optional[int] = None, limit: Optional[int] = None) -> str:
+    def _build_sparql_query(self, since_year: int | None = None, limit: int | None = None) -> str:
         """Builds a SPARQL query to fetch exhibitions from configured museums."""
         museum_values = " ".join([f"wd:{qid}" for qid, _, _ in WIKIDATA_MUSEUM_QIDS])
 
         since_filter = ""
         if since_year:
-            since_filter = f'FILTER(YEAR(?start) >= {since_year})'
+            since_filter = f"FILTER(YEAR(?start) >= {since_year})"
 
         limit_clause = ""
         if limit:
@@ -93,10 +95,8 @@ class WikidataParser:
         return query
 
     def get_api_exhibitions(
-        self,
-        since_year: Optional[int] = None,
-        limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, since_year: int | None = None, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """Fetches exhibitions from Wikidata SPARQL endpoint.
 
         Args:
@@ -120,7 +120,7 @@ class WikidataParser:
                     "User-Agent": HEADERS["User-Agent"],
                     "Accept": HEADERS["Accept"],
                     "Content-Type": "application/x-www-form-urlencoded",
-                }
+                },
             )
             with urllib.request.urlopen(req, timeout=60.0) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
@@ -128,8 +128,10 @@ class WikidataParser:
             bindings = data.get("results", {}).get("bindings", [])
             logger.info(f"[Wikidata] Received {len(bindings)} results")
 
-            museum_map = {f"http://www.wikidata.org/entity/{qid}": (name, city)
-                          for qid, name, city in WIKIDATA_MUSEUM_QIDS}
+            museum_map = {
+                f"http://www.wikidata.org/entity/{qid}": (name, city)
+                for qid, name, city in WIKIDATA_MUSEUM_QIDS
+            }
 
             for binding in bindings:
                 ex_uri = binding.get("exhibition", {}).get("value", "")
@@ -157,19 +159,21 @@ class WikidataParser:
 
                 ex_url = f"https://www.wikidata.org/wiki/{ex_id}"
 
-                exhibitions.append({
-                    "source": museum_name or self.source,
-                    "title": title,
-                    "preface": None,
-                    "concept": None,
-                    "curators": [],
-                    "start_date": start_date,
-                    "end_date": end_date,
-                    "location": museum_name or self.source,
-                    "city": city_name or "",
-                    "url": ex_url,
-                    "artworks": [],
-                })
+                exhibitions.append(
+                    {
+                        "source": museum_name or self.source,
+                        "title": title,
+                        "preface": None,
+                        "concept": None,
+                        "curators": [],
+                        "start_date": start_date,
+                        "end_date": end_date,
+                        "location": museum_name or self.source,
+                        "city": city_name or "",
+                        "url": ex_url,
+                        "artworks": [],
+                    }
+                )
 
             time.sleep(0.5)  # Polite rate limiting for Wikidata
 
