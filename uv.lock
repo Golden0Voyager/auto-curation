@@ -66,7 +66,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "auto-hub", editable = "../auto_hub" },
+    { name = "auto-hub", git = "https://github.com/Golden0Voyager/auto_hub.git?branch=main" },
     { name = "beautifulsoup4", specifier = ">=4.12.0" },
     { name = "fastapi", specifier = ">=0.110.0" },
     { name = "httpx", specifier = ">=0.27.0" },
@@ -86,30 +86,13 @@ dev = [
 [[package]]
 name = "auto-hub"
 version = "0.1.0"
-source = { editable = "../auto_hub" }
+source = { git = "https://github.com/Golden0Voyager/auto_hub.git?branch=main#751edc77b3660004eb8fd195d8f3dcc51c6e7d39" }
 dependencies = [
     { name = "click" },
     { name = "mcp" },
     { name = "openai" },
     { name = "pydantic" },
     { name = "pyyaml" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "click", specifier = ">=8.0" },
-    { name = "mcp", specifier = ">=1.0.0" },
-    { name = "openai", specifier = ">=1.30.0" },
-    { name = "pydantic", specifier = ">=2.0" },
-    { name = "pyyaml", specifier = ">=6.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "click", specifier = ">=8.0" },
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "pytest-asyncio", specifier = ">=0.24" },
-    { name = "ruff", specifier = ">=0.6" },
 ]
 
 [[package]]
