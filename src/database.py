@@ -1,13 +1,14 @@
-import sqlite3
 import json
 import logging
-from typing import Dict, List, Any, Optional
+import sqlite3
+from typing import Any
 
 logger = logging.getLogger("auto_curation.database")
 
+
 class ExhibitionDatabase:
     """Manages the SQLite database for structured art exhibition and artwork storage."""
-    
+
     def __init__(self, db_path: str = "exhibitions.db"):
         self.db_path = db_path
         self.conn = None
@@ -28,7 +29,7 @@ class ExhibitionDatabase:
         """Initializes database schema if tables do not exist."""
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         # 1. Create exhibitions table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS exhibitions (
@@ -68,9 +69,15 @@ class ExhibitionDatabase:
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_url ON exhibitions(url);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_source ON exhibitions(source);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_city ON exhibitions(city);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_start_date ON exhibitions(start_date);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_parser_key ON exhibitions(parser_key);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_artworks_exhibition ON artworks(exhibition_id);")
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_exhibitions_start_date ON exhibitions(start_date);"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_exhibitions_parser_key ON exhibitions(parser_key);"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_artworks_exhibition ON artworks(exhibition_id);"
+        )
         # Deduplicate existing artworks before creating UNIQUE index
         cursor.execute("""
             DELETE FROM artworks
@@ -80,7 +87,9 @@ class ExhibitionDatabase:
                 GROUP BY exhibition_id, artist_name, work_title
             )
         """)
-        cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_artworks_unique ON artworks(exhibition_id, artist_name, work_title);")
+        cursor.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_artworks_unique ON artworks(exhibition_id, artist_name, work_title);"
+        )
         # Check and migrate exhibitions schema for preface_en and concept_en (Bilingual Curation)
         try:
             cursor.execute("ALTER TABLE exhibitions ADD COLUMN preface_en TEXT;")
@@ -129,32 +138,102 @@ class ExhibitionDatabase:
 
         # Add series_id to exhibitions if missing
         try:
-            cursor.execute("ALTER TABLE exhibitions ADD COLUMN series_id INTEGER REFERENCES biennial_series(id);")
+            cursor.execute(
+                "ALTER TABLE exhibitions ADD COLUMN series_id INTEGER REFERENCES biennial_series(id);"
+            )
         except sqlite3.OperationalError:
             pass
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_exhibitions_series_id ON exhibitions(series_id);")
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_exhibitions_series_id ON exhibitions(series_id);"
+        )
 
         # Seed known biennial series
         biennials = [
-            ("Venice Biennale", "venice_biennale", "Venice", "Italy", 1895, "International Art Exhibition of la Biennale di Venezia"),
-            ("Documenta", "documenta", "Kassel", "Germany", 1955, "Quinquennial contemporary art exhibition"),
-            ("Berlin Biennale", "berlin_biennale", "Berlin", "Germany", 1998, "Berlin Biennale for Contemporary Art"),
-            ("São Paulo Biennial", "saopaulo_biennial", "São Paulo", "Brazil", 1951, "Bienal de São Paulo"),
-            ("Istanbul Biennial", "istanbul_biennale", "Istanbul", "Turkey", 1987, "Istanbul Biennial"),
+            (
+                "Venice Biennale",
+                "venice_biennale",
+                "Venice",
+                "Italy",
+                1895,
+                "International Art Exhibition of la Biennale di Venezia",
+            ),
+            (
+                "Documenta",
+                "documenta",
+                "Kassel",
+                "Germany",
+                1955,
+                "Quinquennial contemporary art exhibition",
+            ),
+            (
+                "Berlin Biennale",
+                "berlin_biennale",
+                "Berlin",
+                "Germany",
+                1998,
+                "Berlin Biennale for Contemporary Art",
+            ),
+            (
+                "São Paulo Biennial",
+                "saopaulo_biennial",
+                "São Paulo",
+                "Brazil",
+                1951,
+                "Bienal de São Paulo",
+            ),
+            (
+                "Istanbul Biennial",
+                "istanbul_biennale",
+                "Istanbul",
+                "Turkey",
+                1987,
+                "Istanbul Biennial",
+            ),
             ("Lyon Biennale", "lyon_biennale", "Lyon", "France", 1991, "Biennale de Lyon"),
-            ("Liverpool Biennial", "liverpool_biennale", "Liverpool", "UK", 1999, "Liverpool Biennial of Contemporary Art"),
+            (
+                "Liverpool Biennial",
+                "liverpool_biennale",
+                "Liverpool",
+                "UK",
+                1999,
+                "Liverpool Biennial of Contemporary Art",
+            ),
             ("Taipei Biennial", "taipei_biennale", "Taipei", "Taiwan", 1998, "Taipei Biennial"),
-            ("Yokohama Triennale", "yokohama_triennale", "Yokohama", "Japan", 2001, "Yokohama Triennale"),
-            ("Sydney Biennale", "sydney_biennale", "Sydney", "Australia", 1973, "Biennale of Sydney"),
+            (
+                "Yokohama Triennale",
+                "yokohama_triennale",
+                "Yokohama",
+                "Japan",
+                2001,
+                "Yokohama Triennale",
+            ),
+            (
+                "Sydney Biennale",
+                "sydney_biennale",
+                "Sydney",
+                "Australia",
+                1973,
+                "Biennale of Sydney",
+            ),
             ("Sharjah Biennial", "sharjah_biennale", "Sharjah", "UAE", 1993, "Sharjah Biennial"),
-            ("Gwangju Biennale", "gwangju_biennale", "Gwangju", "South Korea", 1995, "Gwangju Biennale"),
+            (
+                "Gwangju Biennale",
+                "gwangju_biennale",
+                "Gwangju",
+                "South Korea",
+                1995,
+                "Gwangju Biennale",
+            ),
             ("Whitney Biennial", "whitney_biennial", "New York", "USA", 1932, "Whitney Biennial"),
         ]
         for name, key, city, country, year, desc in biennials:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT OR IGNORE INTO biennial_series (series_name, series_key, city, country, founded_year, description)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (name, key, city, country, year, desc))
+            """,
+                (name, key, city, country, year, desc),
+            )
 
         # Create scraper_runs table for operational tracking
         cursor.execute("""
@@ -171,29 +250,33 @@ class ExhibitionDatabase:
                 run_type TEXT DEFAULT 'full'
             );
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_scraper_runs_parser_key ON scraper_runs(parser_key);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_scraper_runs_started_at ON scraper_runs(started_at);")
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_scraper_runs_parser_key ON scraper_runs(parser_key);"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_scraper_runs_started_at ON scraper_runs(started_at);"
+        )
 
         conn.commit()
         conn.close()
         logger.info(f"Database initialized at {self.db_path}")
 
-    def insert_exhibition(self, ex_data: Dict[str, Any]) -> Optional[int]:
+    def insert_exhibition(self, ex_data: dict[str, Any]) -> int | None:
         """Inserts an exhibition and its associated artworks into the database.
-        
+
         Args:
             ex_data: Dictionary containing exhibition fields and a list of artworks.
-                     Expected keys: source, title, preface, concept, start_date, 
+                     Expected keys: source, title, preface, concept, start_date,
                      end_date, location, city, url, artworks.
                      artworks is a list of dicts with: artist_name, work_title,
                      work_year, medium, dimensions, caption.
-        
+
         Returns:
             The ID of the inserted or existing exhibition, or None if failed.
         """
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         try:
             curators = ex_data.get("curators", [])
             if isinstance(curators, list):
@@ -208,54 +291,61 @@ class ExhibitionDatabase:
                 images = json.dumps(images, ensure_ascii=False)
 
             # 1. Insert into exhibitions table using INSERT OR IGNORE
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT OR IGNORE INTO exhibitions (
                     source, title, preface, concept, curators, start_date, end_date, location, city, url, parser_key, institution_type, preface_en, concept_en, biographies, biographies_cn, credits, images, tags
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                ex_data.get("source"),
-                ex_data.get("title"),
-                ex_data.get("preface"),
-                ex_data.get("concept"),
-                curators,
-                ex_data.get("start_date"),
-                ex_data.get("end_date"),
-                ex_data.get("location"),
-                ex_data.get("city"),
-                ex_data.get("url"),
-                ex_data.get("parser_key"),
-                ex_data.get("institution_type", "museum"),
-                ex_data.get("preface_en"),
-                ex_data.get("concept_en"),
-                ex_data.get("biographies"),
-                ex_data.get("biographies_cn"),
-                ex_data.get("credits"),
-                images,
-                tags
-            ))
+            """,
+                (
+                    ex_data.get("source"),
+                    ex_data.get("title"),
+                    ex_data.get("preface"),
+                    ex_data.get("concept"),
+                    curators,
+                    ex_data.get("start_date"),
+                    ex_data.get("end_date"),
+                    ex_data.get("location"),
+                    ex_data.get("city"),
+                    ex_data.get("url"),
+                    ex_data.get("parser_key"),
+                    ex_data.get("institution_type", "museum"),
+                    ex_data.get("preface_en"),
+                    ex_data.get("concept_en"),
+                    ex_data.get("biographies"),
+                    ex_data.get("biographies_cn"),
+                    ex_data.get("credits"),
+                    images,
+                    tags,
+                ),
+            )
 
-            
             ex_id = None
             if cursor.rowcount > 0:
                 ex_id = cursor.lastrowid
-                logger.info(f"Successfully inserted exhibition: '{ex_data.get('title')}' (ID: {ex_id})")
-                
+                logger.info(
+                    f"Successfully inserted exhibition: '{ex_data.get('title')}' (ID: {ex_id})"
+                )
+
                 # 2. Insert associated artworks (ignore duplicates)
                 artworks = ex_data.get("artworks", [])
                 for art in artworks:
-                    cursor.execute("""
+                    cursor.execute(
+                        """
                         INSERT OR IGNORE INTO artworks (
                             exhibition_id, artist_name, work_title, work_year, medium, dimensions, caption
                         ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """, (
-                        ex_id,
-                        art.get("artist_name"),
-                        art.get("work_title"),
-                        art.get("work_year"),
-                        art.get("medium"),
-                        art.get("dimensions"),
-                        art.get("caption")
-                    ))
+                    """,
+                        (
+                            ex_id,
+                            art.get("artist_name"),
+                            art.get("work_title"),
+                            art.get("work_year"),
+                            art.get("medium"),
+                            art.get("dimensions"),
+                            art.get("caption"),
+                        ),
+                    )
                 if artworks:
                     logger.info(f"Inserted {len(artworks)} artworks for exhibition ID: {ex_id}")
             else:
@@ -265,10 +355,10 @@ class ExhibitionDatabase:
                 if row:
                     ex_id = row["id"]
                     logger.debug(f"Exhibition URL already exists. ID: {ex_id}")
-            
+
             conn.commit()
             return ex_id
-            
+
         except Exception as e:
             conn.rollback()
             logger.error(f"Failed to insert exhibition data: {e}", exc_info=True)
@@ -291,17 +381,17 @@ class ExhibitionDatabase:
         finally:
             conn.close()
 
-    def get_exhibition_by_url(self, url: str) -> Optional[Dict[str, Any]]:
+    def get_exhibition_by_url(self, url: str) -> dict[str, Any] | None:
         """Retrieves a single exhibition and its artworks by URL."""
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         try:
             cursor.execute("SELECT * FROM exhibitions WHERE url = ?", (url,))
             ex_row = cursor.fetchone()
             if not ex_row:
                 return None
-                
+
             ex_data = dict(ex_row)
             if ex_data.get("curators"):
                 try:
@@ -319,18 +409,18 @@ class ExhibitionDatabase:
         finally:
             conn.close()
 
-    def get_all_exhibitions(self, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+    def get_all_exhibitions(self, limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
         """Retrieves list of all exhibitions, optionally with pagination."""
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         try:
             cursor.execute(
                 "SELECT * FROM exhibitions ORDER BY scraped_at DESC LIMIT ? OFFSET ?",
-                (limit, offset)
+                (limit, offset),
             )
             rows = cursor.fetchall()
-            
+
             exhibitions = []
             for row in rows:
                 ex_data = dict(row)
@@ -349,7 +439,7 @@ class ExhibitionDatabase:
             return exhibitions
         finally:
             conn.close()
-            
+
     def count_exhibitions(self) -> int:
         """Returns the total number of exhibitions in the database."""
         conn = self._get_connection()
@@ -360,7 +450,7 @@ class ExhibitionDatabase:
             return row["count"] if row else 0
         finally:
             conn.close()
-            
+
     def count_artworks(self) -> int:
         """Returns the total number of artworks in the database."""
         conn = self._get_connection()
@@ -379,10 +469,13 @@ class ExhibitionDatabase:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO scraper_runs (parser_key, run_type)
                 VALUES (?, ?)
-            """, (parser_key, run_type))
+            """,
+                (parser_key, run_type),
+            )
             conn.commit()
             return cursor.lastrowid
         finally:
@@ -395,13 +488,14 @@ class ExhibitionDatabase:
         urls_parsed: int = 0,
         exhibitions_saved: int = 0,
         exhibitions_failed: int = 0,
-        error_message: Optional[str] = None,
+        error_message: str | None = None,
     ) -> None:
         """Update a scraper run record with completion stats."""
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 UPDATE scraper_runs
                 SET finished_at = CURRENT_TIMESTAMP,
                     urls_discovered = ?,
@@ -410,22 +504,34 @@ class ExhibitionDatabase:
                     exhibitions_failed = ?,
                     error_message = ?
                 WHERE id = ?
-            """, (urls_discovered, urls_parsed, exhibitions_saved, exhibitions_failed, error_message, run_id))
+            """,
+                (
+                    urls_discovered,
+                    urls_parsed,
+                    exhibitions_saved,
+                    exhibitions_failed,
+                    error_message,
+                    run_id,
+                ),
+            )
             conn.commit()
         finally:
             conn.close()
 
-    def get_last_scraper_run(self, parser_key: str) -> Optional[Dict[str, Any]]:
+    def get_last_scraper_run(self, parser_key: str) -> dict[str, Any] | None:
         """Return the most recent scraper run for a parser."""
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT * FROM scraper_runs
                 WHERE parser_key = ?
                 ORDER BY started_at DESC
                 LIMIT 1
-            """, (parser_key,))
+            """,
+                (parser_key,),
+            )
             row = cursor.fetchone()
             return dict(row) if row else None
         finally:
@@ -433,7 +539,7 @@ class ExhibitionDatabase:
 
     # --- biennial series management ---
 
-    def get_biennial_series(self) -> List[Dict[str, Any]]:
+    def get_biennial_series(self) -> list[dict[str, Any]]:
         """Return all biennial series."""
         conn = self._get_connection()
         cursor = conn.cursor()

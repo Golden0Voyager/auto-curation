@@ -1,8 +1,10 @@
 import logging
 import time
-from typing import List, Optional, Dict, Any
+from typing import Any
+
 import httpx
 from bs4 import BeautifulSoup
+
 from src.sites.base import ParserStrategy
 
 logger = logging.getLogger("auto_curation.sites.whitney")
@@ -16,29 +18,30 @@ class WhitneyParser:
     Uses Whitney's public REST API to fetch exhibition history.
     No API key required. Paginated at 30 items per page.
     """
+
     source = "Whitney Museum of American Art"
     city = "New York"
     strategy = ParserStrategy.REST_API
     parser_key = "whitney"
     list_url = WHITNEY_API_BASE
 
-    def get_list_urls(self, since_year: Optional[int] = None) -> List[str]:
+    def get_list_urls(self, since_year: int | None = None) -> list[str]:
         return [WHITNEY_API_BASE]
 
-    def get_exhibition_urls(self, client: httpx.Client, since_year: Optional[int] = None) -> List[str]:
+    def get_exhibition_urls(self, client: httpx.Client, since_year: int | None = None) -> list[str]:
         return []
 
     def get_api_exhibitions(
-        self,
-        since_year: Optional[int] = None,
-        limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, since_year: int | None = None, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """Fetches exhibitions from Whitney API with pagination."""
         client = httpx.Client(timeout=30.0, follow_redirects=True)
         exhibitions = []
         page = 1
 
-        logger.info(f"[Whitney] Fetching exhibitions from API (since_year={since_year}, limit={limit})")
+        logger.info(
+            f"[Whitney] Fetching exhibitions from API (since_year={since_year}, limit={limit})"
+        )
 
         try:
             while True:
@@ -92,21 +95,25 @@ class WhitneyParser:
                     if not ex_url:
                         ex_url = f"https://whitney.org/exhibitions/{ex.get('id', '')}"
 
-                    exhibitions.append({
-                        "source": self.source,
-                        "title": title,
-                        "preface": preface,
-                        "concept": None,
-                        "curators": [],
-                        "start_date": start_time[:10] if start_time else None,
-                        "end_date": end_time[:10] if end_time else None,
-                        "location": "Whitney Museum of American Art",
-                        "city": self.city,
-                        "url": ex_url,
-                        "artworks": [],
-                    })
+                    exhibitions.append(
+                        {
+                            "source": self.source,
+                            "title": title,
+                            "preface": preface,
+                            "concept": None,
+                            "curators": [],
+                            "start_date": start_time[:10] if start_time else None,
+                            "end_date": end_time[:10] if end_time else None,
+                            "location": "Whitney Museum of American Art",
+                            "city": self.city,
+                            "url": ex_url,
+                            "artworks": [],
+                        }
+                    )
 
-                logger.info(f"[Whitney] Page {page}: fetched {len(items)} exhibitions, total so far: {len(exhibitions)}")
+                logger.info(
+                    f"[Whitney] Page {page}: fetched {len(items)} exhibitions, total so far: {len(exhibitions)}"
+                )
                 page += 1
                 time.sleep(0.3)
 

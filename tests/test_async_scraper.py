@@ -1,7 +1,9 @@
-import os
-import pytest
 import asyncio
+import os
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 from src.scraper import ExhibitionScraper
 from src.sites.base import BaseSiteParser, ParserStrategy
 
@@ -39,6 +41,7 @@ def clean_db():
 @pytest.fixture(autouse=True)
 def register_dummy():
     from src.sites import SITES
+
     SITES["dummy"] = DummyParser()
     yield
     if "dummy" in SITES:
@@ -54,11 +57,7 @@ async def test_ascrape_site_concurrent_processing():
     async def fake_llm_parse(text, source, default_city=""):
         nonlocal call_count
         call_count += 1
-        return {
-            "title": f"Exhibition {call_count}",
-            "city": default_city,
-            "artworks": []
-        }
+        return {"title": f"Exhibition {call_count}", "city": default_city, "artworks": []}
 
     scraper.parser.parse_exhibition_text_async = fake_llm_parse
 
@@ -107,7 +106,9 @@ def test_scrape_site_still_works_synchronously():
     """Synchronous API must remain backward-compatible."""
     scraper = ExhibitionScraper(TEST_DB)
     DummyParser.parse_exhibition_page = lambda self, client, url: {
-        "title": "Native", "city": "TestCity", "artworks": []
+        "title": "Native",
+        "city": "TestCity",
+        "artworks": [],
     }
     result = scraper.scrape_site("dummy", limit=1, dry_run=True)
     assert result["parsed"] >= 0

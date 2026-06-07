@@ -1,5 +1,6 @@
 from src.sites.base import BaseSiteParser
 
+
 class BiennaleParser(BaseSiteParser):
     source = "Venice Biennale"
     city = "Venice"
@@ -9,5 +10,5 @@ class BiennaleParser(BaseSiteParser):
     link_patterns = [
         r"/en/art/2026/[a-zA-Z0-9_-]+",
         r"/en/art/2024/[a-zA-Z0-9_-]+",
-        r"/en/art/news/"
+        r"/en/art/news/",
     ]

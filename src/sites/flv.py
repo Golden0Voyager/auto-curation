@@ -1,6 +1,5 @@
 import logging
 import re
-from typing import List, Optional
 
 from src.sites.base import BaseSiteParser
 
@@ -8,6 +7,7 @@ logger = logging.getLogger("auto_curation.sites.flv")
 
 try:
     from scrapling import StealthyFetcher
+
     HAS_SCRAPLING = True
 except Exception:
     HAS_SCRAPLING = False
@@ -20,6 +20,7 @@ class FLVParser(BaseSiteParser):
     注意：网站为 SPA 且受 Akamai CDN 保护，原生 Playwright 会 Access Denied，
     必须使用 Scrapling StealthyFetcher 绕过。
     """
+
     source = "Fondation Louis Vuitton"
     city = "Paris"
     parser_key = "flv"
@@ -30,7 +31,7 @@ class FLVParser(BaseSiteParser):
         r"fondationlouisvuitton\.fr/en/events/[^/]+",
     ]
 
-    def get_exhibition_urls(self, client, since_year: Optional[int] = None) -> List[str]:
+    def get_exhibition_urls(self, client, since_year: int | None = None) -> list[str]:
         """Use Scrapling StealthyFetcher to bypass Akamai and discover URLs."""
         if not HAS_SCRAPLING:
             logger.error(

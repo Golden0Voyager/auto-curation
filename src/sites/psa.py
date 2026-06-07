@@ -1,14 +1,15 @@
 import logging
 import re
-from typing import List, Optional, Dict, Any
+from typing import Any
 
-from src.sites.base import BaseSiteParser, ParserStrategy
+from src.sites.base import ParserStrategy
 
 logger = logging.getLogger("auto_curation.sites.psa")
 
 # Playwright is an optional dependency for SPA scraping
 try:
     from playwright.sync_api import sync_playwright
+
     HAS_PLAYWRIGHT = True
 except Exception:
     HAS_PLAYWRIGHT = False
@@ -20,6 +21,7 @@ class PSAParser:
     上海当代艺术博物馆，中国大陆首家公立当代艺术馆。
     官网为 React SPA，必须使用 Playwright 渲染后才能提取内容。
     """
+
     source = "Power Station of Art"
     city = "Shanghai"
     strategy = ParserStrategy.HTML_LLM
@@ -33,7 +35,22 @@ class PSAParser:
     # 上海双年展历届页面（1996-2023）+ 当前届
     _biennale_urls = [
         f"https://www.powerstationofart.com/whats-on/programs/shanghai-biennale-{y}"
-        for y in [1996, 1998, 2000, 2002, 2004, 2006, 2008, 2010, 2012, 2014, 2016, 2018, 2020, 2023]
+        for y in [
+            1996,
+            1998,
+            2000,
+            2002,
+            2004,
+            2006,
+            2008,
+            2010,
+            2012,
+            2014,
+            2016,
+            2018,
+            2020,
+            2023,
+        ]
     ] + ["https://www.powerstationofart.com/whats-on/programs/shanghai-biennale"]
 
     # Wayback Machine 发现的历史展览（官网已下架但仍可访问）
@@ -73,10 +90,10 @@ class PSAParser:
         "https://www.powerstationofart.com/whats-on/exhibitions/xia-yang-collection",
     ]
 
-    def get_list_urls(self, since_year: Optional[int] = None) -> List[str]:
+    def get_list_urls(self, since_year: int | None = None) -> list[str]:
         return [self.list_url]
 
-    def get_exhibition_urls(self, client, since_year: Optional[int] = None) -> List[str]:
+    def get_exhibition_urls(self, client, since_year: int | None = None) -> list[str]:
         """Use Playwright to render the SPA and discover exhibition URLs."""
         if not HAS_PLAYWRIGHT:
             logger.error(
@@ -112,10 +129,12 @@ class PSAParser:
         for wayback_url in self._wayback_urls:
             urls.add(wayback_url)
 
-        logger.info(f"[PSA] Total discovered: {len(urls)} exhibition URLs (including {len(self._biennale_urls)} Shanghai Biennale editions, {len(self._wayback_urls)} from Wayback).")
+        logger.info(
+            f"[PSA] Total discovered: {len(urls)} exhibition URLs (including {len(self._biennale_urls)} Shanghai Biennale editions, {len(self._wayback_urls)} from Wayback)."
+        )
         return sorted(urls)
 
-    def parse_exhibition_page(self, client, url: str) -> Optional[Dict[str, Any]]:
+    def parse_exhibition_page(self, client, url: str) -> dict[str, Any] | None:
         """Use Playwright to render the SPA exhibition page and extract structured data."""
         if not HAS_PLAYWRIGHT:
             return None
@@ -149,37 +168,48 @@ class PSAParser:
 
     # 已知上海双年展的届次与年份映射
     _biennale_editions = {
-        1996: 1, 1998: 2, 2000: 3, 2002: 4, 2004: 5,
-        2006: 6, 2008: 7, 2010: 8, 2012: 9, 2014: 10,
-        2016: 11, 2018: 12, 2020: 13, 2023: 14,
+        1996: 1,
+        1998: 2,
+        2000: 3,
+        2002: 4,
+        2004: 5,
+        2006: 6,
+        2008: 7,
+        2010: 8,
+        2012: 9,
+        2014: 10,
+        2016: 11,
+        2018: 12,
+        2020: 13,
+        2023: 14,
     }
 
-    def _extract_paragraphs(self, html: str) -> List[str]:
+    def _extract_paragraphs(self, html: str) -> list[str]:
         """Extract text paragraphs from <p> tags (SPA-safe)."""
         # Extract content from <p> tags
-        paras = re.findall(r'<p[^>]*>(.*?)</p>', html, re.DOTALL)
+        paras = re.findall(r"<p[^>]*>(.*?)</p>", html, re.DOTALL)
         result = []
         for p in paras:
             # Remove nested tags
-            text = re.sub(r'<[^>]+>', ' ', p).strip()
+            text = re.sub(r"<[^>]+>", " ", p).strip()
             # Clean up whitespace
-            text = ' '.join(text.split())
+            text = " ".join(text.split())
             if len(text) > 10:
                 result.append(text)
         return result
 
-    def _extract_from_html(self, html: str, url: str) -> Optional[Dict[str, Any]]:
-        text = re.sub(r'<[^>]+>', ' ', html)
+    def _extract_from_html(self, html: str, url: str) -> dict[str, Any] | None:
+        text = re.sub(r"<[^>]+>", " ", html)
         paragraphs = self._extract_paragraphs(html)
 
         # 1. Title: first <h1> or fallback to meta title / strong patterns
         title = ""
-        h1_match = re.search(r'<h1[^>]*>(.*?)</h1>', html, re.DOTALL)
+        h1_match = re.search(r"<h1[^>]*>(.*?)</h1>", html, re.DOTALL)
         if h1_match:
-            title = re.sub(r'<[^>]+>', ' ', h1_match.group(1)).strip()
+            title = re.sub(r"<[^>]+>", " ", h1_match.group(1)).strip()
 
         if not title or len(title) < 5:
-            meta_title = re.search(r'<title>(.*?)</title>', html, re.DOTALL)
+            meta_title = re.search(r"<title>(.*?)</title>", html, re.DOTALL)
             if meta_title:
                 title = meta_title.group(1).strip()
 
@@ -191,41 +221,55 @@ class PSAParser:
         # 2. Date range
         start_date = end_date = None
         date_match = re.search(
-            r'(\d{4}[\./-]\d{1,2}[\./-]\d{1,2})\s*[-–—]\s*(\d{4}[\./-]\d{1,2}[\./-]\d{1,2})',
-            text
+            r"(\d{4}[\./-]\d{1,2}[\./-]\d{1,2})\s*[-–—]\s*(\d{4}[\./-]\d{1,2}[\./-]\d{1,2})", text
         )
         if date_match:
-            start_date = date_match.group(1).replace('/', '-').replace('.', '-')
-            end_date = date_match.group(2).replace('/', '-').replace('.', '-')
+            start_date = date_match.group(1).replace("/", "-").replace(".", "-")
+            end_date = date_match.group(2).replace("/", "-").replace(".", "-")
 
         # 3. Location — 清理策展人/主办方污染
         location = "上海当代艺术博物馆"
-        loc_match = re.search(r'地点\s+([^\n\r]{2,40})', text)
+        loc_match = re.search(r"地点\s+([^\n\r]{2,40})", text)
         if loc_match:
             raw_loc = loc_match.group(1).strip()
-            for stop_word in ['策展人', '主办', '承办', '协办', '支持', '特别']:
+            for stop_word in ["策展人", "主办", "承办", "协办", "支持", "特别"]:
                 if stop_word in raw_loc:
-                    raw_loc = raw_loc[:raw_loc.index(stop_word)].strip()
+                    raw_loc = raw_loc[: raw_loc.index(stop_word)].strip()
                     break
             if raw_loc and len(raw_loc) >= 2:
                 location = raw_loc
 
         # 4. Curator — 清理主办方污染 + 过滤非人名
         curators = []
-        curator_match = re.search(r'策展人\s*:?\s*([^\n\r]{2,60})', text)
+        curator_match = re.search(r"策展人\s*:?\s*([^\n\r]{2,60})", text)
         if curator_match:
             raw_curator = curator_match.group(1).strip()
             # 截断到第一个非策展人关键词
-            for stop_word in ['主办', '承办', '协办', '支持', '特别支持', '展期', '地点', '赞助', '计划"', '自']:
+            for stop_word in [
+                "主办",
+                "承办",
+                "协办",
+                "支持",
+                "特别支持",
+                "展期",
+                "地点",
+                "赞助",
+                '计划"',
+                "自",
+            ]:
                 if stop_word in raw_curator:
-                    raw_curator = raw_curator[:raw_curator.index(stop_word)].strip()
+                    raw_curator = raw_curator[: raw_curator.index(stop_word)].strip()
                     break
             # 分割多个策展人
-            for sep in ['、', '，', ',', '  ']:
+            for sep in ["、", "，", ",", "  "]:
                 if sep in raw_curator:
                     parts = [c.strip() for c in raw_curator.split(sep) if c.strip()]
                     # 过滤掉明显不是人名的（长度>15 或包含特定关键词）
-                    curators = [c for c in parts if len(c) <= 15 and '策展' not in c and '计划' not in c and '自' not in c]
+                    curators = [
+                        c
+                        for c in parts
+                        if len(c) <= 15 and "策展" not in c and "计划" not in c and "自" not in c
+                    ]
                     break
             if not curators and len(raw_curator) <= 15:
                 curators = [raw_curator]
@@ -233,22 +277,29 @@ class PSAParser:
         # 5. Preface: from <p> tags, first substantial paragraph that is NOT boilerplate
         preface = None
         for para in paragraphs:
-            if (len(para) > 40
-                    and not self._is_boilerplate(para)
-                    and not any(k in para for k in ['关于PSA', '参观购票', '沪ICP', '展览时间', '展览地点', '策展人'])):
+            if (
+                len(para) > 40
+                and not self._is_boilerplate(para)
+                and not any(
+                    k in para
+                    for k in ["关于PSA", "参观购票", "沪ICP", "展览时间", "展览地点", "策展人"]
+                )
+            ):
                 preface = para
                 break
 
         # 6. Concept: for biennale, extract theme from title or text
         concept = None
-        if 'biennale' in url or 'shanghai-biennale' in url:
+        if "biennale" in url or "shanghai-biennale" in url:
             # Try to extract theme from title like "第十四届上海双年展：宇宙电影"
             theme_match = re.search(r'[:：]\s*["""]?(.*?)["""]?\s*$', title)
             if theme_match:
                 concept = theme_match.group(1).strip()
             # Also try from page text: "主题" 或 "宇宙电影" 等
             if not concept:
-                biennale_concept_match = re.search(r'"([^"]{2,30})"\s*[:：]?\s*第[\d一二三四五六七八九十]+届上海双年展', text)
+                biennale_concept_match = re.search(
+                    r'"([^"]{2,30})"\s*[:：]?\s*第[\d一二三四五六七八九十]+届上海双年展', text
+                )
                 if biennale_concept_match:
                     concept = biennale_concept_match.group(1)
 

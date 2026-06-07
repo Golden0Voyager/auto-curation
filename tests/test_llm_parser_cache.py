@@ -1,7 +1,8 @@
 import os
-import json
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
+
 from src.cache import LLMResponseCache
 from src.llm_parser import LLMExhibitionParser
 
@@ -23,6 +24,7 @@ def clean_state():
     for var in _HUB_ENV_VARS:
         os.environ.pop(var, None)
     from auto_hub.llm.provider_chain import reset_provider_chain
+
     reset_provider_chain()
     yield
     if os.path.exists(TEST_DB):
@@ -39,6 +41,7 @@ def test_llm_parser_cache_hit_skips_api_call(monkeypatch):
 
     expected = {"title": "Cached Show", "city": "Tokyo", "artworks": []}
     from src.cache import make_cache_key
+
     key = make_cache_key("TestSource:", "some exhibition text")
     cache.set(key, "url", "TestSource", expected)
 
@@ -68,6 +71,7 @@ def test_llm_parser_cache_miss_sets_cache(monkeypatch):
         assert result["title"] == "New Show"
 
     from src.cache import make_cache_key
+
     key = make_cache_key("TestSource:", "fresh text")
     cached = cache.get(key)
     assert cached is not None
@@ -81,6 +85,7 @@ async def test_llm_parser_async_cache_hit(monkeypatch):
     parser = LLMExhibitionParser(cache=cache)
     expected = {"title": "Async Cached", "city": "Berlin", "artworks": []}
     from src.cache import make_cache_key
+
     key = make_cache_key("AsyncSource:", "async text")
     cache.set(key, "url", "AsyncSource", expected)
 

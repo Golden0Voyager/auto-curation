@@ -1,47 +1,64 @@
-import os
+import asyncio
 import json
 import logging
-import asyncio
-from typing import Dict, List, Any, Optional
-from pydantic import BaseModel, Field, SecretStr
-from src.cache import LLMResponseCache, make_cache_key
+import os
+from typing import Any
 
+from pydantic import BaseModel, Field, SecretStr
+
+from src.cache import LLMResponseCache, make_cache_key
 
 logger = logging.getLogger("auto_curation.llm_parser")
 
 
 class ArtworkModel(BaseModel):
-    artist_name: Optional[str] = Field(None, description="Name of the artist")
-    work_title: Optional[str] = Field(None, description="Title of the artwork")
-    work_year: Optional[str] = Field(None, description="Year of creation")
-    medium: Optional[str] = Field(None, description="Materials/medium of the artwork")
-    dimensions: Optional[str] = Field(None, description="Physical dimensions")
-    caption: Optional[str] = Field(None, description="Full caption label information")
+    artist_name: str | None = Field(None, description="Name of the artist")
+    work_title: str | None = Field(None, description="Title of the artwork")
+    work_year: str | None = Field(None, description="Year of creation")
+    medium: str | None = Field(None, description="Materials/medium of the artwork")
+    dimensions: str | None = Field(None, description="Physical dimensions")
+    caption: str | None = Field(None, description="Full caption label information")
 
 
 class ExhibitionModel(BaseModel):
     title: str = Field(..., description="Exhibition title/theme")
-    preface: Optional[str] = Field(None, description="Exhibition introduction/preface")
-    concept: Optional[str] = Field(None, description="Curatorial concept/theoretical background")
-    preface_en: Optional[str] = Field(None, description="Detailed exhibition preface/description in original English")
-    concept_en: Optional[str] = Field(None, description="Theoretical concept/background in original English")
-    biographies: Optional[str] = Field(None, description="Detailed biographies of artists and collaborators in original English")
-    biographies_cn: Optional[str] = Field(None, description="A brief summary/translation of the primary artist biography in Chinese")
-    credits: Optional[str] = Field(None, description="Detailed exhibition credits, curators, production, and special thanks in original English")
-    curators: List[str] = Field(default_factory=list, description="List of curators")
-    images: List[str] = Field(default_factory=list, description="List of exhibition image URLs (posters, installation shots, artwork photos)")
-    start_date: Optional[str] = Field(None, description="Exhibition start date")
-    end_date: Optional[str] = Field(None, description="Exhibition end date")
-    location: Optional[str] = Field(None, description="Gallery location within the institution")
-    city: Optional[str] = Field(None, description="Host city")
-    artworks: List[ArtworkModel] = Field(default_factory=list, description="List of exhibited artworks")
+    preface: str | None = Field(None, description="Exhibition introduction/preface")
+    concept: str | None = Field(None, description="Curatorial concept/theoretical background")
+    preface_en: str | None = Field(
+        None, description="Detailed exhibition preface/description in original English"
+    )
+    concept_en: str | None = Field(
+        None, description="Theoretical concept/background in original English"
+    )
+    biographies: str | None = Field(
+        None, description="Detailed biographies of artists and collaborators in original English"
+    )
+    biographies_cn: str | None = Field(
+        None, description="A brief summary/translation of the primary artist biography in Chinese"
+    )
+    credits: str | None = Field(
+        None,
+        description="Detailed exhibition credits, curators, production, and special thanks in original English",
+    )
+    curators: list[str] = Field(default_factory=list, description="List of curators")
+    images: list[str] = Field(
+        default_factory=list,
+        description="List of exhibition image URLs (posters, installation shots, artwork photos)",
+    )
+    start_date: str | None = Field(None, description="Exhibition start date")
+    end_date: str | None = Field(None, description="Exhibition end date")
+    location: str | None = Field(None, description="Gallery location within the institution")
+    city: str | None = Field(None, description="Host city")
+    artworks: list[ArtworkModel] = Field(
+        default_factory=list, description="List of exhibited artworks"
+    )
 
 
 class LLMExhibitionParser:
     """Uses auto_hub.llm provider chain with fallback (MiMo -> Gemini -> SiliconFlow) to parse HTML into JSON."""
 
-    def __init__(self, cache: Optional[LLMResponseCache] = None):
-        self.providers: List[Dict[str, str]] = []
+    def __init__(self, cache: LLMResponseCache | None = None):
+        self.providers: list[dict[str, str]] = []
         self.cache = cache
         if self.cache:
             logger.info("LLM response caching enabled.")
@@ -52,32 +69,43 @@ class LLMExhibitionParser:
         # Primary: Xiaomi MiMo
         mimo_key = os.getenv("XIAOMI_MIMO_API_KEY")
         if mimo_key:
-            self.providers.append({
-                "name": "mimo",
-                "api_key": SecretStr(mimo_key),
-                "base_url": os.getenv("MIMO_BASE_URL", "https://token-plan-cn.xiaomimimo.com/v1"),
-                "model": "mimo-v2.5-pro"
-            })
+            self.providers.append(
+                {
+                    "name": "mimo",
+                    "api_key": SecretStr(mimo_key),
+                    "base_url": os.getenv(
+                        "MIMO_BASE_URL", "https://token-plan-cn.xiaomimimo.com/v1"
+                    ),
+                    "model": "mimo-v2.5-pro",
+                }
+            )
 
         # Fallback 1: Gemini
         gemini_key = os.getenv("GEMINI_API_KEY")
         if gemini_key:
-            self.providers.append({
-                "name": "gemini",
-                "api_key": SecretStr(gemini_key),
-                "base_url": os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/"),
-                "model": "gemini-2.5-flash"
-            })
+            self.providers.append(
+                {
+                    "name": "gemini",
+                    "api_key": SecretStr(gemini_key),
+                    "base_url": os.getenv(
+                        "GEMINI_BASE_URL",
+                        "https://generativelanguage.googleapis.com/v1beta/openai/",
+                    ),
+                    "model": "gemini-2.5-flash",
+                }
+            )
 
         # Fallback 2: SiliconFlow
         siliconflow_key = os.getenv("SILICONFLOW_API_KEY")
         if siliconflow_key:
-            self.providers.append({
-                "name": "siliconflow",
-                "api_key": SecretStr(siliconflow_key),
-                "base_url": os.getenv("SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1"),
-                "model": "deepseek-ai/DeepSeek-V3"
-            })
+            self.providers.append(
+                {
+                    "name": "siliconflow",
+                    "api_key": SecretStr(siliconflow_key),
+                    "base_url": os.getenv("SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1"),
+                    "model": "deepseek-ai/DeepSeek-V3",
+                }
+            )
 
         if not self.providers:
             logger.warning("No LLM API keys found in the environment! LLM parsing will fail.")
@@ -88,7 +116,7 @@ class LLMExhibitionParser:
 
     def _setup_auto_hub_chain(self):
         """Map legacy env var names to auto_hub.llm's AI_PROVIDER_CHAIN format."""
-        from auto_hub.llm import LLMClient, AsyncLLMClient
+        from auto_hub.llm import AsyncLLMClient, LLMClient
         from auto_hub.llm.provider_chain import reset_provider_chain
 
         names = []
@@ -105,16 +133,21 @@ class LLMExhibitionParser:
         self._hub_client = LLMClient(max_retries=3)
         self._hub_async_client = AsyncLLMClient(max_retries=3)
 
-    def _is_valid_result(self, data: Dict[str, Any]) -> bool:
+    def _is_valid_result(self, data: dict[str, Any]) -> bool:
         """Heuristic to detect content-filtered or low-quality LLM responses."""
         title = data.get("title")
         if not title or title in ("N/A", "n/a", "NA", "null", ""):
             return False
         has_dates = bool(data.get("start_date") or data.get("end_date"))
-        text_content = " ".join(filter(None, [
-            data.get("preface", ""),
-            data.get("concept", ""),
-        ]))
+        text_content = " ".join(
+            filter(
+                None,
+                [
+                    data.get("preface", ""),
+                    data.get("concept", ""),
+                ],
+            )
+        )
         if not has_dates and len(text_content.strip()) < 30:
             return False
         concept = data.get("concept", "") or ""
@@ -182,7 +215,7 @@ Strict Guidelines:
 """
         return system_prompt, user_prompt
 
-    def _parse_response(self, content: str, provider_name: str) -> Optional[Dict[str, Any]]:
+    def _parse_response(self, content: str, provider_name: str) -> dict[str, Any] | None:
         """Parse and validate raw LLM response content."""
         if content.startswith("```"):
             content = content.split("```")[1]
@@ -193,19 +226,23 @@ Strict Guidelines:
         try:
             parsed_json = json.loads(content)
         except json.JSONDecodeError as e:
-            logger.warning(f"[{provider_name}] Failed to decode LLM response as JSON: {e}. Content: {content[:200]}...")
+            logger.warning(
+                f"[{provider_name}] Failed to decode LLM response as JSON: {e}. Content: {content[:200]}..."
+            )
             return None
 
         if isinstance(parsed_json, list):
             if parsed_json and isinstance(parsed_json[0], dict):
                 parsed_json = parsed_json[0]
             else:
-                logger.error(f"[{provider_name}] LLM returned a list instead of a dict: {content[:200]}...")
+                logger.error(
+                    f"[{provider_name}] LLM returned a list instead of a dict: {content[:200]}..."
+                )
                 return None
         validated_data = ExhibitionModel(**parsed_json)
         return validated_data.model_dump()
 
-    def _call_provider(self, text: str, source: str, default_city: str) -> Optional[Dict[str, Any]]:
+    def _call_provider(self, text: str, source: str, default_city: str) -> dict[str, Any] | None:
         """Call the LLM via auto_hub.llm (sync) and return parsed data or None."""
         if self._hub_client is None:
             return None
@@ -229,7 +266,9 @@ Strict Guidelines:
             logger.warning(f"[LLM] Error in sync call: {e}", exc_info=True)
             return None
 
-    async def _call_provider_async(self, text: str, source: str, default_city: str) -> Optional[Dict[str, Any]]:
+    async def _call_provider_async(
+        self, text: str, source: str, default_city: str
+    ) -> dict[str, Any] | None:
         """Call the LLM via auto_hub.llm (async) and return parsed data or None."""
         if self._hub_async_client is None:
             return None
@@ -253,7 +292,9 @@ Strict Guidelines:
             logger.warning(f"[LLM] Error in async call: {e}", exc_info=True)
             return None
 
-    def parse_exhibition_text(self, text: str, source: str, default_city: str = "") -> Optional[Dict[str, Any]]:
+    def parse_exhibition_text(
+        self, text: str, source: str, default_city: str = ""
+    ) -> dict[str, Any] | None:
         """Sends clean text to LLM and returns structured exhibition data.
 
         Uses auto_hub.llm provider chain (single call, inner chain handles fallback).
@@ -277,14 +318,14 @@ Strict Guidelines:
                 self.cache.set(cache_key, f"{source}:{default_city}", source, result)
             return result
         if result:
-            logger.warning(
-                f"[hub] Result failed quality check (title={result.get('title')!r})."
-            )
+            logger.warning(f"[hub] Result failed quality check (title={result.get('title')!r}).")
 
         logger.error("LLM provider failed or returned low-quality results.")
         return None
 
-    async def parse_exhibition_text_async(self, text: str, source: str, default_city: str = "") -> Optional[Dict[str, Any]]:
+    async def parse_exhibition_text_async(
+        self, text: str, source: str, default_city: str = ""
+    ) -> dict[str, Any] | None:
         """Async version: sends cleaned text to LLM with caching support."""
         if not self.providers:
             logger.error("Cannot parse text: no LLM providers configured.")
@@ -301,12 +342,12 @@ Strict Guidelines:
         if result and self._is_valid_result(result):
             logger.info(f"[hub] Successfully parsed exhibition '{result.get('title')}'")
             if self.cache:
-                await asyncio.to_thread(self.cache.set, cache_key, f"{source}:{default_city}", source, result)
+                await asyncio.to_thread(
+                    self.cache.set, cache_key, f"{source}:{default_city}", source, result
+                )
             return result
         if result:
-            logger.warning(
-                f"[hub] Result failed quality check (title={result.get('title')!r})."
-            )
+            logger.warning(f"[hub] Result failed quality check (title={result.get('title')!r}).")
 
         logger.error("LLM provider failed or returned low-quality results.")
         return None

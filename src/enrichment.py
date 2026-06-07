@@ -3,11 +3,10 @@
 Tier 2: CSV/API source synthesis — zero network requests, zero LLM cost.
 """
 
-import json
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 
-def synthesize_concept_moma(title: str, artworks: List[Dict[str, Any]]) -> str:
+def synthesize_concept_moma(title: str, artworks: list[dict[str, Any]]) -> str:
     """Synthesize a basic concept from MoMA exhibition title + artist list.
 
     Args:
@@ -40,8 +39,8 @@ def synthesize_concept_moma(title: str, artworks: List[Dict[str, Any]]) -> str:
 
 def synthesize_concept_aic(
     title: str,
-    preface: Optional[str],
-    artist_titles: List[str],
+    preface: str | None,
+    artist_titles: list[str],
 ) -> str:
     """Synthesize a basic concept from AIC exhibition data.
 
@@ -82,7 +81,7 @@ def synthesize_concept_aic(
 
 def synthesize_concept_whitney(
     title: str,
-    preface: Optional[str],
+    preface: str | None,
 ) -> str:
     """Synthesize concept for Whitney exhibitions from preface text.
 
@@ -106,7 +105,7 @@ def synthesize_concept_whitney(
 def synthesize_concept_generic(
     title: str,
     source: str,
-    artist_names: List[str],
+    artist_names: list[str],
 ) -> str:
     """Generic concept synthesizer for any exhibition with title + artists.
 

@@ -1,7 +1,5 @@
 import logging
 import re
-from typing import List, Optional, Set
-from urllib.parse import urljoin
 
 from src.sites.base import BaseSiteParser
 
@@ -9,6 +7,7 @@ logger = logging.getLogger("auto_curation.sites.mca_australia")
 
 try:
     from playwright.sync_api import sync_playwright
+
     HAS_PLAYWRIGHT = True
 except Exception:
     HAS_PLAYWRIGHT = False
@@ -21,6 +20,7 @@ class MCAAustraliaParser(BaseSiteParser):
     注意：网站为 SPA，静态 HTML 无展览链接，需要 Playwright 渲染。
     入口页有 "Continue" 按钮，必须先点击才能看到展览列表。
     """
+
     source = "MCA Australia"
     city = "Sydney"
     parser_key = "mca_australia"
@@ -31,7 +31,7 @@ class MCAAustraliaParser(BaseSiteParser):
         r"mca\.com\.au/exhibitions/[^/]+",
     ]
 
-    def get_exhibition_urls(self, client, since_year: Optional[int] = None) -> List[str]:
+    def get_exhibition_urls(self, client, since_year: int | None = None) -> list[str]:
         """Custom Playwright flow: click Continue button then extract links."""
         if not HAS_PLAYWRIGHT:
             logger.error(
@@ -40,7 +40,7 @@ class MCAAustraliaParser(BaseSiteParser):
             )
             return []
 
-        all_found: Set[str] = set()
+        all_found: set[str] = set()
         list_urls = self.get_list_urls(since_year=since_year)
 
         for list_url in list_urls:
@@ -58,7 +58,9 @@ class MCAAustraliaParser(BaseSiteParser):
                         logger.info("[MCA Australia] Clicked Continue button.")
                         page.wait_for_timeout(5000)
                     except Exception:
-                        logger.info("[MCA Australia] No Continue button found (may already be on content page).")
+                        logger.info(
+                            "[MCA Australia] No Continue button found (may already be on content page)."
+                        )
 
                     links = page.evaluate(
                         """() => Array.from(document.querySelectorAll('a[href]')).map(a => a.href)"""
@@ -72,7 +74,9 @@ class MCAAustraliaParser(BaseSiteParser):
                             break
 
             except Exception as e:
-                logger.error(f"[MCA Australia] Playwright failed to load listing page {list_url}: {e}")
+                logger.error(
+                    f"[MCA Australia] Playwright failed to load listing page {list_url}: {e}"
+                )
                 continue
 
         urls = sorted(list(all_found))

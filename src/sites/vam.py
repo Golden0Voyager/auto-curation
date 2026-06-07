@@ -5,9 +5,6 @@
 """
 
 import logging
-import re
-from typing import List, Optional
-from urllib.parse import urljoin
 
 from src.sites.base import BaseSiteParser, ParserStrategy
 
@@ -31,7 +28,7 @@ class VAMParser(BaseSiteParser):
         r"/exhibitions/",
     ]
 
-    def get_list_urls(self, since_year: Optional[int] = None) -> List[str]:
+    def get_list_urls(self, since_year: int | None = None) -> list[str]:
         urls = [self.list_url]
         urls.extend(self.extra_list_urls)
         return urls

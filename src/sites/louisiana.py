@@ -1,10 +1,12 @@
 from src.sites.base import BaseSiteParser
 
+
 class LouisianaParser(BaseSiteParser):
     """Louisiana Museum of Modern Art.
 
     路易斯安那现代艺术博物馆，丹麦最著名的当代艺术博物馆。
     """
+
     source = "Louisiana Museum"
     city = "Humlebæk"
     parser_key = "louisiana"
