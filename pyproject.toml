@@ -33,13 +33,13 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-username/auto_curation"
-Repository = "https://github.com/your-username/auto_curation"
-Issues = "https://github.com/your-username/auto_curation/issues"
-Changelog = "https://github.com/your-username/auto_curation/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/Golden0Voyager/auto_curation"
+Repository = "https://github.com/Golden0Voyager/auto_curation"
+Issues = "https://github.com/Golden0Voyager/auto_curation/issues"
+Changelog = "https://github.com/Golden0Voyager/auto_curation/blob/main/CHANGELOG.md"
 
 [tool.uv.sources]
-auto-hub = { path = "../auto_hub", editable = true }
+auto-hub = { git = "https://github.com/Golden0Voyager/auto_hub.git", branch = "main" }
 
 [dependency-groups]
 dev = [
