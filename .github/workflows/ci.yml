@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: ruff lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Sync dependencies
+        run: uv sync --group dev
+
+      - name: Run ruff
+        run: uv run ruff check src/ tests/
+
+  test:
+    name: pytest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Sync dependencies
+        run: uv sync --group dev
+
+      - name: Run tests
+        env:
+          # Tests are mocked; secrets are not required but provided to
+          # avoid implicit-failure in case any test reads env.
+          SENSENOVA_API_KEY: ${{ secrets.SENSENOVA_API_KEY || 'mock-key' }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'mock-key' }}
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY || 'mock-key' }}
+          XIAOMI_MIMO_API_KEY: ${{ secrets.XIAOMI_MIMO_API_KEY || 'mock-key' }}
+        run: uv run pytest tests/ -v
