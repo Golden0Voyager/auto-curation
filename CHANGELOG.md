@@ -39,5 +39,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 数据质量监测 + 健康检查（GitHub Actions 每日 UTC 08:03）
 - 零合成数据策略（所有字段必须来源于真实数据）
 
-[Unreleased]: https://github.com/your-username/auto_curation/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/your-username/auto_curation/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Golden0Voyager/auto_curation/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Golden0Voyager/auto_curation/releases/tag/v0.1.0
