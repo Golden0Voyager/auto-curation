@@ -13,7 +13,7 @@
 
 通过以下方式私下报告：
 
-📧 邮件：[your-email@example.com](mailto:your-email@example.com)
+📧 邮件：[yhn0535@gmail.com](mailto:yhn0535@gmail.com)
 
 请在邮件中包含：
 
