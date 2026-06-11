@@ -22,6 +22,7 @@ class KunsthausParser:
     city = "Zürich"
     strategy = ParserStrategy.HTML_LLM
     parser_key = "kunsthaus"
+    institution_type = "museum"
     list_url = "https://www.kunsthaus.ch/en/besuch-planen/ausstellungen/"
     link_patterns = [
         r"kunsthaus\.ch/en/besuch-planen/ausstellungen/[^/]+/$",
@@ -42,7 +43,7 @@ class KunsthausParser:
 
             soup = BeautifulSoup(response.text, "html.parser")
             for a in soup.find_all("a", href=True):
-                href = a["href"]
+                href = str(a["href"])
                 if href.startswith("/"):
                     href = f"https://www.kunsthaus.ch{href}"
                 for pattern in self.link_patterns:
@@ -67,7 +68,7 @@ class KunsthausParser:
         # Find all JSON-LD scripts
         for script in soup.find_all("script", type="application/ld+json"):
             try:
-                data = json.loads(script.string)
+                data = json.loads(script.string or "")
             except (json.JSONDecodeError, TypeError):
                 continue
 
