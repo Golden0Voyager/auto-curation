@@ -73,5 +73,9 @@
   },
   "common": {
     "unknown": "Unknown"
+  },
+  "footer": {
+    "copyright": "© 2026 CurationInsight. Released under Apache-2.0 License.",
+    "support": "Buy me a coffee"
   }
 }
