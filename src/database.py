@@ -477,7 +477,9 @@ class ExhibitionDatabase:
                 (parser_key, run_type),
             )
             conn.commit()
-            return cursor.lastrowid
+            last_id = cursor.lastrowid
+            assert last_id is not None
+            return last_id
         finally:
             conn.close()
 
@@ -527,7 +529,7 @@ class ExhibitionDatabase:
                 """
                 SELECT * FROM scraper_runs
                 WHERE parser_key = ?
-                ORDER BY started_at DESC
+                ORDER BY id DESC
                 LIMIT 1
             """,
                 (parser_key,),
@@ -563,7 +565,9 @@ class ExhibitionDatabase:
                     "UPDATE exhibitions SET series_id = ? WHERE parser_key = ? AND (series_id IS NULL OR series_id = 0)",
                     (series_id, series_key),
                 )
-                updated += cursor.rowcount
+                _rc = cursor.rowcount
+                rowcount: int = _rc if _rc is not None else 0
+                updated += rowcount
 
             conn.commit()
             logger.info(f"Backfilled series_id for {updated} exhibitions")
