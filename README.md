@@ -13,8 +13,8 @@
 [![Python](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![CI](https://img.shields.io/github/actions/workflow/status/Golden0Voyager/auto-curation/ci.yml?branch=main&label=CI&logo=github)](.github/workflows/ci.yml)
-[![coverage](https://img.shields.io/badge/coverage-99%25-brightgreen)](.github/workflows/ci.yml)
-[![tests](https://img.shields.io/badge/tests-582%20passed-brightgreen)](tests/)
+[![coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](.github/workflows/ci.yml)
+[![tests](https://img.shields.io/badge/tests-601%20passed-brightgreen)](tests/)
 [![mypy](https://img.shields.io/badge/mypy-0%20errors-success)](mypy.ini)
 [![ruff](https://img.shields.io/badge/ruff-passing-brightgreen)](pyproject.toml)
 
@@ -76,7 +76,7 @@ This project provides structured global art exhibition data that is otherwise in
 - **Auto-registered Parsers** — `pkgutil`-based scan in `src/sites/__init__.py`; no manual import needed
 - **Quality Monitoring** — daily health checks + post-scrape data validation + GitHub Actions alerts (UTC 08:03)
 - **Zero Synthetic Data** — all fields sourced from real data; missing values left null, never templated
-- **475 Tests, 95% Coverage** — mypy-clean, ruff-passing, production-ready codebase
+- **601 Tests, 100% Coverage** — mypy-clean, ruff-passing, production-ready codebase
 
 ---
 
