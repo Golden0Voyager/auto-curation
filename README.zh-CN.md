@@ -13,8 +13,8 @@
 [![Python](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![CI](https://img.shields.io/github/actions/workflow/status/Golden0Voyager/auto-curation/ci.yml?branch=main&label=CI&logo=github)](.github/workflows/ci.yml)
-[![coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)](.github/workflows/ci.yml)
-[![tests](https://img.shields.io/badge/tests-579%20passed-brightgreen)](tests/)
+[![coverage](https://img.shields.io/badge/coverage-99%25-brightgreen)](.github/workflows/ci.yml)
+[![tests](https://img.shields.io/badge/tests-582%20passed-brightgreen)](tests/)
 [![mypy](https://img.shields.io/badge/mypy-0%20errors-success)](mypy.ini)
 [![ruff](https://img.shields.io/badge/ruff-passing-brightgreen)](pyproject.toml)
 
