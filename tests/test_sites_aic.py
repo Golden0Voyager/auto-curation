@@ -163,3 +163,35 @@ class TestAICParser:
     def test_clean_html_passthrough(self):
         p = AICParser()
         assert p.clean_html("<html/>") == "<html/>"
+
+    def test_get_api_exhibitions_limit_breaks(self):
+        with patch("src.sites.aic.httpx.Client") as mock_client_class:
+            mock_instance = MagicMock()
+            mock_client_class.return_value = mock_instance
+            mock_instance.get.return_value.json.return_value = {
+                "data": [
+                    {"id": 1, "title": "Show 1", "aic_start_at": "2024-01-01T00:00:00Z"},
+                    {"id": 2, "title": "Show 2", "aic_start_at": "2024-02-01T00:00:00Z"},
+                ],
+                "pagination": {"total_pages": 2},
+            }
+            p = AICParser()
+            result = p.get_api_exhibitions(limit=1)
+            assert len(result) == 1
+            assert result[0]["title"] == "Show 1"
+
+    def test_get_api_exhibitions_invalid_date_format(self):
+        with patch("src.sites.aic.httpx.Client") as mock_client_class:
+            mock_instance = MagicMock()
+            mock_client_class.return_value = mock_instance
+            mock_instance.get.return_value.json.return_value = {
+                "data": [
+                    {"id": 1, "title": "Show 1", "aic_start_at": "abcd-ef-gh"},
+                ],
+                "pagination": {"total_pages": 1},
+            }
+            p = AICParser()
+            result = p.get_api_exhibitions(since_year=2020)
+            assert len(result) == 1
+            assert result[0]["title"] == "Show 1"
+
