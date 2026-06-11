@@ -64,3 +64,29 @@ class TestNewMuseumParser:
         assert result is not None
         assert len(result["curators"]) > 0
         assert "Alice Smith" in result["curators"][0]
+
+    def test_has_playwright_reload(self):
+        import importlib
+        from unittest.mock import MagicMock, patch
+
+        import src.sites.new_museum as nm_module
+
+        orig_has_playwright = nm_module.HAS_PLAYWRIGHT
+        orig_parser = nm_module.NewMuseumParser
+
+        try:
+            with patch.dict("sys.modules", {"playwright": None, "playwright.sync_api": None}):
+                importlib.reload(nm_module)
+                assert nm_module.HAS_PLAYWRIGHT is False
+
+            with patch.dict("sys.modules", {
+                "playwright": MagicMock(),
+                "playwright.sync_api": MagicMock()
+            }):
+                importlib.reload(nm_module)
+                assert nm_module.HAS_PLAYWRIGHT is True
+        finally:
+            importlib.reload(nm_module)
+            nm_module.HAS_PLAYWRIGHT = orig_has_playwright
+            nm_module.NewMuseumParser = orig_parser
+
