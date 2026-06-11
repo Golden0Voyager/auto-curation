@@ -647,6 +647,17 @@ class TestCloseExtended:
             await asyncio.sleep(0)
             mock.aclose.assert_awaited()
 
+    @pytest.mark.asyncio
+    async def test_close_with_running_loop_create_task_error(self):
+        """close() handles error when create_task fails on running loop."""
+        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f:
+            scraper = ExhibitionScraper(db_path=f.name)
+            mock_loop = MagicMock()
+            mock_loop.create_task.side_effect = RuntimeError("create_task failed")
+            mock_loop.is_running.return_value = True
+            with patch("asyncio.get_running_loop", return_value=mock_loop):
+                scraper.close()  # Should not raise
+
 
 # ---------------------------------------------------------------------------
 # scrape_site / ascrape_site - parser_key fallback

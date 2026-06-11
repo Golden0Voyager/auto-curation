@@ -21,6 +21,7 @@ secrets.json
 # 测试覆盖率数据
 .coverage
 htmlcov/
+*.py,cover
 
 # 本地数据库（可通过重新采集生成）
 exhibitions.db

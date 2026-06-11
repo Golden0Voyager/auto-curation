@@ -795,7 +795,6 @@ class ExhibitionScraper:
         self.client.close()
         try:
             loop = asyncio.get_running_loop()
-            loop.create_task(self.async_client.aclose())
         except RuntimeError:
             # No event loop running — create a temporary one
             try:
@@ -805,6 +804,10 @@ class ExhibitionScraper:
                 loop.close()
             except Exception as e:
                 logger.warning(f"Failed to close async client: {e}")
+            return
+
+        try:
+            loop.create_task(self.async_client.aclose())
         except Exception as e:
             logger.warning(f"Failed to close async client: {e}")
 
