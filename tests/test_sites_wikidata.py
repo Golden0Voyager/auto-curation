@@ -129,3 +129,38 @@ class TestWikidataParser:
     def test_clean_html_passthrough(self):
         p = WikidataParser()
         assert p.clean_html("test") == "test"
+
+    def test_museum_map_fallback_when_labels_missing(self):
+        """Covers L151 and L153: museumLabel/cityLabel absent → fallback to museum_map."""
+        # Pick a known QID from WIKIDATA_MUSEUM_QIDS so museum_map has an entry
+        known_qid, expected_name, expected_city = WIKIDATA_MUSEUM_QIDS[0]
+        museum_uri = f"http://www.wikidata.org/entity/{known_qid}"
+
+        mock_json = {
+            "results": {
+                "bindings": [
+                    {
+                        "exhibition": {"value": "http://www.wikidata.org/entity/Q999"},
+                        "exhibitionLabel": {"value": "Fallback Test Exhibition"},
+                        # museumLabel and cityLabel intentionally absent → triggers L151, L153
+                        "museum": {"value": museum_uri},
+                        "start": {"value": "2023-03-01T00:00:00Z"},
+                        "end": {"value": "2023-09-01T00:00:00Z"},
+                    }
+                ]
+            }
+        }
+        import json as _json
+
+        with patch("src.sites.wikidata.urllib.request.urlopen") as mock_urlopen:
+            mock_response = MagicMock()
+            mock_response.read.return_value = _json.dumps(mock_json).encode()
+            mock_response.__enter__.return_value = mock_response
+            mock_urlopen.return_value = mock_response
+
+            p = WikidataParser()
+            result = p.get_api_exhibitions()
+
+        assert len(result) == 1
+        assert result[0]["source"] == expected_name
+        assert result[0]["city"] == expected_city
