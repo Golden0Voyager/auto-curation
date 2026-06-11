@@ -57,6 +57,7 @@ class WikidataParser:
     city = "Various"
     strategy = ParserStrategy.SPARQL
     parser_key = "wikidata"
+    institution_type = "museum"
     list_url = WIKIDATA_SPARQL_URL
 
     def get_exhibition_urls(self, client, since_year: int | None = None) -> list[str]:

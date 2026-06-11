@@ -27,6 +27,7 @@ class HirshhornParser:
     city = "Washington D.C."
     strategy = ParserStrategy.REST_API
     parser_key = "hirshhorn"
+    institution_type = "museum"
     status = "BLOCKED_API_KEY"
     list_url = "https://hirshhorn.si.edu/exhibitions/"
 

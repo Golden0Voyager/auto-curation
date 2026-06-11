@@ -45,7 +45,7 @@ def extract_images_from_html(html: str, base_url: str, max_images: int = 8) -> l
         soup = BeautifulSoup(html, "html.parser")
         image_urls = []
         for img in soup.find_all("img", src=True):
-            src = img["src"].strip()
+            src = str(img["src"]).strip()
             full_img_url = urljoin(base_url, src)
             if any(
                 kw in full_img_url.lower()

@@ -43,6 +43,7 @@ class AICParser:
     city = "Chicago"
     strategy = ParserStrategy.REST_API
     parser_key = "aic"
+    institution_type = "museum"
     list_url = AIC_EXHIBITIONS_URL
 
     def get_list_urls(self, since_year: int | None = None) -> list[str]:
@@ -69,7 +70,7 @@ class AICParser:
             List of structured exhibition dicts ready for DB insertion.
         """
         client = httpx.Client(timeout=30.0, follow_redirects=True, headers=HEADERS)
-        exhibitions = []
+        exhibitions: list[dict[str, Any]] = []
         page = 1
         page_size = 100
 

@@ -23,6 +23,7 @@ class WhitneyParser:
     city = "New York"
     strategy = ParserStrategy.REST_API
     parser_key = "whitney"
+    institution_type = "museum"
     list_url = WHITNEY_API_BASE
 
     def get_list_urls(self, since_year: int | None = None) -> list[str]:
@@ -36,7 +37,7 @@ class WhitneyParser:
     ) -> list[dict[str, Any]]:
         """Fetches exhibitions from Whitney API with pagination."""
         client = httpx.Client(timeout=30.0, follow_redirects=True)
-        exhibitions = []
+        exhibitions: list[dict[str, Any]] = []
         page = 1
 
         logger.info(

@@ -39,6 +39,7 @@ class NGAParser:
     city = "Washington D.C."
     strategy = ParserStrategy.ARTWORK_ONLY
     parser_key = "nga"
+    institution_type = "museum"
     list_url = NGA_OBJECTS_PATH
 
     def get_list_urls(self, since_year: int | None = None) -> list[str]:
@@ -111,7 +112,7 @@ class NGAParser:
         logger.info(
             f"[NGA] Loading objects (since_year={since_year}, classification={classification})..."
         )
-        artworks = []
+        artworks: list[dict[str, Any]] = []
         with open(NGA_OBJECTS_PATH, encoding="utf-8", errors="replace") as f:
             reader = csv.DictReader(f)
             for row in reader:

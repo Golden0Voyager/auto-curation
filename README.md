@@ -4,8 +4,11 @@
 
 [![Python](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-11%20passed-brightgreen.svg)](tests/)
-[![CI](https://img.shields.io/badge/CI-daily%20health--check-blueviolet.svg)](.github/workflows/health-check.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/Golden0Voyager/auto_curation/ci.yml?branch=main&label=CI&logo=github)](.github/workflows/ci.yml)
+[![coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](.github/workflows/ci.yml)
+[![tests](https://img.shields.io/badge/tests-475%20passed-brightgreen)](tests/)
+[![mypy](https://img.shields.io/badge/mypy-0%20errors-success)](mypy.ini)
+[![ruff](https://img.shields.io/badge/ruff-passing-brightgreen)](pyproject.toml)
 
 ---
 

@@ -26,6 +26,7 @@ class PSAParser:
     city = "Shanghai"
     strategy = ParserStrategy.HTML_LLM
     parser_key = "psa"
+    institution_type = "museum"
     use_playwright = True
     list_url = "https://www.powerstationofart.com/whats-on/exhibitions"
     link_patterns = [

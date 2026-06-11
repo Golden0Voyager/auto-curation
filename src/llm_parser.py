@@ -72,7 +72,7 @@ class LLMExhibitionParser:
             self.providers.append(
                 {
                     "name": "mimo",
-                    "api_key": SecretStr(mimo_key),
+                    "api_key": SecretStr(mimo_key),  # type: ignore[dict-item]
                     "base_url": os.getenv(
                         "MIMO_BASE_URL", "https://token-plan-cn.xiaomimimo.com/v1"
                     ),
@@ -86,7 +86,7 @@ class LLMExhibitionParser:
             self.providers.append(
                 {
                     "name": "gemini",
-                    "api_key": SecretStr(gemini_key),
+                    "api_key": SecretStr(gemini_key),  # type: ignore[dict-item]
                     "base_url": os.getenv(
                         "GEMINI_BASE_URL",
                         "https://generativelanguage.googleapis.com/v1beta/openai/",
@@ -101,7 +101,7 @@ class LLMExhibitionParser:
             self.providers.append(
                 {
                     "name": "siliconflow",
-                    "api_key": SecretStr(siliconflow_key),
+                    "api_key": SecretStr(siliconflow_key),  # type: ignore[dict-item]
                     "base_url": os.getenv("SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1"),
                     "model": "deepseek-ai/DeepSeek-V3",
                 }

@@ -142,7 +142,7 @@ class BaseSiteParser:
                 soup = BeautifulSoup(page_html, "html.parser")
 
                 for a_tag in soup.find_all("a", href=True):
-                    href = a_tag["href"].strip()
+                    href = str(a_tag["href"]).strip()
                     full_url = urljoin(list_url, href)
 
                     # Exclude exact list URL itself
@@ -207,7 +207,7 @@ class BaseSiteParser:
 
             soup = BeautifulSoup(html, "html.parser")
             for a_tag in soup.find_all("a", href=True):
-                href = a_tag["href"].strip()
+                href = str(a_tag["href"]).strip()
                 full_url = urljoin(list_url, href)
 
                 if full_url.rstrip("/") in [u.rstrip("/") for u in list_urls]:
@@ -235,7 +235,7 @@ class BaseSiteParser:
         meta_desc = ""
         meta_tag = soup.find("meta", attrs={"name": "description"})
         if meta_tag:
-            meta_desc = meta_tag.get("content", "").strip()
+            meta_desc = str(meta_tag.get("content", "")).strip()
 
         # --- Pass 1: Semantic extraction ---
         semantic_selectors = ["main", "article", '[role="main"]', ".content", ".exhibition-content"]
