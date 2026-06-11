@@ -145,9 +145,7 @@ class MoMAParser:
                         "artworks": [],
                     }
 
-                # Skip if this exhibition was filtered by year
-                if ex_id not in groups:
-                    continue
+
 
                 # Add artist/curator information from this row
                 display_name = row.get("DisplayName", "").strip()
