@@ -6,11 +6,12 @@
 
 *Structured exhibition data from 61 world-class institutions — automated, validated, open.*
 
+[![Sponsor Me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/golden_voyager)
+
 [English](#overview) · [中文](README.zh-CN.md)
 
 [![Python](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Sponsor](https://img.shields.io/badge/Sponsor-Ko--fi-F16061?logo=ko-fi&logoColor=white)](https://ko-fi.com/golden_voyager)
 [![CI](https://img.shields.io/github/actions/workflow/status/Golden0Voyager/auto-curation/ci.yml?branch=main&label=CI&logo=github)](.github/workflows/ci.yml)
 [![coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](.github/workflows/ci.yml)
 [![tests](https://img.shields.io/badge/tests-475%20passed-brightgreen)](tests/)
