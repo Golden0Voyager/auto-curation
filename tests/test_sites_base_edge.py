@@ -185,3 +185,56 @@ class TestParserStrategy:
 
     def test_strategy_is_enum(self):
         assert isinstance(ParserStrategy.HTML_LLM, ParserStrategy)
+
+
+class TestBaseSiteParserCoverageGaps:
+    def test_has_playwright_import_error(self):
+        import importlib
+        import sys
+        import src.sites.base
+
+        orig_strategy = src.sites.base.ParserStrategy
+        orig_parser = src.sites.base.BaseSiteParser
+
+        with patch.dict("sys.modules", {"playwright": None, "playwright.sync_api": None}):
+            importlib.reload(src.sites.base)
+            assert src.sites.base.HAS_PLAYWRIGHT is False
+
+        importlib.reload(src.sites.base)
+        assert src.sites.base.HAS_PLAYWRIGHT is True
+
+        src.sites.base.ParserStrategy = orig_strategy
+        src.sites.base.BaseSiteParser = orig_parser
+
+    def test_playwright_list_urls_dedup(self):
+        p = BaseSiteParser()
+        p.list_url = "http://test.com/list"
+        p.link_patterns = [r"test\.com/exhibitions/[^/]+"]
+        p.use_playwright = True
+
+        mock_playwright = MagicMock()
+        mock_playwright.__enter__.return_value = mock_playwright
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+
+        mock_playwright.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_page.content.return_value = """
+            <html><body>
+                <a href="http://test.com/list">List URL itself</a>
+                <a href="http://test.com/exhibitions/show1">Real Show</a>
+            </body></html>
+        """
+
+        with patch("src.sites.base.sync_playwright", return_value=mock_playwright), \
+             patch("src.sites.base.HAS_PLAYWRIGHT", True):
+            urls = p._get_exhibition_urls_playwright()
+            assert len(urls) == 1
+            assert urls[0] == "http://test.com/exhibitions/show1"
+
+    def test_clean_html_body_noise_selector_skip(self):
+        p = BaseSiteParser()
+        html = '<body class="widget"><p>Exhibition content here with enough text to pass the 300 character threshold for the semantic extraction pass to work in the test environment. Additional content about the exhibition to reach the threshold for the test to pass.</p></body>'
+        result = p.clean_html(html)
+        assert "Exhibition content" in result
+
