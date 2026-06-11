@@ -126,7 +126,7 @@ class SerpentineParser(BaseSiteParser):
 
                         # Find the category / type links inside this card
                         for a_tag in teaser.find_all("a", href=True):
-                            href = a_tag["href"].strip()
+                            href = str(a_tag["href"]).strip()
                             full_url = urljoin(list_url, href)
 
                             # Check if the card is labeled as an event, live art, publication, etc.
@@ -173,7 +173,7 @@ class SerpentineParser(BaseSiteParser):
 
                         # Find the actual detail page link
                         for a_tag in teaser.find_all("a", href=True):
-                            href = a_tag["href"].strip()
+                            href = str(a_tag["href"]).strip()
                             full_url = urljoin(list_url, href)
 
                             # Must match whats-on detail page pattern and not contain ? (query params) or index pages
@@ -207,7 +207,7 @@ class SerpentineParser(BaseSiteParser):
                 else:
                     # 2. Fallback to standard tag parsing if layout changes
                     for a_tag in soup.find_all("a", href=True):
-                        href = a_tag["href"].strip()
+                        href = str(a_tag["href"]).strip()
                         full_url = urljoin(list_url, href)
 
                         # Must match exhibition pattern
@@ -239,7 +239,7 @@ class SerpentineParser(BaseSiteParser):
                         if parent:
                             found_fallback = []
                             for tag_a in parent.find_all("a", href=True):
-                                if "?type=" in tag_a["href"]:
+                                if "?type=" in str(tag_a["href"]):
                                     text = tag_a.get_text(strip=True)
                                     if text and text not in found_fallback:
                                         found_fallback.append(text)
