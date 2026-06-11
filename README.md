@@ -304,8 +304,8 @@ If this project, tool, or dataset is helpful to you, please consider supporting 
 
 ## Acknowledgements
 
+- [MoMA GitHub](https://github.com/MuseumofModernArt/collection) — Open exhibition & collection dataset
+- [Art Institute of Chicago](https://github.com/art-institute-of-chicago/data-tools) — Open access API & data tools
 - [Scrapling](https://github.com/D4Vinci/Scrapling) — Underlying Fetcher / StealthyFetcher
 - [Pydantic](https://docs.pydantic.dev/) — Data model validation
 - [auto_hub](https://github.com/Golden0Voyager/auto-hub) — Shared LLM provider chain
-- [MoMA GitHub](https://github.com/MuseumofModernArt/collection) — Open exhibition & collection dataset
-- [Art Institute of Chicago](https://github.com/art-institute-of-chicago/data-tools) — Open access API & data tools
