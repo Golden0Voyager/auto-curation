@@ -1,7 +1,9 @@
 """Edge case tests for src/sites/base.py — BaseSiteParser."""
 
+import importlib
 from unittest.mock import MagicMock, patch
 
+import src.sites.base
 from src.sites.base import BaseSiteParser, ParserStrategy
 
 
@@ -189,22 +191,31 @@ class TestParserStrategy:
 
 class TestBaseSiteParserCoverageGaps:
     def test_has_playwright_import_error(self):
-        import importlib
-        import sys
-        import src.sites.base
-
         orig_strategy = src.sites.base.ParserStrategy
         orig_parser = src.sites.base.BaseSiteParser
+        orig_has_playwright = src.sites.base.HAS_PLAYWRIGHT
 
-        with patch.dict("sys.modules", {"playwright": None, "playwright.sync_api": None}):
+        try:
+            # 1. Test the case where playwright is not installed (import fails)
+            with patch.dict("sys.modules", {"playwright": None, "playwright.sync_api": None}):
+                importlib.reload(src.sites.base)
+                assert src.sites.base.HAS_PLAYWRIGHT is False
+
+            # 2. Test the case where playwright is installed (import succeeds)
+            mock_sync_api = MagicMock()
+            mock_sync_api.sync_playwright = MagicMock()
+            with patch.dict("sys.modules", {
+                "playwright": MagicMock(),
+                "playwright.sync_api": mock_sync_api
+            }):
+                importlib.reload(src.sites.base)
+                assert src.sites.base.HAS_PLAYWRIGHT is True
+        finally:
+            # Restore to original state
             importlib.reload(src.sites.base)
-            assert src.sites.base.HAS_PLAYWRIGHT is False
-
-        importlib.reload(src.sites.base)
-        assert src.sites.base.HAS_PLAYWRIGHT is True
-
-        src.sites.base.ParserStrategy = orig_strategy
-        src.sites.base.BaseSiteParser = orig_parser
+            src.sites.base.ParserStrategy = orig_strategy
+            src.sites.base.BaseSiteParser = orig_parser
+            src.sites.base.HAS_PLAYWRIGHT = orig_has_playwright
 
     def test_playwright_list_urls_dedup(self):
         p = BaseSiteParser()
@@ -226,7 +237,7 @@ class TestBaseSiteParserCoverageGaps:
             </body></html>
         """
 
-        with patch("src.sites.base.sync_playwright", return_value=mock_playwright), \
+        with patch("src.sites.base.sync_playwright", return_value=mock_playwright, create=True), \
              patch("src.sites.base.HAS_PLAYWRIGHT", True):
             urls = p._get_exhibition_urls_playwright()
             assert len(urls) == 1
