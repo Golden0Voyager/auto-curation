@@ -12,7 +12,6 @@ from src.llm_parser import (
     LLMExhibitionParser,
 )
 
-
 # ---------------------------------------------------------------------------
 # LLMExhibitionParser initialization - multiple providers
 # ---------------------------------------------------------------------------
@@ -204,9 +203,11 @@ class TestParseExhibitionTextCacheHit:
         """When cache is None, provider should be called."""
         parser = LLMExhibitionParser(cache=None)
         parser._hub_client = MagicMock()
-        parser._hub_client.chat.return_value = '{"title": "New Show", "artworks": []}'
+        parser._hub_client.chat.return_value = '{"title": "New Show", "start_date": "2024-01-01", "concept": "This is a very long curatorial concept that passes all checks.", "artworks": []}'
 
         result = parser.parse_exhibition_text("Some text", "TestSource")
+        assert result is not None
+        assert result["title"] == "New Show"
         parser._hub_client.chat.assert_called_once()
 
 
