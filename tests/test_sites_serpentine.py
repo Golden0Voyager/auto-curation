@@ -85,3 +85,48 @@ class TestSerpentineParser:
         assert "workshop" in p.EVENT_KEYWORDS
         assert "screening" in p.EVENT_KEYWORDS
         assert "performance" in p.EVENT_KEYWORDS
+
+    def test_get_exhibition_urls_teaser_details(self):
+        p = SerpentineParser()
+        mock_client = MagicMock()
+        mock_response = MagicMock()
+        mock_response.text = """
+        <html><body>
+            <section class="teaser">
+                <a href="/whats-on/exhibition-no-tags/">Link</a>
+                <p class="teaser__category">Skip me</p>
+                <span class="teaser__category">Live</span>
+                <h3>Real Exhibition</h3>
+            </section>
+            <section class="teaser">
+                <a href="/whats-on/exhibition-no-tags-2/">Link</a>
+                <h3>Real Exhibition 2</h3>
+            </section>
+        </body></html>
+        """
+        mock_client.get.return_value = mock_response
+
+        p.get_list_urls = MagicMock(return_value=["https://www.serpentinegalleries.org/whats-on/"])
+        result = p.get_exhibition_urls(mock_client)
+        assert "https://www.serpentinegalleries.org/whats-on/exhibition-no-tags/" in result
+        assert "https://www.serpentinegalleries.org/whats-on/exhibition-no-tags-2/" in result
+
+    def test_get_exhibition_urls_fallback_exclusions(self):
+        p = SerpentineParser()
+        mock_client = MagicMock()
+        mock_response = MagicMock()
+        mock_response.text = """
+        <html><body>
+            <a href="https://www.serpentinegalleries.org/whats-on/archive/old-show/">Archive Link</a>
+            <a href="https://www.serpentinegalleries.org/whats-on/show?param=1">Query Link</a>
+            <a href="https://www.serpentinegalleries.org/whats-on/">Index Link</a>
+            <a href="https://www.serpentinegalleries.org/whats-on/real-fallback-show/">Real Show</a>
+        </body></html>
+        """
+        mock_client.get.return_value = mock_response
+
+        p.get_list_urls = MagicMock(return_value=["https://www.serpentinegalleries.org/whats-on/"])
+        result = p.get_exhibition_urls(mock_client)
+        assert len(result) == 1
+        assert result[0] == "https://www.serpentinegalleries.org/whats-on/real-fallback-show/"
+
