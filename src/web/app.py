@@ -2,6 +2,7 @@ import json
 import os
 import re
 import sqlite3
+from typing import Any
 
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -257,7 +258,7 @@ def get_exhibitions(
 
     try:
         where_clauses = ["1=1"]
-        params = []
+        params: list[str | int] = []
 
         if source:
             where_clauses.append("source = ?")
@@ -304,7 +305,7 @@ def get_exhibitions(
         cursor.execute(sql, params + [limit, offset])
         rows = cursor.fetchall()
 
-        exhibitions = []
+        exhibitions: list[dict[str, Any]] = []
         for row in rows:
             ex_data = dict(row)
             try:
