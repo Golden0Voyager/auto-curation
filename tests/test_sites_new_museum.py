@@ -76,14 +76,12 @@ class TestNewMuseumParser:
                 importlib.reload(nm_module)
                 assert nm_module.HAS_PLAYWRIGHT is False
 
-            with patch.dict("sys.modules", {
-                "playwright": MagicMock(),
-                "playwright.sync_api": MagicMock()
-            }):
+            with patch.dict(
+                "sys.modules", {"playwright": MagicMock(), "playwright.sync_api": MagicMock()}
+            ):
                 importlib.reload(nm_module)
                 assert nm_module.HAS_PLAYWRIGHT is True
         finally:
             importlib.reload(nm_module)
             nm_module.HAS_PLAYWRIGHT = orig_has_playwright
             nm_module.NewMuseumParser = orig_parser
-

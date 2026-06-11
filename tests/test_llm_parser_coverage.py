@@ -5,7 +5,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-
 from src.llm_parser import (
     ArtworkModel,
     ExhibitionModel,
@@ -29,11 +28,14 @@ class TestInitMultipleProviders:
             assert any(p["name"] == "siliconflow" for p in parser.providers)
 
     def test_with_all_providers(self):
-        with patch.dict(os.environ, {
-            "XIAOMI_MIMO_API_KEY": "test-mimo",
-            "GEMINI_API_KEY": "test-gemini",
-            "SILICONFLOW_API_KEY": "test-sf",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "XIAOMI_MIMO_API_KEY": "test-mimo",
+                "GEMINI_API_KEY": "test-gemini",
+                "SILICONFLOW_API_KEY": "test-sf",
+            },
+        ):
             parser = LLMExhibitionParser()
             assert len(parser.providers) == 3
             names = [p["name"] for p in parser.providers]
@@ -134,7 +136,7 @@ class TestParseResponseExtended:
 
     def test_parse_json_with_artworks(self):
         parser = LLMExhibitionParser()
-        json_str = '''
+        json_str = """
         {
             "title": "Show",
             "artworks": [
@@ -142,7 +144,7 @@ class TestParseResponseExtended:
                 {"artist_name": "B", "work_title": "W2"}
             ]
         }
-        '''
+        """
         result = parser._parse_response(json_str, "test")
         assert result is not None
         assert len(result["artworks"]) == 2
@@ -229,14 +231,14 @@ class TestParseExhibitionTextQualityCheck:
         """When result passes quality check, should return data."""
         parser = LLMExhibitionParser()
         parser._hub_client = MagicMock()
-        parser._hub_client.chat.return_value = '''
+        parser._hub_client.chat.return_value = """
         {
             "title": "Valid Show",
             "start_date": "2024-01-01",
             "concept": "A valid curatorial concept.",
             "artworks": []
         }
-        '''
+        """
 
         result = parser.parse_exhibition_text("Some text", "TestSource")
         assert result is not None
@@ -296,14 +298,14 @@ class TestParseExhibitionTextAsync:
         mock_cache.get.return_value = None
         parser = LLMExhibitionParser(cache=mock_cache)
         parser._hub_async_client = AsyncMock()
-        parser._hub_async_client.chat.return_value = '''
+        parser._hub_async_client.chat.return_value = """
         {
             "title": "Valid Show",
             "start_date": "2024-01-01",
             "concept": "A valid curatorial concept.",
             "artworks": []
         }
-        '''
+        """
 
         result = await parser.parse_exhibition_text_async("text", "source")
         assert result is not None
@@ -328,14 +330,14 @@ class TestParseExhibitionTextAsync:
         """Async version: valid result without cache should return data."""
         parser = LLMExhibitionParser()
         parser._hub_async_client = AsyncMock()
-        parser._hub_async_client.chat.return_value = '''
+        parser._hub_async_client.chat.return_value = """
         {
             "title": "Valid Show",
             "start_date": "2024-01-01",
             "concept": "A valid curatorial concept.",
             "artworks": []
         }
-        '''
+        """
 
         result = await parser.parse_exhibition_text_async("text", "source")
         assert result is not None
