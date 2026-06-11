@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - 完整 README.md（项目发布就绪）
-- MIT License
+- Apache-2.0 License
 - CHANGELOG.md
 - CONTRIBUTING.md
 - CODE_OF_CONDUCT.md

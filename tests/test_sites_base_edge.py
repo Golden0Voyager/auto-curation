@@ -1,7 +1,9 @@
 """Edge case tests for src/sites/base.py — BaseSiteParser."""
 
+import importlib
 from unittest.mock import MagicMock, patch
 
+import src.sites.base
 from src.sites.base import BaseSiteParser, ParserStrategy
 
 
@@ -185,3 +187,65 @@ class TestParserStrategy:
 
     def test_strategy_is_enum(self):
         assert isinstance(ParserStrategy.HTML_LLM, ParserStrategy)
+
+
+class TestBaseSiteParserCoverageGaps:
+    def test_has_playwright_import_error(self):
+        orig_strategy = src.sites.base.ParserStrategy
+        orig_parser = src.sites.base.BaseSiteParser
+        orig_has_playwright = src.sites.base.HAS_PLAYWRIGHT
+
+        try:
+            # 1. Test the case where playwright is not installed (import fails)
+            with patch.dict("sys.modules", {"playwright": None, "playwright.sync_api": None}):
+                importlib.reload(src.sites.base)
+                assert src.sites.base.HAS_PLAYWRIGHT is False
+
+            # 2. Test the case where playwright is installed (import succeeds)
+            mock_sync_api = MagicMock()
+            mock_sync_api.sync_playwright = MagicMock()
+            with patch.dict("sys.modules", {
+                "playwright": MagicMock(),
+                "playwright.sync_api": mock_sync_api
+            }):
+                importlib.reload(src.sites.base)
+                assert src.sites.base.HAS_PLAYWRIGHT is True
+        finally:
+            # Restore to original state
+            importlib.reload(src.sites.base)
+            src.sites.base.ParserStrategy = orig_strategy
+            src.sites.base.BaseSiteParser = orig_parser
+            src.sites.base.HAS_PLAYWRIGHT = orig_has_playwright
+
+    def test_playwright_list_urls_dedup(self):
+        p = BaseSiteParser()
+        p.list_url = "http://test.com/list"
+        p.link_patterns = [r"test\.com/exhibitions/[^/]+"]
+        p.use_playwright = True
+
+        mock_playwright = MagicMock()
+        mock_playwright.__enter__.return_value = mock_playwright
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+
+        mock_playwright.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_page.content.return_value = """
+            <html><body>
+                <a href="http://test.com/list">List URL itself</a>
+                <a href="http://test.com/exhibitions/show1">Real Show</a>
+            </body></html>
+        """
+
+        with patch("src.sites.base.sync_playwright", return_value=mock_playwright, create=True), \
+             patch("src.sites.base.HAS_PLAYWRIGHT", True):
+            urls = p._get_exhibition_urls_playwright()
+            assert len(urls) == 1
+            assert urls[0] == "http://test.com/exhibitions/show1"
+
+    def test_clean_html_body_noise_selector_skip(self):
+        p = BaseSiteParser()
+        html = '<body class="widget"><p>Exhibition content here with enough text to pass the 300 character threshold for the semantic extraction pass to work in the test environment. Additional content about the exhibition to reach the threshold for the test to pass.</p></body>'
+        result = p.clean_html(html)
+        assert "Exhibition content" in result
+

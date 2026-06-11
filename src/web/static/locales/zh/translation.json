@@ -73,5 +73,9 @@
   },
   "common": {
     "unknown": "未知"
+  },
+  "footer": {
+    "copyright": "© 2026 CurationInsight. 基于 Apache-2.0 协议开源。",
+    "support": "请我喝杯咖啡"
   }
 }

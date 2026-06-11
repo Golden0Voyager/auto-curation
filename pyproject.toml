@@ -4,15 +4,15 @@ version = "0.1.0"
 description = "Auto Curation - 全球当代艺术展览数据采集与结构化平台"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 authors = [
-    { name = "Auto Curation Contributors" },
+    { name = "Haining Yu (Golden0Voyager)" },
 ]
 keywords = ["art", "curation", "exhibitions", "scraping", "llm", "pydantic"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",

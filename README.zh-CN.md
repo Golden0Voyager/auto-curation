@@ -6,13 +6,15 @@
 
 *来自 61 家世界级机构的结构化展览数据 — 自动化、可验证、开放。*
 
+[![Sponsor Me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/golden_voyager)
+
 [English](README.md) · [中文](#概述)
 
 [![Python](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![CI](https://img.shields.io/github/actions/workflow/status/Golden0Voyager/auto-curation/ci.yml?branch=main&label=CI&logo=github)](.github/workflows/ci.yml)
-[![coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](.github/workflows/ci.yml)
-[![tests](https://img.shields.io/badge/tests-475%20passed-brightgreen)](tests/)
+[![coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)](.github/workflows/ci.yml)
+[![tests](https://img.shields.io/badge/tests-579%20passed-brightgreen)](tests/)
 [![mypy](https://img.shields.io/badge/mypy-0%20errors-success)](mypy.ini)
 [![ruff](https://img.shields.io/badge/ruff-passing-brightgreen)](pyproject.toml)
 
@@ -32,6 +34,7 @@
 - [配置](#配置)
 - [开发](#开发)
 - [贡献](#贡献)
+- [赞助与支持](#赞助与支持-☕)
 - [许可证](#许可证)
 
 ---
@@ -43,6 +46,13 @@
 系统通过 **GitHub Actions 每日运行**，采用具备多供应商回退的 **多策略 LLM 提取引擎**，并严格执行**零合成数据治理**：每个字段必须来自真实数据源，否则留空。
 
 本项目为研究人员、数字人文开发者和 AI 辅助文化分析平台提供大规模结构化全球艺术展览数据——这类数据此前几乎无法在规模上获取。
+
+> [!NOTE]
+> **活跃开发状态：** 本项目目前处于积极开发状态。
+> 截至 2026 年 6 月，数据库已收录并追踪：
+> - **11,651+** 个结构化当代艺术展览。
+> - 时间跨度：从 **1883 年至今 / 进行中** 的展览数据。
+> - 全球覆盖：跨越全球 **56** 个城市（包括伦敦、纽约、东京、巴黎、北京、上海、首尔、悉尼、圣保罗、威尼斯等）的 **55** 家世界级艺术机构和双年展。
 
 ---
 
@@ -277,9 +287,17 @@ python scripts/validate_post_scrape.py --all
 
 ---
 
+## 赞助与支持 ☕
+
+如果这个项目、工具或数据集对您有所帮助，欢迎支持我的工作，以维持服务器运行和数据持续更新！
+
+👉 **[在 Ko-fi 上赞助我](https://ko-fi.com/golden_voyager)**
+
+---
+
 ## 许可证
 
-[MIT License](LICENSE) © 2026 Auto Curation Contributors
+[Apache-2.0 License](LICENSE) © 2026 Haining Yu (Golden0Voyager)
 
 ---
 

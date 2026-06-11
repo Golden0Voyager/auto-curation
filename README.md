@@ -6,13 +6,15 @@
 
 *Structured exhibition data from 61 world-class institutions — automated, validated, open.*
 
+[![Sponsor Me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/golden_voyager)
+
 [English](#overview) · [中文](README.zh-CN.md)
 
 [![Python](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![CI](https://img.shields.io/github/actions/workflow/status/Golden0Voyager/auto-curation/ci.yml?branch=main&label=CI&logo=github)](.github/workflows/ci.yml)
-[![coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](.github/workflows/ci.yml)
-[![tests](https://img.shields.io/badge/tests-475%20passed-brightgreen)](tests/)
+[![coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)](.github/workflows/ci.yml)
+[![tests](https://img.shields.io/badge/tests-579%20passed-brightgreen)](tests/)
 [![mypy](https://img.shields.io/badge/mypy-0%20errors-success)](mypy.ini)
 [![ruff](https://img.shields.io/badge/ruff-passing-brightgreen)](pyproject.toml)
 
@@ -32,6 +34,7 @@
 - [Configuration](#configuration)
 - [Development](#development)
 - [Contributing](#contributing)
+- [Support & Sponsor](#support--sponsor-☕)
 - [License](#license)
 
 ---
@@ -43,6 +46,13 @@
 It runs daily via **GitHub Actions**, uses a **multi-strategy LLM extraction engine** with multi-provider fallback, and enforces strict **no-synthetic-data governance**: every field must come from real source data or remain empty.
 
 This project provides structured global art exhibition data that is otherwise inaccessible at scale — enabling researchers, digital humanities developers, and AI-assisted cultural analytics platforms to build on top of a reliable, continuously updated dataset.
+
+> [!NOTE]
+> **Active Development Status:** This project is currently in active development.
+> As of June 2026, the database tracks:
+> - **11,651+** structured contemporary art exhibitions.
+> - **1883 to Present / Ongoing** temporal coverage.
+> - **55** world-class art institutions and biennials across **56** global cities (including London, New York, Tokyo, Paris, Beijing, Shanghai, Seoul, Sydney, São Paulo, Venice, and more).
 
 ---
 
@@ -276,9 +286,17 @@ All fields must come from real source data. Missing values must remain empty —
 
 ---
 
+## Support & Sponsor ☕
+
+If this project, tool, or dataset is helpful to you, please consider supporting my work to keep the servers running and the data updated!
+
+👉 **[Support me on Ko-fi](https://ko-fi.com/golden_voyager)**
+
+---
+
 ## License
 
-[MIT License](LICENSE) © 2026 Auto Curation Contributors
+[Apache-2.0 License](LICENSE) © 2026 Haining Yu (Golden0Voyager)
 
 ---
 
