@@ -4,7 +4,7 @@ import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from pydantic import ValidationError
+
 
 from src.llm_parser import (
     ArtworkModel,
@@ -126,12 +126,11 @@ class TestParseResponseExtended:
         assert result is None
 
     def test_parse_json_with_missing_required_field(self):
-        """Missing required field raises ValidationError which is caught."""
+        """Missing required field returns None (ValidationError caught)."""
         parser = LLMExhibitionParser()
         json_str = '{"city": "Paris"}'
-        # This should raise ValidationError which is caught and returns None
-        with pytest.raises(ValidationError):
-            parser._parse_response(json_str, "test")
+        result = parser._parse_response(json_str, "test")
+        assert result is None
 
     def test_parse_json_with_artworks(self):
         parser = LLMExhibitionParser()

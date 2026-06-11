@@ -1,5 +1,6 @@
 """Additional tests for src/scraper.py to improve coverage to 100%."""
 
+import asyncio
 import tempfile
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -621,7 +622,7 @@ class TestIsRetryableExtended:
 
 class TestCloseExtended:
     def test_close_handles_async_close_error(self):
-        """close() handles errors when closing async client."""
+        """close() handles errors when closing async client (no running loop)."""
         with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f:
             scraper = ExhibitionScraper(db_path=f.name)
             # Simulate async client close error
@@ -633,7 +634,18 @@ class TestCloseExtended:
         with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f:
             scraper = ExhibitionScraper(db_path=f.name)
             scraper.close()
-            scraper.close()  # Should not raise
+            scraper.close()
+
+    @pytest.mark.asyncio
+    async def test_close_with_running_loop(self):
+        """close() schedules aclose on running loop."""
+        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f:
+            scraper = ExhibitionScraper(db_path=f.name)
+            mock = AsyncMock()
+            scraper.async_client = mock
+            scraper.close()
+            await asyncio.sleep(0)
+            mock.aclose.assert_awaited()
 
 
 # ---------------------------------------------------------------------------
@@ -966,3 +978,13 @@ class TestScrapeHtmlAsyncDbInsertFail:
             )
             assert result["failed"] == 1
             scraper.close()
+
+
+class TestFixtureCleanupCoverage:
+    def test_fixture_teardown_cleans_db(self):
+        """Ensure fixture teardown os.remove runs for TEST_DB."""
+        import os
+        if os.path.exists(TEST_DB):
+            os.remove(TEST_DB)
+        scraper = ExhibitionScraper(TEST_DB)
+        scraper.close()

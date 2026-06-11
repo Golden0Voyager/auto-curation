@@ -50,14 +50,14 @@ def main():
     arg_parser = argparse.ArgumentParser(
         description=(
             "Auto Curation Collector — 智能当代艺术展览数据采集系统\n"
-            "抓取全球 10 大顶级艺术机构的展览数据（含历史记录）并结构化存储至 SQLite。"
+            "抓取全球顶级艺术机构的展览数据（含历史记录）并结构化存储至 SQLite。"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     
     group = arg_parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--site", type=str, help="抓取指定机构 (e.g. 'moma', 'tate', 'mplus')")
-    group.add_argument("--all", action="store_true", help="抓取全部 10 大机构")
+    group.add_argument("--all", action="store_true", help=f"抓取全部 {len(SITES)} 大机构")
     group.add_argument("--list-sites", action="store_true", help="列出所有机构及其历史数据支持情况")
     
     arg_parser.add_argument(
@@ -102,7 +102,7 @@ def main():
     
     try:
         if args.all:
-            print(f"🚀 全量采集所有 10 大机构中... 数据库: {args.db}")
+            print(f"🚀 全量采集所有 {len(SITES)} 大机构中... 数据库: {args.db}")
             if args.dry_run:
                 print("⚠️  [DRY-RUN] 模拟运行，不写入数据库。")
             if args.concurrent:

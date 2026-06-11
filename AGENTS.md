@@ -273,6 +273,8 @@ SQLite，两张核心表：
 
 宁可留空（NULL），也不要填入低质量合成数据。留空的字段可在后续通过 Tier 1 enrichment（重新抓取 HTML + LLM 提取）补全。
 
+> **⚠️ 例外**：CSV_LOCAL / CSV_REMOTE / REST_API 等无 HTML/LLM 路径的数据源，允许使用 `src/enrichment.py` 中的 `synthesize_concept_*` 函数从标题和艺术家列表生成概念说明。这是无 LLM 回退路径下的刻意设计折衷 — 模板概念优于纯 NULL。
+
 ### 日期格式
 
 所有日期统一为 `YYYY-MM-DD` 格式。`normalize_dates.py` 脚本支持以下格式转换：

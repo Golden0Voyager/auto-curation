@@ -1,7 +1,6 @@
 """Tests for src/sites/base.py — BaseSiteParser class."""
 
 import httpx
-import pytest
 
 from src.sites.base import HEADERS, BaseSiteParser, ParserStrategy
 
@@ -317,7 +316,6 @@ class TestInheritability:
         assert urls == ["http://ex.com/2024"]
 
 
-@pytest.mark.skip(reason="Requires playwright installed")
 def test_playwright_url_extraction():
     """Placeholder: Playwright-based URL extraction is tested in specific parsers."""
     pass

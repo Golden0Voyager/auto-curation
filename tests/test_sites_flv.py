@@ -25,12 +25,18 @@ class TestFLVParser:
             urls = p.get_exhibition_urls(client=None)
             assert urls == []
 
-    def test_get_exhibition_urls_with_scrapling(self):
-        """When scrapling is installed, it attempts to fetch."""
+    def test_get_exhibition_urls_scrapling_mocked(self):
+        """When scrapling is mocked as installed, returns URL list."""
         p = FLVParser()
-        if flv_module.HAS_SCRAPLING:
+        with unittest.mock.patch.object(flv_module, "HAS_SCRAPLING", True), \
+             unittest.mock.patch("src.sites.flv.StealthyFetcher", create=True) as mock_fetcher_cls:
+            mock_fetcher = unittest.mock.MagicMock()
+            mock_page = unittest.mock.MagicMock()
+            mock_page.html_content = '<a href="/en/events/test-exhibition">Link</a>'
+            mock_fetcher.fetch.return_value = mock_page
+            mock_fetcher_cls.return_value = mock_fetcher
             urls = p.get_exhibition_urls(client=None)
-            assert isinstance(urls, list)
+            assert urls == ["https://www.fondationlouisvuitton.fr/en/events/test-exhibition"]
 
     def test_has_scrapling_reload(self):
         import importlib
