@@ -86,6 +86,7 @@ class TestGuggenheimParser:
             <a href="/exhibitions">List</a>
             <a href="/exhibitions#past">Past</a>
             <a href="#past-exhibitions">Anchor</a>
+            <a href="/exhibition/exhibitions">Excluded Exh</a>
         """
         mock_fetcher.fetch.return_value = mock_page
 
@@ -108,3 +109,28 @@ class TestGuggenheimParser:
         ):
             result = p.get_exhibition_urls(None)
             assert result == []
+
+    def test_has_scrapling_reload(self):
+        import importlib
+
+        import src.sites.guggenheim as guggenheim_module
+
+        orig_has_scrapling = guggenheim_module.HAS_SCRAPLING
+        orig_parser = guggenheim_module.GuggenheimParser
+
+        try:
+            with patch.dict("sys.modules", {
+                "scrapling": MagicMock(),
+                "scrapling.StealthyFetcher": MagicMock()
+            }):
+                importlib.reload(guggenheim_module)
+                assert guggenheim_module.HAS_SCRAPLING is True
+
+            with patch.dict("sys.modules", {"scrapling": None}):
+                importlib.reload(guggenheim_module)
+                assert guggenheim_module.HAS_SCRAPLING is False
+        finally:
+            importlib.reload(guggenheim_module)
+            guggenheim_module.HAS_SCRAPLING = orig_has_scrapling
+            guggenheim_module.GuggenheimParser = orig_parser
+
