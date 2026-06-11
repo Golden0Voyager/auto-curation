@@ -217,13 +217,7 @@ class SerpentineParser(BaseSiteParser):
                         ):
                             continue
 
-                        # Exclude: archive paths, query params, index links
-                        if (
-                            "/archive/" in full_url
-                            or "?" in full_url
-                            or full_url.endswith("/whats-on/")
-                        ):
-                            continue
+
 
                         # Exclude by keyword
                         title_text = a_tag.get_text(strip=True)

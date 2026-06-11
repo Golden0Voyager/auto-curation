@@ -31,3 +31,27 @@ class TestFLVParser:
         if flv_module.HAS_SCRAPLING:
             urls = p.get_exhibition_urls(client=None)
             assert isinstance(urls, list)
+
+    def test_has_scrapling_reload(self):
+        import importlib
+        from unittest.mock import MagicMock, patch
+
+        orig_has_scrapling = flv_module.HAS_SCRAPLING
+        orig_parser = flv_module.FLVParser
+
+        try:
+            with patch.dict("sys.modules", {
+                "scrapling": MagicMock(),
+                "scrapling.StealthyFetcher": MagicMock()
+            }):
+                importlib.reload(flv_module)
+                assert flv_module.HAS_SCRAPLING is True
+
+            with patch.dict("sys.modules", {"scrapling": None}):
+                importlib.reload(flv_module)
+                assert flv_module.HAS_SCRAPLING is False
+        finally:
+            importlib.reload(flv_module)
+            flv_module.HAS_SCRAPLING = orig_has_scrapling
+            flv_module.FLVParser = orig_parser
+

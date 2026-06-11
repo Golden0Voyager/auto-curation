@@ -118,8 +118,7 @@ class PSAParser:
             return []
 
         for href in re.findall(r'href="(/whats-on/exhibitions/[^"]+)"', html):
-            if href == "/whats-on/exhibitions":
-                continue
+
             urls.add(f"https://www.powerstationofart.com{href}")
 
         # 2. 上海双年展（历届 + 当前届）

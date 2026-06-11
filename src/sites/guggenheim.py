@@ -54,6 +54,7 @@ class GuggenheimParser(BaseSiteParser):
                     "/exhibitions#upcoming",
                     "#past-exhibitions",
                     "#exhibitions-on-view",
+                    "/exhibition/exhibitions",
                 ):
                     continue
                 urls.add(f"https://www.guggenheim.org{href}")

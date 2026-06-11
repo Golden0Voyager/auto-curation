@@ -106,3 +106,60 @@ class TestPSAParser:
     def test_clean_html_passthrough(self):
         p = PSAParser()
         assert p.clean_html("<html/>") == "<html/>"
+
+    def test_get_exhibition_urls_success(self):
+        from unittest.mock import MagicMock
+        p = PSAParser()
+
+        mock_playwright = MagicMock()
+        mock_playwright.__enter__.return_value = mock_playwright
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+
+        mock_playwright.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_page.content.return_value = """
+            <html><body>
+                <a href="/whats-on/exhibitions">List page itself (skip)</a>
+                <a href="/whats-on/exhibitions/real-show">Real Show</a>
+            </body></html>
+        """
+
+        with patch("src.sites.psa.sync_playwright", return_value=mock_playwright, create=True), \
+             patch("src.sites.psa.HAS_PLAYWRIGHT", True):
+            urls = p.get_exhibition_urls(client=None)
+            assert "https://www.powerstationofart.com/whats-on/exhibitions/real-show" in urls
+            assert "https://www.powerstationofart.com/whats-on/exhibitions" not in urls
+
+    def test_extract_from_html_curator_stop_words(self):
+        p = PSAParser()
+        html = "<html><body><h1>Curated Exhibition</h1><p>策展人: 王小明 主办方：上海博物馆</p><p>展览描述文字内容用于测试。测试策展人提取功能。</p></body></html>"
+        result = p._extract_from_html(html, "http://ex.com")
+        assert result is not None
+        assert "王小明" in result["curators"]
+
+    def test_has_playwright_reload(self):
+        import importlib
+        from unittest.mock import MagicMock, patch
+
+        import src.sites.psa as psa_module
+
+        orig_has_playwright = psa_module.HAS_PLAYWRIGHT
+        orig_parser = psa_module.PSAParser
+
+        try:
+            with patch.dict("sys.modules", {"playwright": None, "playwright.sync_api": None}):
+                importlib.reload(psa_module)
+                assert psa_module.HAS_PLAYWRIGHT is False
+
+            with patch.dict("sys.modules", {
+                "playwright": MagicMock(),
+                "playwright.sync_api": MagicMock()
+            }):
+                importlib.reload(psa_module)
+                assert psa_module.HAS_PLAYWRIGHT is True
+        finally:
+            importlib.reload(psa_module)
+            psa_module.HAS_PLAYWRIGHT = orig_has_playwright
+            psa_module.PSAParser = orig_parser
+
