@@ -188,13 +188,26 @@ class TestGetExhibitionByUrl:
         # Insert exhibition with NULL curators by raw SQL
         conn = db._get_connection()
         conn.execute(
-            "INSERT INTO exhibitions (source, title, url) VALUES (?, ?, ?)",
+            "INSERT INTO exhibitions (source, title, url, curators) VALUES (?, ?, ?, NULL)",
             ("Test", "No Curators", "http://nocu.rate"),
         )
         conn.commit()
         conn.close()
         retrieved = db.get_exhibition_by_url("http://nocu.rate")
         assert retrieved["curators"] == []
+
+    def test_handles_malformed_curators(self):
+        db = ExhibitionDatabase(TEST_DB)
+        conn = db._get_connection()
+        conn.execute(
+            "INSERT INTO exhibitions (source, title, url, curators) VALUES (?, ?, ?, ?)",
+            ("Test", "Malformed Curators", "http://malformed.rate", "not a valid json string"),
+        )
+        conn.commit()
+        conn.close()
+        retrieved = db.get_exhibition_by_url("http://malformed.rate")
+        assert retrieved["curators"] == []
+
 
 
 # ---------------------------------------------------------------------------
@@ -220,6 +233,25 @@ class TestGetAllExhibitions:
             db.insert_exhibition(_sample_exhibition(url=f"http://x.com/{i}", title=f"Ex{i}"))
         first_page = db.get_all_exhibitions(limit=2, offset=0)
         assert len(first_page) == 2
+
+    def test_get_all_handles_null_and_malformed_curators(self):
+        db = ExhibitionDatabase(TEST_DB)
+        conn = db._get_connection()
+        conn.execute(
+            "INSERT INTO exhibitions (source, title, url, curators) VALUES (?, ?, ?, ?)",
+            ("Test", "Null Curators", "http://null.rate", None),
+        )
+        conn.execute(
+            "INSERT INTO exhibitions (source, title, url, curators) VALUES (?, ?, ?, ?)",
+            ("Test", "Malformed Curators", "http://malformed.rate", "not a valid json string"),
+        )
+        conn.commit()
+        conn.close()
+        all_ex = db.get_all_exhibitions()
+        assert len(all_ex) == 2
+        for ex in all_ex:
+            assert ex["curators"] == []
+
 
 
 # ---------------------------------------------------------------------------
