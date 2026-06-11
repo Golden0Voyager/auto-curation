@@ -39,6 +39,7 @@ class MoMAParser:
     city = "New York"
     strategy = ParserStrategy.CSV_REMOTE
     parser_key = "moma"
+    institution_type = "museum"
     # MoMA 使用 CSV 而非网页，此字段仅作标识
     list_url = MOMA_EXHIBITIONS_CSV_URL
 
