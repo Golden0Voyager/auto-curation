@@ -45,7 +45,9 @@ auto-hub = { git = "https://github.com/Golden0Voyager/auto_hub.git", branch = "m
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
+    "pytest-cov>=5.0",
     "ruff>=0.6",
+    "mypy>=1.10",
     "httpx[socks]>=0.27.0",
 ]
 
