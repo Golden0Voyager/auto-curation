@@ -196,3 +196,28 @@ class TestNGAParser:
         p = NGAParser()
         with patch("os.path.exists", return_value=False):
             assert p._ensure_local_files() is False
+
+    def test_invalid_begin_year_value_error(self):
+        objects = "objectid,title,beginyear,classification\n1,Mona Lisa,abcd,Painting\n"
+        constituents = "constituentid,displayname\n10,Leonardo da Vinci\n"
+        links = "objectid,constituentid,role\n1,10,artist\n"
+
+        p = NGAParser()
+        with patch("os.path.exists", return_value=True), patch("builtins.open") as mock_open:
+            def side_effect(path, *args, **kwargs):
+                file = MagicMock()
+                file.__enter__.return_value = io.StringIO(
+                    {
+                        NGA_OBJECTS_PATH: objects,
+                        NGA_CONSTITUENTS_PATH: constituents,
+                        NGA_OBJECTS_CONSTITUENTS_PATH: links,
+                    }[path]
+                )
+                return file
+
+            mock_open.side_effect = side_effect
+
+            result = p.get_csv_artworks(since_year=1500)
+            assert len(result) == 1
+            assert result[0]["work_title"] == "Mona Lisa"
+
