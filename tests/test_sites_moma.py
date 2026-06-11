@@ -136,3 +136,34 @@ class TestMoMAParser:
     def test_clean_html_passthrough(self):
         p = MoMAParser()
         assert p.clean_html("test") == "test"
+
+    def test_get_csv_exhibitions_invalid_begin_date(self):
+        csv_data = "ExhibitionID,ExhibitionTitle,ExhibitionBeginDate,DisplayName\n1,Test Show,abcd/ef/gh,Artist A"
+        with patch("os.path.exists", return_value=True), patch("builtins.open") as mock_open:
+            mock_file = MagicMock()
+            mock_file.__enter__.return_value = io.StringIO(csv_data)
+            mock_open.return_value = mock_file
+
+            p = MoMAParser()
+            result = p.get_csv_exhibitions(since_year=2020)
+            assert len(result) == 1
+            assert result[0]["title"] == "Test Show"
+
+    def test_get_csv_exhibitions_filtered_and_missing_name(self):
+        csv_data = (
+            "ExhibitionID,ExhibitionTitle,ExhibitionBeginDate,DisplayName,ExhibitionRole\n"
+            "1,Old Show,2010,Artist A,Artist\n"
+            "1,Old Show,2010,Artist B,Artist\n"
+            "2,New Show,2025,,Artist\n"
+        )
+        with patch("os.path.exists", return_value=True), patch("builtins.open") as mock_open:
+            mock_file = MagicMock()
+            mock_file.__enter__.return_value = io.StringIO(csv_data)
+            mock_open.return_value = mock_file
+
+            p = MoMAParser()
+            result = p.get_csv_exhibitions(since_year=2020)
+            assert len(result) == 1
+            assert result[0]["title"] == "New Show"
+            assert len(result[0]["artworks"]) == 0
+
