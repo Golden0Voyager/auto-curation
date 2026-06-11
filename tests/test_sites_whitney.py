@@ -149,3 +149,93 @@ class TestWhitneyParser:
     def test_clean_html_passthrough(self):
         p = WhitneyParser()
         assert p.clean_html("test") == "test"
+
+    def test_limit_breaks_before_next_page(self):
+        """Covers L50: outer while-loop limit check triggers break before fetching next page."""
+        with patch("src.sites.whitney.httpx.Client") as mock_client_class:
+            mock_instance = MagicMock()
+            mock_client_class.return_value = mock_instance
+            # Page 1 returns exactly 1 item; limit=1 means outer check fires before page 2
+            mock_instance.get.side_effect = [
+                _make_response(
+                    [
+                        {
+                            "id": 1,
+                            "attributes": {
+                                "title": "Show A",
+                                "start_time": "2024-01-01T00:00:00Z",
+                                "end_time": "2024-06-01T00:00:00Z",
+                                "url": "/exhibitions/1",
+                            },
+                        }
+                    ]
+                ),
+                # This page should never be reached
+                _make_response([{"id": 2, "attributes": {"title": "Should Not Appear"}}]),
+            ]
+            p = WhitneyParser()
+            result = p.get_api_exhibitions(limit=1)
+            assert len(result) == 1
+            assert result[0]["title"] == "Show A"
+            # Confirm page 2 was never fetched
+            assert mock_instance.get.call_count == 1
+
+    def test_limit_breaks_mid_page(self):
+        """Covers L68: inner for-loop limit check stops processing items mid-page."""
+        with patch("src.sites.whitney.httpx.Client") as mock_client_class:
+            mock_instance = MagicMock()
+            mock_client_class.return_value = mock_instance
+            mock_instance.get.side_effect = [
+                _make_response(
+                    [
+                        {
+                            "id": 1,
+                            "attributes": {
+                                "title": "First",
+                                "start_time": "2024-01-01T00:00:00Z",
+                                "url": "/exhibitions/1",
+                            },
+                        },
+                        {
+                            "id": 2,
+                            "attributes": {
+                                "title": "Second",
+                                "start_time": "2024-02-01T00:00:00Z",
+                                "url": "/exhibitions/2",
+                            },
+                        },
+                    ]
+                ),
+                _make_response([]),
+            ]
+            p = WhitneyParser()
+            result = p.get_api_exhibitions(limit=1)
+            assert len(result) == 1
+            assert result[0]["title"] == "First"
+
+    def test_invalid_start_time_does_not_raise(self):
+        """Covers L83-84: malformed start_time triggers ValueError/IndexError → pass."""
+        with patch("src.sites.whitney.httpx.Client") as mock_client_class:
+            mock_instance = MagicMock()
+            mock_client_class.return_value = mock_instance
+            mock_instance.get.side_effect = [
+                _make_response(
+                    [
+                        {
+                            "id": 1,
+                            "attributes": {
+                                "title": "Garbled Date Show",
+                                # Non-numeric prefix causes int() to raise ValueError
+                                "start_time": "INVALID-DATE",
+                                "url": "/exhibitions/1",
+                            },
+                        }
+                    ]
+                ),
+                _make_response([]),
+            ]
+            p = WhitneyParser()
+            # since_year triggers the date-parsing branch; malformed value must not crash
+            result = p.get_api_exhibitions(since_year=2020)
+            assert len(result) == 1
+            assert result[0]["title"] == "Garbled Date Show"
