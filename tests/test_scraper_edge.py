@@ -457,6 +457,7 @@ class TestAscrapeSite:
     def test_ascrape_site_exception_handled(self):
         """Exception in ascrape_site handler gets caught and logged."""
         import asyncio
+
         import pytest
 
         mock_parser = MagicMock()
