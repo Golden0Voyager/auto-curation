@@ -1,13 +1,10 @@
 """Additional tests for src/sites/__init__.py to improve coverage to 100%."""
 
-import importlib
 import logging
 import sys
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-from src.sites import SITES, _discover_parsers
+from src.sites import _discover_parsers
 
 
 class TestDiscoverParsersPrivateModule:

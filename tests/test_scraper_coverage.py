@@ -8,12 +8,10 @@ import pytest
 
 from src.scraper import (
     ExhibitionScraper,
-    MAX_HTML_SIZE,
     _is_retryable_http_error,
     extract_images_from_html,
 )
-from src.sites.base import BaseSiteParser, ParserStrategy
-
+from src.sites.base import ParserStrategy
 
 TEST_DB = "tests/test_scraper_coverage.db"
 
