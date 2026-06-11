@@ -13,8 +13,8 @@
 [![Python](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![CI](https://img.shields.io/github/actions/workflow/status/Golden0Voyager/auto-curation/ci.yml?branch=main&label=CI&logo=github)](.github/workflows/ci.yml)
-[![coverage](https://img.shields.io/badge/coverage-99%25-brightgreen)](.github/workflows/ci.yml)
-[![tests](https://img.shields.io/badge/tests-582%20passed-brightgreen)](tests/)
+[![coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](.github/workflows/ci.yml)
+[![tests](https://img.shields.io/badge/tests-601%20passed-brightgreen)](tests/)
 [![mypy](https://img.shields.io/badge/mypy-0%20errors-success)](mypy.ini)
 [![ruff](https://img.shields.io/badge/ruff-passing-brightgreen)](pyproject.toml)
 
@@ -52,7 +52,7 @@ This project provides structured global art exhibition data that is otherwise in
 > As of June 2026, the database tracks:
 > - **11,651+** structured contemporary art exhibitions.
 > - **1883 to Present / Ongoing** temporal coverage.
-> - **55** world-class art institutions and biennials across **56** global cities (including London, New York, Tokyo, Paris, Beijing, Shanghai, Seoul, Sydney, São Paulo, Venice, and more).
+> - **61** world-class art institutions and biennials across **38** global cities (including London, New York, Tokyo, Paris, Beijing, Shanghai, Seoul, Sydney, São Paulo, Venice, and more).
 
 ---
 
@@ -76,7 +76,7 @@ This project provides structured global art exhibition data that is otherwise in
 - **Auto-registered Parsers** — `pkgutil`-based scan in `src/sites/__init__.py`; no manual import needed
 - **Quality Monitoring** — daily health checks + post-scrape data validation + GitHub Actions alerts (UTC 08:03)
 - **Zero Synthetic Data** — all fields sourced from real data; missing values left null, never templated
-- **475 Tests, 95% Coverage** — mypy-clean, ruff-passing, production-ready codebase
+- **601 Tests, 100% Coverage** — mypy-clean, ruff-passing, production-ready codebase
 
 ---
 
@@ -143,6 +143,7 @@ This project provides structured global art exhibition data that is otherwise in
 | National Gallery of Australia | Canberra | 🇦🇺 Australia | HTML_LLM |
 | NGV | Melbourne | 🇦🇺 Australia | HTML_LLM |
 | MCA Australia | Sydney | 🇦🇺 Australia | HTML_LLM |
+| National Gallery of Art | Washington D.C. | 🇺🇸 USA | ARTWORK_ONLY |
 | National Gallery Singapore | Singapore | 🇸🇬 Singapore | HTML_LLM |
 | MAIIAM | Chiang Mai | 🇹🇭 Thailand | HTML_LLM |
 | UCCA | Beijing | 🇨🇳 China | HTML_LLM |
@@ -179,8 +180,9 @@ This project provides structured global art exhibition data that is otherwise in
 | KW Institute | Berlin | 🇩🇪 Germany | HTML_LLM |
 | Kunsthal Rotterdam | Rotterdam | 🇳🇱 Netherlands | HTML_LLM |
 | Whitney Biennial | New York | 🇺🇸 USA | HTML_LLM |
-| NJPAC | Newark | 🇺🇸 USA | HTML_LLM |
-| The Met | New York | 🇺🇸 USA | REST_API |
+| Nam June Paik Art Center | Yongin | 🇰🇷 Korea | HTML_LLM |
+| The Met | New York | 🇺🇸 USA | HTML_LLM |
+| Wikidata | Various | 🌐 Global | SPARQL |
 
 *Full status at runtime: `python run_collector.py --list-sites`*
 </details>
@@ -302,6 +304,8 @@ If this project, tool, or dataset is helpful to you, please consider supporting 
 
 ## Acknowledgements
 
+- [MoMA GitHub](https://github.com/MuseumofModernArt/collection) — Open exhibition & collection dataset
+- [Art Institute of Chicago](https://github.com/art-institute-of-chicago/data-tools) — Open access API & data tools
 - [Scrapling](https://github.com/D4Vinci/Scrapling) — Underlying Fetcher / StealthyFetcher
 - [Pydantic](https://docs.pydantic.dev/) — Data model validation
 - [auto_hub](https://github.com/Golden0Voyager/auto-hub) — Shared LLM provider chain

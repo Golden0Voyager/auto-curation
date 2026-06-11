@@ -1,5 +1,6 @@
 """Additional tests for src/scraper.py to improve coverage to 100%."""
 
+import asyncio
 import tempfile
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -19,6 +20,7 @@ TEST_DB = "tests/test_scraper_coverage.db"
 @pytest.fixture(autouse=True)
 def cleanup_db():
     import os
+
     if os.path.exists(TEST_DB):
         os.remove(TEST_DB)
     yield
@@ -58,7 +60,9 @@ def _create_mock_parser(source="Test", strategy=ParserStrategy.HTML_LLM):
 
 class TestExtractImagesExtended:
     def test_filters_tracking_pixels(self):
-        html = '<html><body><img src="http://track.com/pixel.gif"><img src="/photo.jpg"></body></html>'
+        html = (
+            '<html><body><img src="http://track.com/pixel.gif"><img src="/photo.jpg"></body></html>'
+        )
         result = extract_images_from_html(html, "http://ex.com")
         assert len(result) == 1
 
@@ -125,8 +129,10 @@ class TestScrapeHtmlNativeParser:
 
         mock_parser.parse_exhibition_page = mock_parse
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"native_test": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"native_test": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             result = scraper._scrape_html(mock_parser, dry_run=True)
             assert result["parsed"] == 1
@@ -140,8 +146,10 @@ class TestScrapeHtmlNativeParser:
         mock_parser.parse_exhibition_page.return_value = None
         mock_parser.clean_html.return_value = "Clean content for LLM that is long enough."
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"fallback_test": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"fallback_test": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             # Mock the LLM parser to return None (simulating LLM failure)
             scraper.parser.parse_exhibition_text = MagicMock(return_value=None)
@@ -168,19 +176,25 @@ class TestScrapeHtmlForceMode:
         mock_response.status_code = 200
         mock_response.raise_for_status = MagicMock()
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"force_test": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"force_test": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
-            scraper.db.insert_exhibition({
-                "source": "Force Test",
-                "title": "Existing Show",
-                "url": "http://force.test/show1",
-            })
-            scraper.parser.parse_exhibition_text = MagicMock(return_value={
-                "title": "New Show",
-                "start_date": "2024-06-01",
-                "artworks": [],
-            })
+            scraper.db.insert_exhibition(
+                {
+                    "source": "Force Test",
+                    "title": "Existing Show",
+                    "url": "http://force.test/show1",
+                }
+            )
+            scraper.parser.parse_exhibition_text = MagicMock(
+                return_value={
+                    "title": "New Show",
+                    "start_date": "2024-06-01",
+                    "artworks": [],
+                }
+            )
             with patch.object(scraper.client, "get", return_value=mock_response):
                 result = scraper._scrape_html(mock_parser, force=True, dry_run=False)
                 assert result["saved"] == 1
@@ -198,15 +212,19 @@ class TestScrapeHtmlSkipExisting:
         mock_parser = _create_mock_parser("Skip Test")
         mock_parser.get_exhibition_urls.return_value = ["http://skip.test/show1"]
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"skip_test": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"skip_test": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             # Insert existing record
-            scraper.db.insert_exhibition({
-                "source": "Skip Test",
-                "title": "Existing Show",
-                "url": "http://skip.test/show1",
-            })
+            scraper.db.insert_exhibition(
+                {
+                    "source": "Skip Test",
+                    "title": "Existing Show",
+                    "url": "http://skip.test/show1",
+                }
+            )
             result = scraper._scrape_html(mock_parser, dry_run=False)
             assert result["skipped"] == 1
             assert result["saved"] == 0
@@ -233,8 +251,10 @@ class TestScrapeHtmlSizeLimit:
         mock_response.status_code = 200
         mock_response.raise_for_status = MagicMock()
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"size_test": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"size_test": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             with patch.object(scraper.client, "get", return_value=mock_response):
                 result = scraper._scrape_html(mock_parser, dry_run=True)
@@ -260,8 +280,10 @@ class TestScrapeHtmlShortContent:
         mock_response.status_code = 200
         mock_response.raise_for_status = MagicMock()
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"short_test": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"short_test": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             with patch.object(scraper.client, "get", return_value=mock_response):
                 result = scraper._scrape_html(mock_parser, dry_run=True)
@@ -280,8 +302,10 @@ class TestScrapeHtmlShortContent:
         mock_response.status_code = 200
         mock_response.raise_for_status = MagicMock()
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"empty_test": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"empty_test": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             with patch.object(scraper.client, "get", return_value=mock_response):
                 result = scraper._scrape_html(mock_parser, dry_run=True)
@@ -307,8 +331,10 @@ class TestScrapeHtmlLlmFailure:
         mock_response.status_code = 200
         mock_response.raise_for_status = MagicMock()
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"llm_fail_test": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"llm_fail_test": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             scraper.parser.parse_exhibition_text = MagicMock(return_value=None)
             with patch.object(scraper.client, "get", return_value=mock_response):
@@ -336,14 +362,18 @@ class TestScrapeHtmlImages:
         mock_response.status_code = 200
         mock_response.raise_for_status = MagicMock()
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"images_test": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"images_test": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
-            scraper.parser.parse_exhibition_text = MagicMock(return_value={
-                "title": "Images Show",
-                "start_date": "2024-01-01",
-                "artworks": [],
-            })
+            scraper.parser.parse_exhibition_text = MagicMock(
+                return_value={
+                    "title": "Images Show",
+                    "start_date": "2024-01-01",
+                    "artworks": [],
+                }
+            )
             with patch.object(scraper.client, "get", return_value=mock_response):
                 result = scraper._scrape_html(mock_parser, dry_run=True)
                 assert result["saved"] == 1
@@ -363,8 +393,10 @@ class TestScrapeHtmlTags:
         mock_parser.parse_exhibition_page.return_value = {"title": "Tags Show"}
         mock_parser._url_tags = {"http://tags.test/show1": '["contemporary", "solo"]'}
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"tags_test": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"tags_test": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             result = scraper._scrape_html(mock_parser, dry_run=True)
             assert result["saved"] == 1
@@ -384,8 +416,10 @@ class TestScrapeHtmlAsync:
         mock_parser.strategy = ParserStrategy.HTML_LLM
         mock_parser.get_exhibition_urls.return_value = []
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"async_empty": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"async_empty": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             result = await scraper._scrape_html_async(mock_parser)
             assert result["discovered"] == 0
@@ -399,8 +433,10 @@ class TestScrapeHtmlAsync:
         mock_parser.strategy = ParserStrategy.HTML_LLM
         mock_parser.get_exhibition_urls.return_value = []
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"async_pw": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"async_pw": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             result = await scraper._scrape_html_async(mock_parser)
             assert result["discovered"] == 0
@@ -419,8 +455,10 @@ class TestScrapeSiteException:
         mock_parser.strategy = ParserStrategy.HTML_LLM
         mock_parser.get_exhibition_urls.side_effect = RuntimeError("Network error")
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"error_test": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"error_test": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             with pytest.raises(RuntimeError):
                 scraper.scrape_site("error_test")
@@ -457,11 +495,13 @@ class TestScrapeCsvExtended:
 
         with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f:
             scraper = ExhibitionScraper(db_path=f.name)
-            scraper.db.insert_exhibition({
-                "source": "CSV Force",
-                "title": "Old Show",
-                "url": "http://csv/1",
-            })
+            scraper.db.insert_exhibition(
+                {
+                    "source": "CSV Force",
+                    "title": "Old Show",
+                    "url": "http://csv/1",
+                }
+            )
             result = scraper._scrape_csv(mock_parser, force=True, dry_run=False)
             assert result["saved"] == 1
             scraper.close()
@@ -482,11 +522,13 @@ class TestScrapeApiExtended:
 
         with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f:
             scraper = ExhibitionScraper(db_path=f.name)
-            scraper.db.insert_exhibition({
-                "source": "API Skip",
-                "title": "Existing",
-                "url": "http://api/1",
-            })
+            scraper.db.insert_exhibition(
+                {
+                    "source": "API Skip",
+                    "title": "Existing",
+                    "url": "http://api/1",
+                }
+            )
             result = scraper._scrape_api(mock_parser, dry_run=False)
             assert result["skipped"] == 1
             scraper.close()
@@ -500,11 +542,13 @@ class TestScrapeApiExtended:
 
         with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f:
             scraper = ExhibitionScraper(db_path=f.name)
-            scraper.db.insert_exhibition({
-                "source": "API Force",
-                "title": "Old Show",
-                "url": "http://api/1",
-            })
+            scraper.db.insert_exhibition(
+                {
+                    "source": "API Force",
+                    "title": "Old Show",
+                    "url": "http://api/1",
+                }
+            )
             result = scraper._scrape_api(mock_parser, force=True, dry_run=False)
             assert result["saved"] == 1
             scraper.close()
@@ -527,11 +571,13 @@ class TestScrapeArtworkOnlyExtended:
 
         with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f:
             scraper = ExhibitionScraper(db_path=f.name)
-            scraper.db.insert_exhibition({
-                "source": "Art Skip",
-                "title": "Existing Collection",
-                "url": synthetic_url,
-            })
+            scraper.db.insert_exhibition(
+                {
+                    "source": "Art Skip",
+                    "title": "Existing Collection",
+                    "url": synthetic_url,
+                }
+            )
             result = scraper._scrape_artwork_only(mock_parser, dry_run=False)
             assert result["skipped"] == 1
             scraper.close()
@@ -564,8 +610,10 @@ class TestAscrapeHtmlNoUrls:
         mock_parser.strategy = ParserStrategy.HTML_LLM
         mock_parser.get_exhibition_urls.return_value = []
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"async_no_urls": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"async_no_urls": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             result = await scraper.ascrape_site("async_no_urls")
             assert result["discovered"] == 0
@@ -583,8 +631,10 @@ class TestScrapeAllSitesExtended:
         mock_parser = _create_mock_parser("All Test", ParserStrategy.REST_API)
         mock_parser.get_api_exhibitions.return_value = []
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"all_test": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"all_test": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             results = scraper.scrape_all_sites(dry_run=True)
             assert len(results) == 1
@@ -621,7 +671,7 @@ class TestIsRetryableExtended:
 
 class TestCloseExtended:
     def test_close_handles_async_close_error(self):
-        """close() handles errors when closing async client."""
+        """close() handles errors when closing async client (no running loop)."""
         with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f:
             scraper = ExhibitionScraper(db_path=f.name)
             # Simulate async client close error
@@ -633,7 +683,29 @@ class TestCloseExtended:
         with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f:
             scraper = ExhibitionScraper(db_path=f.name)
             scraper.close()
-            scraper.close()  # Should not raise
+            scraper.close()
+
+    @pytest.mark.asyncio
+    async def test_close_with_running_loop(self):
+        """close() schedules aclose on running loop."""
+        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f:
+            scraper = ExhibitionScraper(db_path=f.name)
+            mock = AsyncMock()
+            scraper.async_client = mock
+            scraper.close()
+            await asyncio.sleep(0)
+            mock.aclose.assert_awaited()
+
+    @pytest.mark.asyncio
+    async def test_close_with_running_loop_create_task_error(self):
+        """close() handles error when create_task fails on running loop."""
+        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f:
+            scraper = ExhibitionScraper(db_path=f.name)
+            mock_loop = MagicMock()
+            mock_loop.create_task.side_effect = RuntimeError("create_task failed")
+            mock_loop.is_running.return_value = True
+            with patch("asyncio.get_running_loop", return_value=mock_loop):
+                scraper.close()  # Should not raise
 
 
 # ---------------------------------------------------------------------------
@@ -648,8 +720,10 @@ class TestScrapeSiteParserKey:
         mock_parser.parser_key = ""
         mock_parser.get_exhibition_urls.return_value = []
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"test_empty_key": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"test_empty_key": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             result = scraper.scrape_site("test_empty_key")
             assert result["discovered"] == 0
@@ -665,8 +739,10 @@ class TestAscrapeSiteParserKey:
         mock_parser.parser_key = ""
         mock_parser.get_exhibition_urls.return_value = []
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"async_empty_key": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"async_empty_key": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             result = await scraper.ascrape_site("async_empty_key")
             assert result["discovered"] == 0
@@ -692,14 +768,18 @@ class TestScrapeHtmlDbInsertFail:
         mock_response.status_code = 200
         mock_response.raise_for_status = MagicMock()
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"dbfail_test": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"dbfail_test": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
-            scraper.parser.parse_exhibition_text = MagicMock(return_value={
-                "title": "DB Fail Show",
-                "start_date": "2024-01-01",
-                "artworks": [],
-            })
+            scraper.parser.parse_exhibition_text = MagicMock(
+                return_value={
+                    "title": "DB Fail Show",
+                    "start_date": "2024-01-01",
+                    "artworks": [],
+                }
+            )
             scraper.db.insert_exhibition = MagicMock(return_value=None)
             with patch.object(scraper.client, "get", return_value=mock_response):
                 result = scraper._scrape_html(mock_parser, dry_run=False)
@@ -726,8 +806,10 @@ class TestScrapeHtmlAsyncEdgeCases:
         mock_response.status_code = 200
         mock_response.raise_for_status = MagicMock()
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"async_short": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"async_short": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             with patch.object(scraper.async_client, "get", return_value=mock_response):
                 result = await scraper._scrape_html_async(mock_parser)
@@ -747,8 +829,10 @@ class TestScrapeHtmlAsyncEdgeCases:
         mock_response.status_code = 200
         mock_response.raise_for_status = MagicMock()
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"async_large": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"async_large": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             with patch.object(scraper.async_client, "get", return_value=mock_response):
                 result = await scraper._scrape_html_async(mock_parser)
@@ -768,8 +852,10 @@ class TestScrapeHtmlAsyncEdgeCases:
         mock_response.status_code = 200
         mock_response.raise_for_status = MagicMock()
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"async_llmfail": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"async_llmfail": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             scraper.parser.parse_exhibition_text_async = AsyncMock(return_value=None)
             with patch.object(scraper.async_client, "get", return_value=mock_response):
@@ -790,14 +876,18 @@ class TestScrapeHtmlAsyncEdgeCases:
         mock_response.status_code = 200
         mock_response.raise_for_status = MagicMock()
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"async_city": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"async_city": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
-            scraper.parser.parse_exhibition_text_async = AsyncMock(return_value={
-                "title": "City Fallback Show",
-                "start_date": "2024-01-01",
-                "artworks": [],
-            })
+            scraper.parser.parse_exhibition_text_async = AsyncMock(
+                return_value={
+                    "title": "City Fallback Show",
+                    "start_date": "2024-01-01",
+                    "artworks": [],
+                }
+            )
             with patch.object(scraper.async_client, "get", return_value=mock_response):
                 result = await scraper._scrape_html_async(mock_parser, dry_run=True)
                 assert result["saved"] == 1
@@ -810,8 +900,10 @@ class TestScrapeHtmlAsyncEdgeCases:
         mock_parser.get_exhibition_urls.return_value = ["http://async.exception/show1"]
         mock_parser.parse_exhibition_page = None
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"async_exc": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"async_exc": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             mock_get = AsyncMock(side_effect=RuntimeError("Connection error"))
             with patch.object(scraper.async_client, "get", mock_get):
@@ -832,14 +924,18 @@ class TestScrapeHtmlAsyncNativeExtraction:
         mock_parser = _create_mock_parser("Async Native")
         mock_parser.use_playwright = False
         mock_parser.get_exhibition_urls.return_value = ["http://async.native/show1"]
-        mock_parser.parse_exhibition_page = MagicMock(return_value={
-            "title": "Native Show",
-            "start_date": "2024-01-01",
-            "artworks": [],
-        })
+        mock_parser.parse_exhibition_page = MagicMock(
+            return_value={
+                "title": "Native Show",
+                "start_date": "2024-01-01",
+                "artworks": [],
+            }
+        )
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"async_native": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"async_native": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             result = await scraper._scrape_html_async(mock_parser, dry_run=True)
             assert result["saved"] == 1
@@ -858,17 +954,19 @@ class TestScrapeHtmlAsyncDedup:
         mock_parser = _create_mock_parser("Async Dedup")
         mock_parser.get_exhibition_urls.return_value = ["http://async.dedup/show1"]
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"async_dedup": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"async_dedup": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
-            scraper.db.insert_exhibition({
-                "source": "Async Dedup",
-                "title": "Existing Show",
-                "url": "http://async.dedup/show1",
-            })
-            result = await scraper._scrape_html_async(
-                mock_parser, force=False, dry_run=False
+            scraper.db.insert_exhibition(
+                {
+                    "source": "Async Dedup",
+                    "title": "Existing Show",
+                    "url": "http://async.dedup/show1",
+                }
             )
+            result = await scraper._scrape_html_async(mock_parser, force=False, dry_run=False)
             assert result["skipped"] == 1
             scraper.close()
 
@@ -884,23 +982,27 @@ class TestScrapeHtmlAsyncForceDelete:
         """Async: force mode deletes existing record before insert."""
         mock_parser = _create_mock_parser("Async Force")
         mock_parser.get_exhibition_urls.return_value = ["http://async.force/show1"]
-        mock_parser.parse_exhibition_page = MagicMock(return_value={
-            "title": "New Show",
-            "start_date": "2024-07-01",
-            "artworks": [],
-        })
+        mock_parser.parse_exhibition_page = MagicMock(
+            return_value={
+                "title": "New Show",
+                "start_date": "2024-07-01",
+                "artworks": [],
+            }
+        )
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"async_force": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"async_force": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
-            scraper.db.insert_exhibition({
-                "source": "Async Force",
-                "title": "Old Show",
-                "url": "http://async.force/show1",
-            })
-            result = await scraper._scrape_html_async(
-                mock_parser, force=True, dry_run=False
+            scraper.db.insert_exhibition(
+                {
+                    "source": "Async Force",
+                    "title": "Old Show",
+                    "url": "http://async.force/show1",
+                }
             )
+            result = await scraper._scrape_html_async(mock_parser, force=True, dry_run=False)
             assert result["saved"] == 1
             assert result["skipped"] == 0
             scraper.close()
@@ -930,8 +1032,10 @@ class TestScrapeHtmlScraplingFallback:
 
         mock_response.raise_for_status = raise_403
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"scrapling_test": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"scrapling_test": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             with patch.object(scraper.client, "get", return_value=mock_response):
                 result = scraper._scrape_html(mock_parser)
@@ -951,18 +1055,31 @@ class TestScrapeHtmlAsyncDbInsertFail:
         mock_parser = _create_mock_parser("Async DB Fail")
         mock_parser.use_playwright = False
         mock_parser.get_exhibition_urls.return_value = ["http://async.dbfail/show1"]
-        mock_parser.parse_exhibition_page = MagicMock(return_value={
-            "title": "Async Fail Show",
-            "start_date": "2024-01-01",
-            "artworks": [],
-        })
+        mock_parser.parse_exhibition_page = MagicMock(
+            return_value={
+                "title": "Async Fail Show",
+                "start_date": "2024-01-01",
+                "artworks": [],
+            }
+        )
 
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f, \
-             patch("src.scraper.SITES", {"async_dbfail": mock_parser}):
+        with (
+            tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f,
+            patch("src.scraper.SITES", {"async_dbfail": mock_parser}),
+        ):
             scraper = ExhibitionScraper(db_path=f.name)
             scraper.db.insert_exhibition = MagicMock(return_value=None)
-            result = await scraper._scrape_html_async(
-                mock_parser, force=False, dry_run=False
-            )
+            result = await scraper._scrape_html_async(mock_parser, force=False, dry_run=False)
             assert result["failed"] == 1
             scraper.close()
+
+
+class TestFixtureCleanupCoverage:
+    def test_fixture_teardown_cleans_db(self):
+        """Ensure fixture teardown os.remove runs for TEST_DB."""
+        import os
+
+        if os.path.exists(TEST_DB):
+            os.remove(TEST_DB)
+        scraper = ExhibitionScraper(TEST_DB)
+        scraper.close()

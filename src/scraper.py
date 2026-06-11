@@ -362,7 +362,7 @@ class ExhibitionScraper:
                         continue
 
                     # Extract and attach image links deterministically (saves disk & tokens)
-                    image_urls = extract_images_from_html(response.text, url, max_images=8)
+                    image_urls = extract_images_from_html(page_html, url, max_images=8)
                     parsed_data["images"] = json.dumps(image_urls)
 
                 if parsed_data and "images" not in parsed_data:
@@ -794,12 +794,22 @@ class ExhibitionScraper:
         """Closes any network resources (sync and async clients)."""
         self.client.close()
         try:
-            # Close async client synchronously using a temporary event loop
-            loop = asyncio.new_event_loop()
-            loop.run_until_complete(self.async_client.aclose())
-            loop.close()
-        except Exception:
-            pass
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # No event loop running — create a temporary one
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(self.async_client.aclose())
+                loop.close()
+            except Exception as e:
+                logger.warning(f"Failed to close async client: {e}")
+            return
+
+        try:
+            loop.create_task(self.async_client.aclose())
+        except Exception as e:
+            logger.warning(f"Failed to close async client: {e}")
 
     async def aclose(self):
         """Async close: shuts down both sync and async HTTP clients."""

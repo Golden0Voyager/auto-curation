@@ -2,9 +2,7 @@
 
 from unittest.mock import patch
 
-import pytest
-
-from src.sites.new_museum import HAS_PLAYWRIGHT, NewMuseumParser
+from src.sites.new_museum import NewMuseumParser
 
 
 class TestNewMuseumParser:
@@ -23,9 +21,8 @@ class TestNewMuseumParser:
             assert result is None
 
     def test_parse_exhibition_page_playwright_failure(self):
+        """Parser can be instantiated regardless of Playwright status."""
         _ = NewMuseumParser()
-        if not HAS_PLAYWRIGHT:
-            pytest.skip("Playwright not installed")
 
     def test_extract_from_html_with_h1(self):
         p = NewMuseumParser()
@@ -79,14 +76,12 @@ class TestNewMuseumParser:
                 importlib.reload(nm_module)
                 assert nm_module.HAS_PLAYWRIGHT is False
 
-            with patch.dict("sys.modules", {
-                "playwright": MagicMock(),
-                "playwright.sync_api": MagicMock()
-            }):
+            with patch.dict(
+                "sys.modules", {"playwright": MagicMock(), "playwright.sync_api": MagicMock()}
+            ):
                 importlib.reload(nm_module)
                 assert nm_module.HAS_PLAYWRIGHT is True
         finally:
             importlib.reload(nm_module)
             nm_module.HAS_PLAYWRIGHT = orig_has_playwright
             nm_module.NewMuseumParser = orig_parser
-

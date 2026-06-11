@@ -4,7 +4,7 @@ import logging
 import os
 from typing import Any
 
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import BaseModel, Field, SecretStr, ValidationError
 
 from src.cache import LLMResponseCache, make_cache_key
 
@@ -239,7 +239,11 @@ Strict Guidelines:
                     f"[{provider_name}] LLM returned a list instead of a dict: {content[:200]}..."
                 )
                 return None
-        validated_data = ExhibitionModel(**parsed_json)
+        try:
+            validated_data = ExhibitionModel(**parsed_json)
+        except ValidationError as ve:
+            logger.warning(f"[{provider_name}] Pydantic validation failed: {ve}")
+            return None
         return validated_data.model_dump()
 
     def _call_provider(self, text: str, source: str, default_city: str) -> dict[str, Any] | None:
