@@ -57,18 +57,16 @@ pythonpath = ["src"]
 asyncio_mode = "auto"
 
 [tool.ruff]
-line-length = 100
-target-version = "py312"
+extend = "~/.config/ruff/ruff.toml"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM"]
 ignore = [
-    "E501",   # line too long (parser files have long HTML patterns)
-    "C414",   # unnecessary double cast (intentional in Pydantic coercion)
-    "SIM105", # try-except-pass (intentional in database migrations)
-    "SIM102", # collapsible if (style preference)
-    "SIM103", # needless bool (style preference)
-    "SIM118", # key in dict.keys (style preference)
+    "C414",
+    "SIM105",
+    "SIM102",
+    "SIM103",
+    "SIM118",
 ]
 
 [tool.ruff.lint.per-file-ignores]
