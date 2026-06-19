@@ -57,7 +57,12 @@ pythonpath = ["src"]
 asyncio_mode = "auto"
 
 [tool.ruff]
-extend = "~/.config/ruff/ruff.toml"
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM"]
+ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/sites/*.py" = ["E501"]
