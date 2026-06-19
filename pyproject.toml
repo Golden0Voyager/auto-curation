@@ -59,17 +59,15 @@ asyncio_mode = "auto"
 [tool.ruff]
 extend = "~/.config/ruff/ruff.toml"
 
-[tool.ruff.lint]
-select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM"]
-ignore = [
-    "C414",
-    "SIM105",
-    "SIM102",
-    "SIM103",
-    "SIM118",
-]
-
 [tool.ruff.lint.per-file-ignores]
 "src/sites/*.py" = ["E501"]
-"src/database.py" = ["SIM105"]
 
+[tool.coverage.run]
+source = ["src"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+
+[tool.mypy]
+ignore_missing_imports = true
