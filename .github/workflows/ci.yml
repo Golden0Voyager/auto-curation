@@ -57,4 +57,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'mock-key' }}
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY || 'mock-key' }}
           XIAOMI_MIMO_API_KEY: ${{ secrets.XIAOMI_MIMO_API_KEY || 'mock-key' }}
-        run: uv run pytest --cov=src --cov-fail-under=90 --cov-report=term-missing tests/ -v
+        run: uv run pytest --cov --cov-report=term-missing tests/ -v
+
+      - name: Enforce coverage threshold
+        run: uv run coverage report
