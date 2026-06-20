@@ -79,6 +79,6 @@ class MCAAustraliaParser(BaseSiteParser):
                 )
                 continue
 
-        urls = sorted(list(all_found))
+        urls = sorted(all_found)
         logger.info(f"[MCA Australia] Total discovered (Playwright): {len(urls)} exhibition URLs.")
         return urls

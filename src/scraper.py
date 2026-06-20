@@ -748,7 +748,7 @@ class ExhibitionScraper:
         """Runs the scraper for all registered contemporary art institutions."""
         results = []
         logger.info(f"Starting bulk scraper for all {len(SITES)} registered institutions.")
-        for site_key in SITES.keys():
+        for site_key in SITES:
             res = self.scrape_site(
                 site_key, limit=limit_per_site, force=force, dry_run=dry_run, since_year=since_year
             )

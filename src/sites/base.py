@@ -161,7 +161,7 @@ class BaseSiteParser:
                 )
                 continue
 
-        urls = sorted(list(all_found))
+        urls = sorted(all_found)
         logger.info(
             f"[{self.source}] Total discovered: {len(urls)} exhibition URLs across {len(list_urls)} listing page(s)."
         )
@@ -218,7 +218,7 @@ class BaseSiteParser:
                         all_found.add(full_url)
                         break
 
-        urls = sorted(list(all_found))
+        urls = sorted(all_found)
         logger.info(f"[{self.source}] Total discovered (Playwright): {len(urls)} exhibition URLs.")
         return urls
 

@@ -151,8 +151,8 @@ def get_timeline():
                     yearly_data[year][source] = yearly_data[year].get(source, 0) + 1
 
         # Sort years
-        sorted_years = sorted(list(yearly_data.keys()))
-        sources_list = sorted(list(all_sources))
+        sorted_years = sorted(yearly_data.keys())
+        sources_list = sorted(all_sources)
 
         series_data = {src: [] for src in sources_list}
         for yr in sorted_years:

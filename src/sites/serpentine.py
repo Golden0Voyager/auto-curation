@@ -246,7 +246,7 @@ class SerpentineParser(BaseSiteParser):
                 logger.error(f"[Serpentine] Error fetching {list_url}: {e}")
                 continue
 
-        urls = sorted(list(all_found))
+        urls = sorted(all_found)
         logger.info(
             f"[Serpentine] Discovered {len(urls)} real, clean exhibition URLs (filtered out non-exhibition events)."
         )
