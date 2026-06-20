@@ -14,14 +14,12 @@ import argparse
 import json
 import logging
 import sys
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 sys.path.insert(0, ".")
 
 from src.database import ExhibitionDatabase
-from src.enrichment import synthesize_concept_moma, synthesize_concept_aic, synthesize_concept_whitney
-from src.llm_parser import LLMExhibitionParser
+from src.enrichment import synthesize_concept_aic, synthesize_concept_moma, synthesize_concept_whitney
 from src.scraper import ExhibitionScraper, extract_images_from_html
 from src.sites import SITES
 from src.sites.base import ParserStrategy
@@ -34,7 +32,7 @@ logging.basicConfig(
 logger = logging.getLogger("enrich_exhibitions")
 
 
-def _get_artists_for_exhibition(conn, ex_id: int) -> List[str]:
+def _get_artists_for_exhibition(conn, ex_id: int) -> list[str]:
     """Query artworks table for artist names belonging to an exhibition."""
     cursor = conn.cursor()
     cursor.execute(
@@ -44,7 +42,7 @@ def _get_artists_for_exhibition(conn, ex_id: int) -> List[str]:
     return [row["artist_name"] for row in cursor.fetchall() if row["artist_name"]]
 
 
-def enrich_tier2(db: ExhibitionDatabase, limit: Optional[int] = None, dry_run: bool = False) -> Dict[str, Any]:
+def enrich_tier2(db: ExhibitionDatabase, limit: int | None = None, dry_run: bool = False) -> dict[str, Any]:
     """Tier 2: 为 MoMA / AIC 合成 concept。零网络请求。"""
     conn = db._get_connection()
     cursor = conn.cursor()
@@ -164,10 +162,10 @@ def enrich_tier2(db: ExhibitionDatabase, limit: Optional[int] = None, dry_run: b
     return stats
 
 
-def _build_parser_key_mapping(html_llm_keys: set[str]) -> tuple[set[str], Dict[str, str]]:
+def _build_parser_key_mapping(html_llm_keys: set[str]) -> tuple[set[str], dict[str, str]]:
     """Build mapping between SITES keys and DB parser_keys, including legacy names."""
     db_parser_keys: set[str] = set()
-    key_to_sites_key: Dict[str, str] = {}
+    key_to_sites_key: dict[str, str] = {}
     for sites_key in html_llm_keys:
         parser = SITES[sites_key]
         pk = getattr(parser, "parser_key", "")
@@ -179,7 +177,7 @@ def _build_parser_key_mapping(html_llm_keys: set[str]) -> tuple[set[str], Dict[s
     return db_parser_keys, key_to_sites_key
 
 
-def _add_legacy_mappings(db_parser_keys: set[str], key_to_sites_key: Dict[str, str], html_llm_keys: set[str], all_db_keys: set[str]) -> None:
+def _add_legacy_mappings(db_parser_keys: set[str], key_to_sites_key: dict[str, str], html_llm_keys: set[str], all_db_keys: set[str]) -> None:
     """Add known legacy parser_key mappings from older DB records."""
     legacy_map = {
         "serpentine_galleries": "serpentine",
@@ -194,7 +192,7 @@ def _add_legacy_mappings(db_parser_keys: set[str], key_to_sites_key: Dict[str, s
             key_to_sites_key[db_key] = sites_key
 
 
-def _build_missing_field_filter(fields: Optional[List[str]] = None) -> str:
+def _build_missing_field_filter(fields: list[str] | None = None) -> str:
     """Build SQL WHERE clause for missing field detection.
 
     Args:
@@ -224,7 +222,7 @@ def _build_missing_field_filter(fields: Optional[List[str]] = None) -> str:
     return " OR ".join(conditions) if conditions else "1=1"
 
 
-def _should_update_field(field: str, parsed: Dict[str, Any], row, force: bool = False) -> bool:
+def _should_update_field(field: str, parsed: dict[str, Any], row, force: bool = False) -> bool:
     """Check if a field should be updated from parsed result.
 
     Args:
@@ -242,13 +240,13 @@ def _should_update_field(field: str, parsed: Dict[str, Any], row, force: bool = 
     if force:
         return True
     # Only update if current value is empty/null
-    existing = row[field] if field in row.keys() else None
+    existing = row.get(field, None)
     if existing is None or existing == "" or existing == "[]":
         return True
     return False
 
 
-def enrich_tier1(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: Optional[int] = None, dry_run: bool = False, site: Optional[str] = None, fields: Optional[List[str]] = None, force_reparse: bool = False) -> Dict[str, Any]:
+def enrich_tier1(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: int | None = None, dry_run: bool = False, site: str | None = None, fields: list[str] | None = None, force_reparse: bool = False) -> dict[str, Any]:
     """Tier 1: 重新抓取 HTML_LLM 源缺失字段。
 
     Args:
@@ -399,7 +397,7 @@ def enrich_tier1(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: Opti
     return {"processed": len(rows), "updated": updated, "failed": failed}
 
 
-def enrich_tier3(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: Optional[int] = None, dry_run: bool = False) -> Dict[str, Any]:
+def enrich_tier3(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: int | None = None, dry_run: bool = False) -> dict[str, Any]:
     """Tier 3: Image 统一提取。"""
     conn = db._get_connection()
     cursor = conn.cursor()
@@ -426,7 +424,7 @@ def enrich_tier3(db: ExhibitionDatabase, scraper: ExhibitionScraper, limit: Opti
         parser_key = row["parser_key"]
         source = row["source"]
 
-        image_urls: List[str] = []
+        image_urls: list[str] = []
 
         # HTML_LLM 源：重新抓取页面提取图片
         if parser_key and parser_key in SITES:

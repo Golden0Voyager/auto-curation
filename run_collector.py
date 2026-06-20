@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 import argparse
 import asyncio
+import logging
 import os
 import sys
-import logging
 from datetime import date
+
 from src.scraper import ExhibitionScraper
 from src.sites import SITES
 

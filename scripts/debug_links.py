@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Debug script: fetch listing page and print all links for diagnosis."""
 
-import sys
-import httpx
 import re
 from urllib.parse import urljoin
+
+import httpx
 from bs4 import BeautifulSoup
 
 HEADERS = {
@@ -73,7 +73,7 @@ def diagnose(site: str, list_url: str, patterns: list):
                 print("\nNo matches. Looking for exhibition-like paths...")
                 candidates = []
                 for href, full in links:
-                    path = full.replace(list_url, "").lstrip("/")
+                    full.replace(list_url, "").lstrip("/")
                     if any(k in href.lower() for k in ["exhib", "show", "event", "program"]):
                         candidates.append(href)
                 for c in list(set(candidates))[:10]:

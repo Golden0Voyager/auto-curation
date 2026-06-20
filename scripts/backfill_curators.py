@@ -12,8 +12,7 @@ import argparse
 import json
 import logging
 import sys
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 sys.path.insert(0, ".")
 
@@ -40,9 +39,9 @@ def backfill_site(
     scraper: ExhibitionScraper,
     db: ExhibitionDatabase,
     site_key: str,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     dry_run: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """对单个站点执行策展人回填。"""
     parser = SITES.get(site_key)
     if not parser:
@@ -151,10 +150,7 @@ def main():
     db = ExhibitionDatabase(args.db)
     scraper = ExhibitionScraper(args.db)
 
-    if args.site:
-        sites = [args.site]
-    else:
-        sites = sorted(HIGH_VALUE_SITES & set(SITES.keys()))
+    sites = [args.site] if args.site else sorted(HIGH_VALUE_SITES & set(SITES.keys()))
 
     logger.info(f"Backfilling curators for {len(sites)} site(s), limit={args.limit}")
 

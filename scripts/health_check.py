@@ -27,7 +27,6 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.database import ExhibitionDatabase  # noqa: E402
 from src.sites import SITES  # noqa: E402
-from src.sites.base import ParserStrategy  # noqa: E402
 
 MAX_WORKERS = 2
 TIMEOUT_SECONDS = 90

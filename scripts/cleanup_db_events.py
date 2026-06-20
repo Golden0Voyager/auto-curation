@@ -1,5 +1,5 @@
-import sqlite3
 import re
+import sqlite3
 
 db_path = "exhibitions.db"
 conn = sqlite3.connect(db_path)
@@ -31,16 +31,13 @@ for row in rows:
     title = row["title"]
     url = row["url"]
     ex_id = row["id"]
-    
+
     is_event_or_index = False
-    
+
     # 1. Exclude if contains /archive/
-    if "/archive/" in url:
+    if "/archive/" in url or event_pattern.search(url) or event_pattern.search(title):
         is_event_or_index = True
-    # 2. Exclude by event keywords in URL or Title
-    elif event_pattern.search(url) or event_pattern.search(title):
-        is_event_or_index = True
-        
+
     if is_event_or_index:
         to_delete_ids.append(ex_id)
         to_delete_details.append((ex_id, title, url))
@@ -49,23 +46,23 @@ print(f"\nFlagged {len(to_delete_ids)} entries for deletion.")
 
 if to_delete_ids:
     print("\nStarting database cleanup...")
-    
+
     # 1. Enable Foreign Key just in case
     conn.execute("PRAGMA foreign_keys = ON;")
-    
+
     # 2. Explicitly delete artworks to be 100% safe
     # Let's count how many artworks will be deleted
     placeholders = ",".join("?" for _ in to_delete_ids)
     cursor.execute(f"SELECT COUNT(*) as count FROM artworks WHERE exhibition_id IN ({placeholders})", to_delete_ids)
     artwork_del_count = cursor.fetchone()["count"]
-    
+
     cursor.execute(f"DELETE FROM artworks WHERE exhibition_id IN ({placeholders})", to_delete_ids)
     print(f"  - Deleted {artwork_del_count} associated artworks from database.")
-    
+
     # 3. Delete exhibitions
     cursor.execute(f"DELETE FROM exhibitions WHERE id IN ({placeholders})", to_delete_ids)
     print(f"  - Deleted {len(to_delete_ids)} exhibitions from database.")
-    
+
     conn.commit()
     print("Database cleanup completed successfully.")
 else:
