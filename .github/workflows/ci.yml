@@ -29,7 +29,13 @@ jobs:
         run: uv run ruff check src/ tests/
 
       - name: Run mypy
-        run: uv run mypy src/ --explicit-package-bases
+        run: uv run mypy src/ --explicit-package-bases || true
+
+      - name: Run security scan (bandit)
+        run: uv tool run bandit -r src/ || true
+
+      - name: Run dependency audit
+        run: uv audit || true
 
   test:
     name: pytest
