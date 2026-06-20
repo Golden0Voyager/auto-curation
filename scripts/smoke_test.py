@@ -16,6 +16,8 @@ from typing import Any
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+import contextlib  # noqa: E402
+
 from src.scraper import ExhibitionScraper  # noqa: E402
 from src.sites import SITES  # noqa: E402
 
@@ -62,9 +64,7 @@ def run_single_smoke(site_key: str) -> dict[str, Any]:
         strategy = getattr(parser, "strategy", None)
         is_html = strategy is None or strategy.name == "HTML_LLM"
 
-        if url_count >= 5:
-            result["status"] = "PASS"
-        elif url_count > 0 and not is_html:
+        if url_count >= 5 or url_count > 0 and not is_html:
             result["status"] = "PASS"
         elif url_count > 0:
             result["status"] = "WARN"
@@ -93,10 +93,8 @@ def run_single_smoke(site_key: str) -> dict[str, Any]:
         result["error"] = err_msg[:500]
     finally:
         if scraper:
-            try:
+            with contextlib.suppress(Exception):
                 scraper.close()
-            except Exception:
-                pass
 
     return result
 
@@ -184,9 +182,9 @@ def main():
     lines = [
         "# Smoke Test Report",
         f"\nGenerated: {datetime.now().isoformat()}",
-        f"\n## Summary\n",
-        f"| Metric | Count | Percentage |",
-        f"|--------|------:|------------|",
+        "\n## Summary\n",
+        "| Metric | Count | Percentage |",
+        "|--------|------:|------------|",
         f"| Total  | {total} | 100% |",
         f"| Green  | {green} | {green / total * 100:.1f}% |",
         f"| Yellow | {yellow} | {yellow / total * 100:.1f}% |",

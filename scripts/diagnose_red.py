@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """二次诊断：对 Red 站点延长超时并获取详细错误信息"""
 
-import subprocess
 import concurrent.futures
+import contextlib
 import json
+import subprocess
 import sys
 import time
 from datetime import datetime
@@ -65,15 +66,11 @@ def diagnose_site(site: str) -> dict:
         url_count = 0
         for line in combined.splitlines():
             if "发现 URL" in line or "发现URL" in line:
-                try:
+                with contextlib.suppress(ValueError, IndexError):
                     url_count = int(line.split(":")[-1].strip())
-                except (ValueError, IndexError):
-                    pass
             elif "'discovered':" in line:
-                try:
+                with contextlib.suppress(ValueError, IndexError):
                     url_count = int(line.split("'discovered':")[1].split(",")[0].strip())
-                except (ValueError, IndexError):
-                    pass
 
         result["urls_found"] = url_count
 
@@ -215,9 +212,9 @@ def main():
     lines = [
         "# Red Site Diagnosis Report",
         f"\nGenerated: {datetime.now().isoformat()}",
-        f"\n## Summary\n",
-        f"| Category | Count |",
-        f"|----------|------:|",
+        "\n## Summary\n",
+        "| Category | Count |",
+        "|----------|------:|",
         f"| Recovered | {len(recovered)} |",
         f"| Fixable | {len(fixable)} |",
         f"| Blocked | {len(unfixable)} |",

@@ -20,8 +20,7 @@ if str(_SRC.parent) not in sys.path:
     sys.path.insert(0, str(_SRC.parent))
 
 # Register `src` as a package alias so `from src.cache import ...` works.
-import importlib
-import types
+import types  # noqa: E402
 
 if "src" not in sys.modules:
     _src_pkg = types.ModuleType("src")

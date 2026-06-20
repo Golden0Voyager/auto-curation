@@ -12,12 +12,11 @@ Usage:
 """
 import argparse
 import concurrent.futures
-import json
 import logging
 import re
 import sys
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 sys.path.insert(0, ".")
 
@@ -41,7 +40,7 @@ NOISE_TITLES = {
 }
 
 
-def validate_exhibition(data: Dict[str, Any]) -> List[str]:
+def validate_exhibition(data: dict[str, Any]) -> list[str]:
     """Return list of quality issues found in parsed exhibition data."""
     issues = []
 
@@ -107,7 +106,7 @@ def _is_strict_date(val: str) -> bool:
     return bool(re.match(r"^\d{4}-\d{2}-\d{2}$", val))
 
 
-def test_parser(scraper: ExhibitionScraper, key: str, limit: int) -> Dict[str, Any]:
+def test_parser(scraper: ExhibitionScraper, key: str, limit: int) -> dict[str, Any]:
     """Test a single parser with up to `limit` URLs."""
     parser = SITES[key]
     strategy = getattr(parser, "strategy", ParserStrategy.HTML_LLM)
@@ -206,7 +205,7 @@ def test_parser(scraper: ExhibitionScraper, key: str, limit: int) -> Dict[str, A
     }
 
 
-def determine_parser_status(result: Dict[str, Any]) -> str:
+def determine_parser_status(result: dict[str, Any]) -> str:
     """Determine overall status for a parser based on its results."""
     if result.get("skipped"):
         return "SKIPPED"
@@ -229,7 +228,7 @@ def determine_parser_status(result: Dict[str, Any]) -> str:
         return "FAIL"
 
 
-def write_markdown_report(all_results: List[Dict[str, Any]], path: str) -> None:
+def write_markdown_report(all_results: list[dict[str, Any]], path: str) -> None:
     """Write validation results as a Markdown report."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -246,10 +245,10 @@ def write_markdown_report(all_results: List[Dict[str, Any]], path: str) -> None:
         status_counts[status] = status_counts.get(status, 0) + 1
 
     with open(path, "w", encoding="utf-8") as f:
-        f.write(f"# LLM Parsing Validation Report\n\n")
+        f.write("# LLM Parsing Validation Report\n\n")
         f.write(f"Generated: {now}\n\n")
 
-        f.write(f"## Summary\n\n")
+        f.write("## Summary\n\n")
         f.write(f"- Total parsers tested: {len(tested_results)}\n")
         f.write(f"- Total URLs tested: {total_tested}\n")
         f.write(f"- Total issues found: {total_issues}\n")
@@ -258,7 +257,7 @@ def write_markdown_report(all_results: List[Dict[str, Any]], path: str) -> None:
         f.write("\n")
 
         # Issue breakdown
-        issue_types: Dict[str, int] = {}
+        issue_types: dict[str, int] = {}
         for r in tested_results:
             for u in r["results"]:
                 for issue in u["issues"]:

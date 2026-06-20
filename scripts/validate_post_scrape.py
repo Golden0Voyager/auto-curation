@@ -67,8 +67,8 @@ def validate_exhibition(row: dict) -> list[dict]:
             issues.append({"field": "dates", "severity": "error", "detail": f"start_date ({start}) > end_date ({end})"})
 
     # Concept check (only for HTML_LLM sources, skip CSV/API)
-    source = row.get("source", "")
-    strategy_hint = row.get("parser_key", "")
+    row.get("source", "")
+    row.get("parser_key", "")
     concept = row.get("concept", "")
     if not concept:
         issues.append({"field": "concept", "severity": "warn", "detail": "Missing"})
@@ -177,7 +177,7 @@ def main() -> None:
 
     # Output
     total = len(rows)
-    with_issues = sum(1 for s in source_stats.values() if s["issues"] > 0)
+    sum(1 for s in source_stats.values() if s["issues"] > 0)
 
     if args.json:
         print(json.dumps({
@@ -196,8 +196,8 @@ def main() -> None:
 
     # Summary table
     report_lines.append("\n## Source Summary\n")
-    report_lines.append(f"| Source | Total | With Issues | Errors | Issue Rate |")
-    report_lines.append(f"|--------|------:|------------:|-------:|-----------:|")
+    report_lines.append("| Source | Total | With Issues | Errors | Issue Rate |")
+    report_lines.append("|--------|------:|------------:|-------:|-----------:|")
     for source, stats in sorted(source_stats.items(), key=lambda x: x[1]["total"], reverse=True):
         rate = f"{stats['issues'] / stats['total'] * 100:.1f}%" if stats["total"] else "0%"
         report_lines.append(f"| {source} | {stats['total']} | {stats['issues']} | {stats['errors']} | {rate} |")

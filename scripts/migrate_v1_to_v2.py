@@ -9,9 +9,9 @@ Adds fields introduced by Phase 0 architecture refactoring:
 - New indexes for performance at scale
 """
 
+import os
 import sqlite3
 import sys
-import os
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "exhibitions.db")
 

@@ -218,13 +218,13 @@ def main() -> None:
     print(f"Artwork Validation Report — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Total issues: {total}")
     print(f"  Errors: {by_severity.get('error', 0)}, Warnings: {by_severity.get('warn', 0)}, Info: {by_severity.get('info', 0)}")
-    print(f"\nBy type:")
+    print("\nBy type:")
     for t, count in sorted(by_type.items(), key=lambda x: x[1], reverse=True):
         print(f"  {t}: {count}")
 
     # Print details
     if issues:
-        print(f"\nDetails (first 50):")
+        print("\nDetails (first 50):")
         for issue in issues[:50]:
             sev = issue["severity"].upper()
             pk = issue.get("source", issue.get("parser_key", "?"))

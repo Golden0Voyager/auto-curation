@@ -15,7 +15,6 @@ import json
 import logging
 import sys
 import time
-from typing import List, Optional
 
 import httpx
 
@@ -47,7 +46,7 @@ DEFAULT_TIMEOUT = 30.0
 REQUEST_DELAY = 0.3
 
 
-def fetch_images_for_url(client: httpx.Client, url: str, timeout: float = DEFAULT_TIMEOUT) -> List[str]:
+def fetch_images_for_url(client: httpx.Client, url: str, timeout: float = DEFAULT_TIMEOUT) -> list[str]:
     """Fetch a single exhibition page and extract image URLs."""
     try:
         response = client.get(url, timeout=timeout, follow_redirects=True)

@@ -14,7 +14,6 @@ import json
 import logging
 import sys
 import time
-from typing import Dict, Optional
 
 import httpx
 
@@ -34,13 +33,13 @@ BATCH_SIZE = 100
 REQUEST_DELAY = 0.2
 
 
-def fetch_all_aic_images(limit_pages: Optional[int] = None) -> Dict[int, str]:
+def fetch_all_aic_images(limit_pages: int | None = None) -> dict[int, str]:
     """Fetch all AIC exhibition image URLs via paginated search API.
 
     Returns:
         Mapping of exhibition_id (int) -> image_url (str)
     """
-    image_map: Dict[int, str] = {}
+    image_map: dict[int, str] = {}
     offset = 0
     page = 0
 
