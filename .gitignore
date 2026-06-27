@@ -35,3 +35,8 @@ data/nga_collection/objects.csv
 # Skill-generated analysis artifacts
 .understand-anything/
 .codegraph/
+
+# Toolchain caches
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
