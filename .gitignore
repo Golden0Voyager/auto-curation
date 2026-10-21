@@ -40,3 +40,6 @@ data/nga_collection/objects.csv
 .ruff_cache/
 .mypy_cache/
 .pytest_cache/
+
+# Local git worktrees
+.worktrees/
