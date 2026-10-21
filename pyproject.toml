@@ -81,3 +81,6 @@ files = ["src/"]
 
 [tool.bandit]
 skips = ["B101", "B311", "B404", "B603"]
+
+[tool.uv]
+required-version = "0.13.4"
