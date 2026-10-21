@@ -20,7 +20,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install uv
-        run: pip install uv
+        run: pip install uv==0.13.4
 
       - name: Sync dependencies
         run: uv sync --group dev
@@ -34,8 +34,13 @@ jobs:
       - name: Run security scan (bandit)
         run: uv tool run bandit -r src/ || true
 
-      - name: Run dependency audit
-        run: uv audit || true
+      - name: Audit dependencies
+        # The old step ran `uv audit` for real (uv >= 0.11) but `|| true` turned
+        # every advisory into a green build. This gate reads the frozen lock, so
+        # CI cannot disagree with uv.lock.
+        run: |
+          uv export --frozen --no-emit-project --format requirements-txt --no-hashes > "$RUNNER_TEMP/requirements.txt"
+          uvx pip-audit@2.10.1 --disable-pip --no-deps -r "$RUNNER_TEMP/requirements.txt" --progress-spinner off
 
   test:
     name: pytest
@@ -50,7 +55,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install uv
-        run: pip install uv
+        run: pip install uv==0.13.4
 
       - name: Sync dependencies
         run: uv sync --group dev
