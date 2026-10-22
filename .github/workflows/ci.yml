@@ -19,8 +19,9 @@ jobs:
         with:
           python-version: '3.12'
 
+      # 不钉版本：让 CI 始终装最新 uv；太旧的版本由 pyproject.toml 的 required-version 下限挡住
       - name: Install uv
-        run: pip install uv==0.13.4
+        run: pip install uv
 
       - name: Sync dependencies
         run: uv sync --group dev
@@ -54,8 +55,9 @@ jobs:
         with:
           python-version: '3.12'
 
+      # 不钉版本：让 CI 始终装最新 uv；太旧的版本由 pyproject.toml 的 required-version 下限挡住
       - name: Install uv
-        run: pip install uv==0.13.4
+        run: pip install uv
 
       - name: Sync dependencies
         run: uv sync --group dev
